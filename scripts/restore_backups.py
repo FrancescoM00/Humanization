@@ -36,7 +36,7 @@ def part_paths(backup_dir, component):
         count = 0
         with path.open('rb') as handle:
             if handle.read(128).startswith(b'version https://git-lfs.github.com/spec/v1'):
-                raise RuntimeError('This is a Git LFS pointer, not archive data. Run git lfs install, then git lfs pull origin cloud-backup --include="backups/**".')
+                raise RuntimeError('This is a Git LFS pointer, not archive data. Follow backups/README.md: git lfs install; git fetch origin cloud-backup; git lfs fetch origin FETCH_HEAD --include="backups/**"; git restore --source=FETCH_HEAD --worktree -- backups/.')
             handle.seek(0)
             for block in iter(lambda: handle.read(1024 * 1024), b''):
                 digest.update(block)

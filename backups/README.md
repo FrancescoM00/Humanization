@@ -16,20 +16,17 @@ Codice, report, CSV, figure e pacchetti ZIP rimangono normali file del repositor
 Il ramo `main` mantiene codice, risultati, questo documento, manifest e script di ripristino. Le parti pesanti sono conservate sul ramo `cloud-backup`. Dalla radice del clone, prima di ripristinare:
 
 ```bash
-git fetch origin cloud-backup
-git restore --source=FETCH_HEAD -- backups/
-```
-
-Se le parti sono distribuite con Git LFS, installare anche Git LFS sul computer e inizializzarlo prima del recupero. Se i file restano piccoli puntatori testuali anziché archivi reali:
-
-```bash
 git lfs install
-git lfs pull origin cloud-backup --include='backups/**'
+git fetch origin cloud-backup
+git lfs fetch origin FETCH_HEAD --include='backups/**'
+git restore --source=FETCH_HEAD --worktree -- backups/
 ```
+
+Installare Git LFS sul computer se il comando non è disponibile. Il fetch LFS scarica gli oggetti del ramo dei backup prima del ripristino; il checkout può quindi ricostruire i file reali dalla cache locale. Non usare `git lfs pull origin cloud-backup`: `pull` opera sul ramo correntemente aperto e non accetta un ramo come secondo argomento.
 
 Lo script riconosce i puntatori LFS e mostra un messaggio esplicito invece di presentarli come archivi corrotti. Il manifest descrive i byte degli archivi reali.
 
-Il secondo comando importa la directory dei backup nel working tree; **non esegue gli esperimenti e non pubblica modifiche**. Preservare eventuali modifiche locali personali nella directory `backups/` prima di usarlo. Il fetch del ramo può scaricare tutti gli archivi anche se poi si ripristina un solo componente.
+L'ultimo comando importa la directory dei backup nel working tree; **non esegue gli esperimenti e non pubblica modifiche**. Preservare eventuali modifiche locali personali nella directory `backups/` prima di usarlo. Il fetch LFS può scaricare tutti gli archivi anche se poi si ripristina un solo componente.
 
 ## Elencare e ripristinare
 
