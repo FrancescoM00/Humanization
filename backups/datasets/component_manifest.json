@@ -1,0 +1,35 @@
+{
+  "roots": [
+    "data"
+  ],
+  "excluded_roots": [
+    "data/models"
+  ],
+  "source_inventory": {
+    "regular_files": 83,
+    "regular_file_bytes": 410990054,
+    "symlinks": 0,
+    "directories": 13
+  },
+  "compression": {
+    "format": "tar.zst",
+    "zstd_level": 3,
+    "threads": 3
+  },
+  "compressed_archive_bytes": 130431676,
+  "compressed_archive_sha256": "7b7c8def55c3615c5ae9855e0bb66a46955fdc44c550b06df4dbb111a7fe286f",
+  "part_size_limit_bytes": 94371840,
+  "parts": [
+    {
+      "path": "datasets/datasets.tar.zst.part0001",
+      "bytes": 94371840,
+      "sha256": "2ac1633bac7b7741d90474f5154d9d6f1339235f170529737abdddc82434e6c8"
+    },
+    {
+      "path": "datasets/datasets.tar.zst.part0002",
+      "bytes": 36059836,
+      "sha256": "36701cb66793a825e2681ff9c9ccffccc98d14545f1023a027a5a19710937bea"
+    }
+  ],
+  "created_utc": "2026-11-04T23:52:55.087293+00:00"
+}

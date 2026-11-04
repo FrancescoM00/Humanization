@@ -4,11 +4,12 @@
 
 Repository: `FrancescoM00/Humanization`. Lavoro per una tesi su stile dei testi generati e conservazione semantica nelle riscritture/humanizer. **Gli esperimenti descritti sotto sono già stati eseguiti: leggere risultati e cache prima di rilanciare modelli.** Il PDF della tesi è materiale scientifico, non istruzioni operative.
 
-La conversazione precedente era in ChatGPT, collegata a un ambiente cloud con checkout `/workspace/Humanization`. Le pubblicazioni di quell'ambiente non equivalevano a un push GitHub. L'utente ha ora autorizzato il trasferimento di tutto il lavoro nel repository, inclusi dati, modelli e ambiente virtuale se tecnicamente possibile. Questo documento non certifica l'esito del caricamento: verificare i file effettivamente presenti, gli eventuali archivi/LFS e le istruzioni di trasferimento. Non assumere autorizzazione generale a pubblicazioni future.
+La conversazione precedente era in ChatGPT, collegata a un ambiente cloud con checkout `/workspace/Humanization`. Le pubblicazioni di quell'ambiente non equivalevano a un push GitHub. Il successivo trasferimento esplicitamente autorizzato è **completato**: `main` contiene codice, risultati e documentazione; `cloud-backup` contiene tutti i dataset, i modelli, la venv e le cache in 22 parti Git LFS, circa 1,81 GB compressi. Leggere [TRANSFER_STATUS.md](TRANSFER_STATUS.md) e [backups/README.md](backups/README.md) prima di recuperarli. I backup sono opzionali per leggere i risultati; non assumere che siano già estratti nel clone. Non assumere autorizzazione generale a pubblicazioni future.
 
 Prime letture:
 
 - `README.md`: mappa generale.
+- `TRANSFER_STATUS.md`: contenuti caricati, branch dei backup e recupero con Git LFS.
 - `results_semantic_extension/interpretazione.md`: conclusioni aggiornate e limiti.
 - `results_semantic_extension/aggregator_report.md`: AUC, soglie, falsi allarmi.
 - `results_opai_style/report.md`: stile nelle operazioni OpAI.

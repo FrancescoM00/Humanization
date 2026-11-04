@@ -1,0 +1,276 @@
+{
+  "format_version": 1,
+  "source_root": "/workspace/Humanization",
+  "platform": {
+    "system": "Linux",
+    "machine": "x86_64",
+    "python": "3.12.14",
+    "libc": [
+      "glibc",
+      "2.41"
+    ]
+  },
+  "notes": [
+    "Includes project data, local model weights, .venv and project runtime caches.",
+    "Excludes .git and executor credentials/configuration; source and results are regular repository files.",
+    "The Linux x86_64 virtual environment is a preservation snapshot, not portable to other OS/architectures.",
+    "Its Python symlink and script shebangs reference absolute paths of the original cloud runtime."
+  ],
+  "components": {
+    "cache": {
+      "roots": [
+        ".cache",
+        ".pytest_cache",
+        "semantic_run.log"
+      ],
+      "excluded_roots": [],
+      "source_inventory": {
+        "regular_files": 9,
+        "regular_file_bytes": 182110,
+        "symlinks": 0,
+        "directories": 6
+      },
+      "compression": {
+        "format": "tar.zst",
+        "zstd_level": 3,
+        "threads": 3
+      },
+      "compressed_archive_bytes": 14228,
+      "compressed_archive_sha256": "ae96d048eab4b6fb8e18266f83b96c64641f471ca1c3260397270b8d84c08877",
+      "part_size_limit_bytes": 94371840,
+      "parts": [
+        {
+          "path": "runtime_cache/runtime_cache.tar.zst.part0001",
+          "bytes": 14228,
+          "sha256": "ae96d048eab4b6fb8e18266f83b96c64641f471ca1c3260397270b8d84c08877"
+        }
+      ],
+      "created_utc": "2026-11-04T23:52:38.760562+00:00"
+    },
+    "data": {
+      "roots": [
+        "data"
+      ],
+      "excluded_roots": [
+        "data/models"
+      ],
+      "source_inventory": {
+        "regular_files": 83,
+        "regular_file_bytes": 410990054,
+        "symlinks": 0,
+        "directories": 13
+      },
+      "compression": {
+        "format": "tar.zst",
+        "zstd_level": 3,
+        "threads": 3
+      },
+      "compressed_archive_bytes": 130431676,
+      "compressed_archive_sha256": "7b7c8def55c3615c5ae9855e0bb66a46955fdc44c550b06df4dbb111a7fe286f",
+      "part_size_limit_bytes": 94371840,
+      "parts": [
+        {
+          "path": "datasets/datasets.tar.zst.part0001",
+          "bytes": 94371840,
+          "sha256": "2ac1633bac7b7741d90474f5154d9d6f1339235f170529737abdddc82434e6c8"
+        },
+        {
+          "path": "datasets/datasets.tar.zst.part0002",
+          "bytes": 36059836,
+          "sha256": "36701cb66793a825e2681ff9c9ccffccc98d14545f1023a027a5a19710937bea"
+        }
+      ],
+      "created_utc": "2026-11-04T23:52:55.087293+00:00"
+    },
+    "models": {
+      "roots": [
+        "data/models"
+      ],
+      "excluded_roots": [],
+      "source_inventory": {
+        "regular_files": 34,
+        "regular_file_bytes": 1722872299,
+        "symlinks": 0,
+        "directories": 6
+      },
+      "compression": {
+        "format": "tar.zst",
+        "zstd_level": 3,
+        "threads": 3
+      },
+      "compressed_archive_bytes": 1160384762,
+      "compressed_archive_sha256": "7d3e0cfeb42ce990632b4e72c2f35ba8703bb51204d4f87c72f65b35bfd3d45b",
+      "part_size_limit_bytes": 94371840,
+      "parts": [
+        {
+          "path": "model_weights/model_weights.tar.zst.part0001",
+          "bytes": 94371840,
+          "sha256": "575814f964607d8926e16e2fb1a45075baebd75d1e58bdb1f87c1e3b1fc5d3fa"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0002",
+          "bytes": 94371840,
+          "sha256": "22424e7bde572298a4e8f016d6c5620fea571ad383a59630459f50d366fe0d84"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0003",
+          "bytes": 94371840,
+          "sha256": "9295f6f7720d69aab44008441084bcb634f1ed0159b0db43b170d9e98d09097e"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0004",
+          "bytes": 94371840,
+          "sha256": "e528c8646772aa473e86d142dce03507c65940d7d48f9da15e6a1d02465df1dc"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0005",
+          "bytes": 94371840,
+          "sha256": "6772f65143dfc4691a0a2b18c8ba89e3b610c8f6e77775f437c6050c4094d4fc"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0006",
+          "bytes": 94371840,
+          "sha256": "a4cc841984c39061402e96a1dfc487a749054d7c70ddbaad834bb79944573847"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0007",
+          "bytes": 94371840,
+          "sha256": "a46c6938e60d9cf448357a9692440a6550cd671792290e658047e3c3dc5d452b"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0008",
+          "bytes": 94371840,
+          "sha256": "055eae00d4c302903ddb16339be369e8960bf88e359f0d3ddfe7970eaa49b1ae"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0009",
+          "bytes": 94371840,
+          "sha256": "15a20350715a7f0d4c91ea556076c7c910981d3e3f99d6fe0c751f54ce8b5fd1"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0010",
+          "bytes": 94371840,
+          "sha256": "f0e284fab9b27483d169fdc07f71ac992b8659461debb46f3e8b2c9fa3db08e9"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0011",
+          "bytes": 94371840,
+          "sha256": "d14120e25715344ac930844d920927744ccaee40071711595aa69c799f6494fd"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0012",
+          "bytes": 94371840,
+          "sha256": "fd83e319c3db96f421fedd2db843bc3d17568b0d939d3454acee1c2b8e6c03b2"
+        },
+        {
+          "path": "model_weights/model_weights.tar.zst.part0013",
+          "bytes": 27922682,
+          "sha256": "71ab8491097d22e952337c7da1e1af0bb46c7a86a6dbd0884e68713064b8911e"
+        }
+      ],
+      "created_utc": "2026-11-04T23:52:59.911062+00:00"
+    },
+    "venv": {
+      "roots": [
+        ".venv"
+      ],
+      "excluded_roots": [],
+      "source_inventory": {
+        "regular_files": 53748,
+        "regular_file_bytes": 1961633586,
+        "symlinks": 4,
+        "directories": 8046
+      },
+      "compression": {
+        "format": "tar.zst",
+        "zstd_level": 3,
+        "threads": 3
+      },
+      "compressed_archive_bytes": 518027092,
+      "compressed_archive_sha256": "9a97b7efba43da4e002a906310fd2dbfea444769bc4bde535e2ed1f546fd42f7",
+      "part_size_limit_bytes": 94371840,
+      "parts": [
+        {
+          "path": "python_environment/python_environment.tar.zst.part0001",
+          "bytes": 94371840,
+          "sha256": "f8563b645383b1cbf0205f32533ce9ecc069f4b3d9bf359006ba9b9620199ce9"
+        },
+        {
+          "path": "python_environment/python_environment.tar.zst.part0002",
+          "bytes": 94371840,
+          "sha256": "837979f1e964e915eab8d97cf8303cff4b695b7a4354d32f871dd8c25d65f55a"
+        },
+        {
+          "path": "python_environment/python_environment.tar.zst.part0003",
+          "bytes": 94371840,
+          "sha256": "5008c6d43b04b1772940854a0fce79945afc08e54b21c4e7af9975ac1651c6cb"
+        },
+        {
+          "path": "python_environment/python_environment.tar.zst.part0004",
+          "bytes": 94371840,
+          "sha256": "29ed016da548f1009bd9e41c623f0aa10466ebebe3751b7da286897572fab48c"
+        },
+        {
+          "path": "python_environment/python_environment.tar.zst.part0005",
+          "bytes": 94371840,
+          "sha256": "558da4b48f7b95d48d5e837cf0fa85f121f06686e363b897b703ced81145f9a8"
+        },
+        {
+          "path": "python_environment/python_environment.tar.zst.part0006",
+          "bytes": 46167892,
+          "sha256": "e8f373665d7d4086d77d00a83adf3734647de040ebbe03bca768878c8a491784"
+        }
+      ],
+      "created_utc": "2026-11-04T23:53:07.800354+00:00"
+    }
+  },
+  "suggested_git_push_groups": [
+    {
+      "bytes": 413561424,
+      "parts": [
+        "runtime_cache/runtime_cache.tar.zst.part0001",
+        "datasets/datasets.tar.zst.part0001",
+        "datasets/datasets.tar.zst.part0002",
+        "model_weights/model_weights.tar.zst.part0001",
+        "model_weights/model_weights.tar.zst.part0002",
+        "model_weights/model_weights.tar.zst.part0003"
+      ]
+    },
+    {
+      "bytes": 471859200,
+      "parts": [
+        "model_weights/model_weights.tar.zst.part0004",
+        "model_weights/model_weights.tar.zst.part0005",
+        "model_weights/model_weights.tar.zst.part0006",
+        "model_weights/model_weights.tar.zst.part0007",
+        "model_weights/model_weights.tar.zst.part0008"
+      ]
+    },
+    {
+      "bytes": 405410042,
+      "parts": [
+        "model_weights/model_weights.tar.zst.part0009",
+        "model_weights/model_weights.tar.zst.part0010",
+        "model_weights/model_weights.tar.zst.part0011",
+        "model_weights/model_weights.tar.zst.part0012",
+        "model_weights/model_weights.tar.zst.part0013"
+      ]
+    },
+    {
+      "bytes": 471859200,
+      "parts": [
+        "python_environment/python_environment.tar.zst.part0001",
+        "python_environment/python_environment.tar.zst.part0002",
+        "python_environment/python_environment.tar.zst.part0003",
+        "python_environment/python_environment.tar.zst.part0004",
+        "python_environment/python_environment.tar.zst.part0005"
+      ]
+    },
+    {
+      "bytes": 46167892,
+      "parts": [
+        "python_environment/python_environment.tar.zst.part0006"
+      ]
+    }
+  ]
+}
