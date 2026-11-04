@@ -1,0 +1,53 @@
+{
+  "roots": [
+    ".venv"
+  ],
+  "excluded_roots": [],
+  "source_inventory": {
+    "regular_files": 53748,
+    "regular_file_bytes": 1961633586,
+    "symlinks": 4,
+    "directories": 8046
+  },
+  "compression": {
+    "format": "tar.zst",
+    "zstd_level": 3,
+    "threads": 3
+  },
+  "compressed_archive_bytes": 518027092,
+  "compressed_archive_sha256": "9a97b7efba43da4e002a906310fd2dbfea444769bc4bde535e2ed1f546fd42f7",
+  "part_size_limit_bytes": 94371840,
+  "parts": [
+    {
+      "path": "python_environment/python_environment.tar.zst.part0001",
+      "bytes": 94371840,
+      "sha256": "f8563b645383b1cbf0205f32533ce9ecc069f4b3d9bf359006ba9b9620199ce9"
+    },
+    {
+      "path": "python_environment/python_environment.tar.zst.part0002",
+      "bytes": 94371840,
+      "sha256": "837979f1e964e915eab8d97cf8303cff4b695b7a4354d32f871dd8c25d65f55a"
+    },
+    {
+      "path": "python_environment/python_environment.tar.zst.part0003",
+      "bytes": 94371840,
+      "sha256": "5008c6d43b04b1772940854a0fce79945afc08e54b21c4e7af9975ac1651c6cb"
+    },
+    {
+      "path": "python_environment/python_environment.tar.zst.part0004",
+      "bytes": 94371840,
+      "sha256": "29ed016da548f1009bd9e41c623f0aa10466ebebe3751b7da286897572fab48c"
+    },
+    {
+      "path": "python_environment/python_environment.tar.zst.part0005",
+      "bytes": 94371840,
+      "sha256": "558da4b48f7b95d48d5e837cf0fa85f121f06686e363b897b703ced81145f9a8"
+    },
+    {
+      "path": "python_environment/python_environment.tar.zst.part0006",
+      "bytes": 46167892,
+      "sha256": "e8f373665d7d4086d77d00a83adf3734647de040ebbe03bca768878c8a491784"
+    }
+  ],
+  "created_utc": "2026-11-04T23:53:07.800354+00:00"
+}
