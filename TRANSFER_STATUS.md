@@ -15,7 +15,7 @@ Le parti pesanti non sono presenti nel working tree di `main`: aprire il codice 
 | Modelli | Tutto `data/models/`, inclusi MiniLM, RoBERTa, DeBERTa-v3 base e ONNX | 13 | 1.160.384.762 |
 | Venv | Tutto `.venv/`, inclusi pacchetti, spaCy e CMUdict | 6 | 518.027.092 |
 | Cache | `.cache/`, `.pytest_cache/` e `semantic_run.log` del progetto | 1 | 14.228 |
-| **Totale** | **4.095.678.049 byte di dati, modelli e venv, più cache** | **22** | **1.808.857.758** |
+| **Totale** | **4.095.678.049 byte complessivi nei quattro componenti** | **22** | **1.808.857.758** |
 
 Ogni parte è al massimo 90 MiB. Le dimensioni e gli SHA-256 sono in [backups/manifest.json](backups/manifest.json). Un ripristino integrale in una directory temporanea ha riprodotto gli inventari dei quattro componenti, inclusi i symlink; i dati originali non sono stati sostituiti.
 
