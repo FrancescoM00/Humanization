@@ -6,3 +6,4 @@ __pycache__/
 data/
 experiment_bundle*.zip
 semantic_run.log
+backups/.build/
