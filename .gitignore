@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.cache/
+*.pyc
+data/
+experiment_bundle*.zip
+semantic_run.log

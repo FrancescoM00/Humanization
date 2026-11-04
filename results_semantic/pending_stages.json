@@ -1,0 +1,14 @@
+[
+  {
+    "stage": "embedding",
+    "reason": "Pretrained model files unavailable; metrics NOT computed"
+  },
+  {
+    "stage": "bertscore",
+    "reason": "Pretrained model files unavailable; metrics NOT computed"
+  },
+  {
+    "stage": "nli",
+    "reason": "Pretrained model files unavailable; metrics NOT computed"
+  }
+]

@@ -1,0 +1,62 @@
+mkdir -p failed for path /home/agent/.config/matplotlib: [Errno 30] Read-only file system: '/home/agent/.config/matplotlib'
+Matplotlib created a temporary cache directory at /tmp/matplotlib-mp77y9m6 because there was an issue with the default path (/home/agent/.config/matplotlib); it is highly recommended to set the MPLCONFIGDIR environment variable to a writable directory, in particular to speed up the import of Matplotlib and to better support multiprocessing.
+Fontconfig error: No writable cache directories
+Preparing a balanced, source-paired sample...
+Extracting spaCy/textstat/MATTR features for 1800 documents...
+Computing paired effects and cluster bootstrap intervals...
+Evaluating grouped logistic regression: within-domain, held-domain, held-generator...
+           protocol         domain     generator feature_set  roc_auc  macro_f1
+   leave_domain_out          Essay           ALL    combined 0.762322  0.452846
+   leave_domain_out          Essay           ALL length_only 0.848489  0.653863
+   leave_domain_out          Essay           ALL       style 0.754111  0.464286
+   leave_domain_out          Essay           ALL   wikipedia 0.578650  0.519441
+   leave_domain_out        Reuters           ALL    combined 0.836678  0.786267
+   leave_domain_out        Reuters           ALL length_only 0.872178  0.751319
+   leave_domain_out        Reuters           ALL       style 0.836878  0.773838
+   leave_domain_out        Reuters           ALL   wikipedia 0.507461  0.498460
+   leave_domain_out WritingPrompts           ALL    combined 0.575233  0.538633
+   leave_domain_out WritingPrompts           ALL length_only 0.763961  0.705082
+   leave_domain_out WritingPrompts           ALL       style 0.571622  0.529326
+   leave_domain_out WritingPrompts           ALL   wikipedia 0.509333  0.428872
+leave_generator_out            ALL       ChatGLM    combined 0.965507  0.906618
+leave_generator_out            ALL       ChatGLM length_only 0.948020  0.824349
+leave_generator_out            ALL       ChatGLM       style 0.968271  0.914477
+leave_generator_out            ALL       ChatGLM   wikipedia 0.455802  0.373358
+leave_generator_out            ALL       ChatGPT    combined 0.949402  0.891473
+leave_generator_out            ALL       ChatGPT length_only 0.936422  0.820109
+leave_generator_out            ALL       ChatGPT       style 0.953248  0.875902
+leave_generator_out            ALL       ChatGPT   wikipedia 0.438105  0.439121
+leave_generator_out            ALL ChatGPT-turbo    combined 0.887807  0.806015
+leave_generator_out            ALL ChatGPT-turbo length_only 0.442582  0.381751
+leave_generator_out            ALL ChatGPT-turbo       style 0.879875  0.813774
+leave_generator_out            ALL ChatGPT-turbo   wikipedia 0.771017  0.750725
+leave_generator_out            ALL        Claude    combined 0.726399  0.644472
+leave_generator_out            ALL        Claude length_only 0.580855  0.413967
+leave_generator_out            ALL        Claude       style 0.714921  0.631747
+leave_generator_out            ALL        Claude   wikipedia 0.552881  0.603285
+leave_generator_out            ALL         Dolly    combined 0.838952  0.809249
+leave_generator_out            ALL         Dolly length_only 0.967430  0.849447
+leave_generator_out            ALL         Dolly       style 0.847725  0.801822
+leave_generator_out            ALL         Dolly   wikipedia 0.380416  0.370596
+leave_generator_out            ALL       GPT4All    combined 0.932696  0.864290
+leave_generator_out            ALL       GPT4All length_only 0.946337  0.789915
+leave_generator_out            ALL       GPT4All       style 0.940148  0.879843
+leave_generator_out            ALL       GPT4All   wikipedia 0.516075  0.481767
+leave_generator_out            ALL      StableLM    combined 0.661061  0.619417
+leave_generator_out            ALL      StableLM length_only 0.939594  0.832878
+leave_generator_out            ALL      StableLM       style 0.661124  0.618684
+leave_generator_out            ALL      StableLM   wikipedia 0.406053  0.326102
+      within_domain          Essay           ALL    combined 0.928067  0.869977
+      within_domain          Essay           ALL length_only 0.846044  0.654765
+      within_domain          Essay           ALL       style 0.932267  0.866643
+      within_domain          Essay           ALL   wikipedia 0.565994  0.590877
+      within_domain        Reuters           ALL    combined 0.937444  0.894934
+      within_domain        Reuters           ALL length_only 0.868656  0.783215
+      within_domain        Reuters           ALL       style 0.938289  0.896638
+      within_domain        Reuters           ALL   wikipedia 0.633022  0.513382
+      within_domain WritingPrompts           ALL    combined 0.887889  0.826649
+      within_domain WritingPrompts           ALL length_only 0.802817  0.735416
+      within_domain WritingPrompts           ALL       style 0.888189  0.833304
+      within_domain WritingPrompts           ALL   wikipedia 0.583472  0.494652
+Exploratory shortlist: fw_and, punct_total_per100, pos_num, pos_adv, mattr_50, punct_period_per100, pos_noun
+Results: /workspace/Humanization/results

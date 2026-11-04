@@ -1,0 +1,59 @@
+Preparing a balanced, source-paired sample...
+Extracting spaCy/textstat/MATTR features for 1800 documents...
+Computing paired effects and cluster bootstrap intervals...
+Evaluating grouped logistic regression: within-domain, held-domain, held-generator...
+           protocol         domain     generator feature_set  roc_auc  macro_f1
+   leave_domain_out          Essay           ALL    combined 0.803133  0.464198
+   leave_domain_out          Essay           ALL length_only 0.848922  0.651858
+   leave_domain_out          Essay           ALL       style 0.779000  0.453618
+   leave_domain_out          Essay           ALL   wikipedia 0.579928  0.517905
+   leave_domain_out        Reuters           ALL    combined 0.855922  0.782461
+   leave_domain_out        Reuters           ALL length_only 0.883533  0.772650
+   leave_domain_out        Reuters           ALL       style 0.843233  0.773323
+   leave_domain_out        Reuters           ALL   wikipedia 0.487056  0.486603
+   leave_domain_out WritingPrompts           ALL    combined 0.562944  0.534703
+   leave_domain_out WritingPrompts           ALL length_only 0.780467  0.736245
+   leave_domain_out WritingPrompts           ALL       style 0.534756  0.523085
+   leave_domain_out WritingPrompts           ALL   wikipedia 0.519956  0.427780
+leave_generator_out            ALL       ChatGLM    combined 0.979689  0.922313
+leave_generator_out            ALL       ChatGLM length_only 0.975843  0.828571
+leave_generator_out            ALL       ChatGLM       style 0.981251  0.926169
+leave_generator_out            ALL       ChatGLM   wikipedia 0.510757  0.406067
+leave_generator_out            ALL       ChatGPT    combined 0.949703  0.887582
+leave_generator_out            ALL       ChatGPT length_only 0.966709  0.828571
+leave_generator_out            ALL       ChatGPT       style 0.951025  0.899225
+leave_generator_out            ALL       ChatGPT   wikipedia 0.394598  0.399641
+leave_generator_out            ALL ChatGPT-turbo    combined 0.904273  0.841064
+leave_generator_out            ALL ChatGPT-turbo length_only 0.443303  0.386946
+leave_generator_out            ALL ChatGPT-turbo       style 0.886605  0.817827
+leave_generator_out            ALL ChatGPT-turbo   wikipedia 0.778679  0.765412
+leave_generator_out            ALL        Claude    combined 0.726699  0.627824
+leave_generator_out            ALL        Claude length_only 0.559281  0.408709
+leave_generator_out            ALL        Claude       style 0.711796  0.618191
+leave_generator_out            ALL        Claude   wikipedia 0.649120  0.548132
+leave_generator_out            ALL         Dolly    combined 0.846043  0.790080
+leave_generator_out            ALL         Dolly length_only 0.980169  0.828571
+leave_generator_out            ALL         Dolly       style 0.842978  0.794200
+leave_generator_out            ALL         Dolly   wikipedia 0.347064  0.356492
+leave_generator_out            ALL       GPT4All    combined 0.955171  0.895158
+leave_generator_out            ALL       GPT4All length_only 0.941530  0.811576
+leave_generator_out            ALL       GPT4All       style 0.960339  0.902983
+leave_generator_out            ALL       GPT4All   wikipedia 0.530707  0.467419
+leave_generator_out            ALL      StableLM    combined 0.675800  0.604160
+leave_generator_out            ALL      StableLM length_only 0.939972  0.841440
+leave_generator_out            ALL      StableLM       style 0.663265  0.609550
+leave_generator_out            ALL      StableLM   wikipedia 0.411880  0.333396
+      within_domain          Essay           ALL    combined 0.916433  0.858286
+      within_domain          Essay           ALL length_only 0.846800  0.653863
+      within_domain          Essay           ALL       style 0.922311  0.863295
+      within_domain          Essay           ALL   wikipedia 0.552233  0.581400
+      within_domain        Reuters           ALL    combined 0.946833  0.889940
+      within_domain        Reuters           ALL length_only 0.877789  0.801423
+      within_domain        Reuters           ALL       style 0.942867  0.874900
+      within_domain        Reuters           ALL   wikipedia 0.633356  0.506883
+      within_domain WritingPrompts           ALL    combined 0.879056  0.823263
+      within_domain WritingPrompts           ALL length_only 0.811678  0.724598
+      within_domain WritingPrompts           ALL       style 0.878967  0.816634
+      within_domain WritingPrompts           ALL   wikipedia 0.576672  0.490749
+Exploratory shortlist: fw_and, punct_total_per100, pos_num, flesch_kincaid_grade, pos_adv, pos_noun, mattr_50
+Results: /workspace/Humanization/results

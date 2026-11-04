@@ -1,0 +1,6 @@
+{
+  "sample_sha256": "98370d8da5fffe2119c2155ac4cd8156979f48c3606bac3d7580751f6acaae2f",
+  "non_sentence_ending_regex": "[.!?\u2026][\\s\\\"\\'\u201d\u2019\\)\\]]*$",
+  "refusal_regex_first_250_characters": "\\b(?:as an ai(?: language model)?|as a language model|i am sorry|i[\\'\u2019]m sorry|i cannot|i can[\\'\u2019]t|sorry,)",
+  "caveat": "Automatic artifact flags, not ground truth. Fictional dialogue can match refusal expressions and punctuation heuristics do not prove sentence completeness."
+}

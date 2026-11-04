@@ -1,0 +1,16 @@
+{
+  "sample_sha256": "9714d9b8088b14551834085ffbe400269e4b2597066144f6a03b356f9033eee3",
+  "schema_sha256": "0671483047cfd1e1e52e987b55515e7e63169d15555d44a6318a5e4cf1af4cf0",
+  "extractor_sha256": "cfad42bc393cf34ea27747db8fefe6f8264a1ca08b54aac419d7edc36a0016d7",
+  "model": "en_core_web_sm",
+  "versions": {
+    "spacy": "3.8.7",
+    "en-core-web-sm": "3.8.0",
+    "textstat": "0.7.10",
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scipy": "1.16.3",
+    "scikit-learn": "1.7.2",
+    "nltk": "3.10.4"
+  }
+}
