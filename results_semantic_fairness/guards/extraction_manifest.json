@@ -1,0 +1,15 @@
+{
+  "pairs_files": [
+    {
+      "path": "/workspace/Humanization/data/semantic_extension/pairs.jsonl",
+      "sha256": "918420c191e9c6ea5629151efc65e5f3e91c9836577a744261b12e0fe62d426f"
+    }
+  ],
+  "n_pairs": 2621,
+  "guard_features": [
+    "guard_hedge_change",
+    "guard_negation_change",
+    "guard_number_change",
+    "guard_quantifier_change"
+  ]
+}
