@@ -55,32 +55,32 @@
         "data/models"
       ],
       "source_inventory": {
-        "regular_files": 83,
-        "regular_file_bytes": 410990054,
+        "regular_files": 113,
+        "regular_file_bytes": 583574349,
         "symlinks": 0,
-        "directories": 13
+        "directories": 17
       },
       "compression": {
         "format": "tar.zst",
         "zstd_level": 3,
         "threads": 3
       },
-      "compressed_archive_bytes": 130431676,
-      "compressed_archive_sha256": "7b7c8def55c3615c5ae9855e0bb66a46955fdc44c550b06df4dbb111a7fe286f",
+      "compressed_archive_bytes": 153492058,
+      "compressed_archive_sha256": "6623a1dadbdb6d83929e9fca79c33f5ad13d703001a2ffbf488c5a392c278dd2",
       "part_size_limit_bytes": 94371840,
       "parts": [
         {
           "path": "datasets/datasets.tar.zst.part0001",
           "bytes": 94371840,
-          "sha256": "2ac1633bac7b7741d90474f5154d9d6f1339235f170529737abdddc82434e6c8"
+          "sha256": "59da95711debeb0d9f10fdeb5850cfee3842b3057318419bb85af42d7d0e829d"
         },
         {
           "path": "datasets/datasets.tar.zst.part0002",
-          "bytes": 36059836,
-          "sha256": "36701cb66793a825e2681ff9c9ccffccc98d14545f1023a027a5a19710937bea"
+          "bytes": 59120218,
+          "sha256": "bc350503f9e7f9e866adedcae345dd20d29bbeb361b79bb9544b453e094bab2f"
         }
       ],
-      "created_utc": "2026-11-04T23:52:55.087293+00:00"
+      "created_utc": "2026-11-05T15:26:26.634094+00:00"
     },
     "models": {
       "roots": [
@@ -226,7 +226,7 @@
   },
   "suggested_git_push_groups": [
     {
-      "bytes": 413561424,
+      "bytes": 436621806,
       "parts": [
         "runtime_cache/runtime_cache.tar.zst.part0001",
         "datasets/datasets.tar.zst.part0001",

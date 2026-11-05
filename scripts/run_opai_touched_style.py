@@ -348,7 +348,7 @@ def report(frame,features,summary,order,output,matched_scope):
     case_path=output/'qualitative_cases.md'
     if case_path.exists():
         lines.extend(['## Lettura diagnostica di cinque inversioni', '',case_path.read_text(), ''])
-    (output/'report.md').write_text('\n'.join(lines))
+    (output/'report.md').write_text('\n'.join(lines).rstrip()+'\n')
     for metric in ['distance_rms_sentences','distance_pos_js_pooled','distance_rms_coverage']:
         fig,ax=plt.subplots(figsize=(7,4))
         for scope,color,offset in [('native_targeted','#167c80',-.06),('actually_changed','#d78c3c',.06)]:
