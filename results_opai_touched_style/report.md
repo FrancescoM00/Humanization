@@ -180,4 +180,3 @@ Distanze Polish / Paraphrase / Style: 0.892 / 1.454 / 0.542; posizione s0003.
 Estratti v1 → v2 → v3: «The human race uses more and more technology, but technology does not unders…» → «Although humans rely increasingly on technology, it does not comprehend huma…» → «Although humans are becoming increasingly dependent on technology, it does n…».
 
 Paraphrase passa dalla coordinazione con but a una subordinata con Although; Style conserva la subordinata e cambia soprattutto il lessico. Le due operazioni agiscono su assi e storie diverse.
-

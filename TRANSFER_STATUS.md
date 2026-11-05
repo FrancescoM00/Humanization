@@ -9,15 +9,17 @@ Repository: [FrancescoM00/Humanization](https://github.com/FrancescoM00/Humaniza
 
 Le parti pesanti non sono presenti nel working tree di `main`: aprire il codice e leggere i risultati non richiede di scaricarle. Il normale ZIP del codice non include i backup pesanti; usare Git LFS come descritto sotto.
 
+Aggiornamento del 5 novembre 2026: aggiunti codice e risultati del confronto semantico equo e dello stile localizzato. Il componente dataset è stato aggiornato con tutte le 3.500 coppie, i nuovi allineamenti, le probabilità NLI e le cache stilometriche. Modelli e venv sono gli stessi già trasferiti. Leggere [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) per riprendere questa fase.
+
 | Componente | Contenuto originale | Parti | Byte compressi |
 | --- | --- | ---: | ---: |
-| Dataset | `data/`, escluso `data/models/`: corpora, campioni, coppie, cache e probabilità | 2 | 130.431.676 |
+| Dataset | `data/`, escluso `data/models/`: corpora, campioni, coppie, cache e probabilità | 2 | 153.492.058 |
 | Modelli | Tutto `data/models/`, inclusi MiniLM, RoBERTa, DeBERTa-v3 base e ONNX | 13 | 1.160.384.762 |
 | Venv | Tutto `.venv/`, inclusi pacchetti, spaCy e CMUdict | 6 | 518.027.092 |
 | Cache | `.cache/`, `.pytest_cache/` e `semantic_run.log` del progetto | 1 | 14.228 |
-| **Totale** | **4.095.678.049 byte complessivi nei quattro componenti** | **22** | **1.808.857.758** |
+| **Totale** | **4.268.262.344 byte complessivi nei quattro componenti** | **22** | **1.831.918.140** |
 
-Ogni parte è al massimo 90 MiB. Le dimensioni e gli SHA-256 sono in [backups/manifest.json](backups/manifest.json). Un ripristino integrale in una directory temporanea ha riprodotto gli inventari dei quattro componenti, inclusi i symlink; i dati originali non sono stati sostituiti.
+Ogni parte è al massimo 90 MiB. Le dimensioni e gli SHA-256 sono in [backups/manifest.json](backups/manifest.json). Il trasferimento iniziale era stato verificato con ripristino integrale in una directory temporanea, inclusi i symlink. L'aggiornamento sostituisce soltanto l'archivio dei dati; i dati originali non sono stati sostituiti.
 
 Non sono inclusi credenziali, `.git`, configurazioni private dell'esecutore o l'intero sistema operativo. La venv è conservata integralmente come **snapshot Linux x86_64, Python 3.12.14**; il suo interprete base è esterno alla venv e gli shebang contengono percorsi assoluti. Su macOS, Windows o percorsi diversi va ricreata dai lockfile. Non viene presentata come ambiente portabile.
 
