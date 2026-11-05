@@ -1,0 +1,24 @@
+{
+  "n_prepared_pairs": 2621,
+  "n_evaluated_pairs": 1814,
+  "n_positive_controls": 300,
+  "n_distributed_pairs": 0,
+  "n_metrics": 41,
+  "n_bootstrap": 1000,
+  "calibration_test_source_overlap": 0,
+  "primary_endpoint": "Continuous alteration ranking; no universal decision threshold.",
+  "labels_are_proxy_not_human_gold": true,
+  "DIPPER_or_other_humanizers_executed": false,
+  "partial_diagnostic_allowed": false,
+  "length_adjustment_fitted_only_on_calibration_positives": true,
+  "cohorts": {
+    "opai_matched_primary": {
+      "n_pairs": 842,
+      "n_sources": 94
+    },
+    "opai_matched_subtle_secondary": {
+      "n_pairs": 224,
+      "n_sources": 53
+    }
+  }
+}

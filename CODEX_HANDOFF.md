@@ -10,10 +10,25 @@ Prime letture:
 
 - `README.md`: mappa generale.
 - `TRANSFER_STATUS.md`: contenuti caricati, branch dei backup e recupero con Git LFS.
-- `results_semantic_extension/interpretazione.md`: conclusioni aggiornate e limiti.
-- `results_semantic_extension/aggregator_report.md`: AUC, soglie, falsi allarmi.
-- `results_opai_style/report.md`: stile nelle operazioni OpAI.
+- `results_semantic_fairness/interpretazione.md`: conclusioni aggiornate, confronto equo e limiti.
+- `FAIRNESS_EXPERIMENT.md`: riproduzione della fase più recente senza inferenze inutili.
+- `results_opai_touched_style/report.md`: stile sulle frasi native toccate da OpAI.
+- `results_semantic_extension/interpretazione.md`: fase precedente, controlli positivi e revisioni qualitative.
 - `SEMANTIC_CONTROLS.md` e `SEMANTIC_EXPERIMENT.md`: protocolli e riproduzione.
+
+## Aggiornamento più recente: confronto equo e robustezza
+
+Completato il confronto sulle stesse frasi/chunk e sugli stessi aggregatori: ogni ipotesi usa la similarità massima con l'originale, poi media, q10 o minimo, in entrambe le direzioni. AUC nel test appaiato precedente: minimo NLI **0,958**, coseno **0,607**, BERTScore riscalato **0,534**. La limitazione BERTScore agli stessi tre candidati NLI non cambia il risultato. Non generalizzare il limite delle similarità a ogni tipo di riscrittura.
+
+Run complessivo: **3.500 coppie**, le 2.621 precedenti più 879 nuove. Il pannello aggiuntivo principale contiene 87 positivi e 400 negativi, 50 sorgenti per famiglia, nessuna sovrapposta alle vecchie 99; split 25/25. Corruzioni annidate su 1/2/3/5 frasi. Da due errori, media e quota non supportata possono superare il minimo; q10 recupera. Il pannello sottile è prevalentemente numerico, non una distribuzione di errori reali degli humanizer. DeBERTa-v3 base float32 conservato; 15.198 nuove evidenze uniche calcolate, senza rifare le precedenti.
+
+Il minimo NLI correla con la lunghezza sui positivi (rho −0,316). Un controllo a coppia fissa quantifica il calo del minimo atteso da 0,952 a 0,809 passando da 5 a 40 unità ipotesi campionate; è un effetto di molteplicità, non un test su documenti troncati. Fasce ≤14, 15–23, >23 frasi apprese solo sulla calibrazione: l'AUC del minimo NLI trasformato in percentile di riferimento resta **0,951**. Il riferimento OpAI non è automaticamente valido su DIPPER.
+
+Le quattro guardie lessicali conservano conteggi, delta e valori numerici normalizzati. NLI+guardie L2: AUC **0,938**, inferiore all'NLI solo. Le cautele restano irrisolte: nove casi test, lessico v1 incompleto, compensazioni documentali e due proxy che rimuovono solo possibly lasciando could. Leggere l'audit per frase; non scambiare conteggio ripristinato per modalità della proposizione ripristinata.
+
+Stile: lineage ordinale nativa verificata su 200 traiettorie. Sullo stesso sottoinsieme test, ΔMATTR Paraphrase è +0,02198 nei passaggi cambiati contro +0,00747 sull'intero testo: il segnale si diluiva. La distanza primaria RMS per frase marcata dà Polish/Paraphrase/Style **0,366/0,717/0,656**. Non soddisfa l'ordine atteso; la distanza pesata per copertura dà 0,152/0,369/0,425, ma include il budget crescente per costruzione. Distinguere intensità e copertura, senza scegliere la metrica solo perché restituisce l'ordine desiderato.
+
+**Output operativo aggiornato:** `scripts/export_semantic_suite.py` esporta punteggi continui per coppia e distribuzioni per humanizer/condizione; non emette verdetti o applica soglie. La soglia storica 0,04075 qui sotto non va usata come risultato operativo. DIPPER e nuovi servizi non sono stati eseguiti. Dataset/cache di questa fase: `data/semantic_fairness/`; risultati già pronti in `results_semantic_fairness/` e `results_opai_touched_style/`.
 
 ## 1. Stile umano/macchina
 
@@ -35,7 +50,7 @@ OpAI ufficiale: Compress adiacente v3→v4, Expand v4→v5; confronti con v0 sec
 
 ## 3. Controlli positivi, sottili e scelta dell'aggregatore
 
-Run aggiornato: **2.621 coppie** = 1.607 controlli precedenti + 300 positivi OpAI (100 Polish, 100 Paraphrase, 100 Style) + 562 corruzioni degli stessi output + 152 sfide sottili MGTBench. Le sottili MGTBench sono 50 numeri, 50 quantificatori, 39 cautele rimosse, 13 dettagli aggiunti; quote inferiori esplicite per applicabilità.
+Run della fase precedente: **2.621 coppie** = 1.607 controlli precedenti + 300 positivi OpAI (100 Polish, 100 Paraphrase, 100 Style) + 562 corruzioni degli stessi output + 152 sfide sottili MGTBench. Le sottili MGTBench sono 50 numeri, 50 quantificatori, 39 cautele rimosse, 13 dettagli aggiunti; quote inferiori esplicite per applicabilità.
 
 Il confronto principale usa lo stesso originale→buon edit contro originale→stesso edit corrotto, riducendo il confondente OpAI/MGTBench. Selezione indipendente dagli score; split e bootstrap per sorgente, condivisi da editor e varianti. Aggregatore scelto solo sulla calibrazione, poi valutato su test separato.
 
