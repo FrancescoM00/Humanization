@@ -1,10 +1,10 @@
-# Seconda fase: conservazione semantica
+# Protocollo della baseline semantica v1
 
-Aggiornamento eseguito: [controlli positivi e perturbazioni sottili](SEMANTIC_CONTROLS.md), [interpretazione](results_semantic_extension/interpretazione.md) e [AUC con test separato](results_semantic_extension/aggregator_report.md). La revisione testuale ha rilevato alcuni errori e ambiguità nelle perturbazioni originali; i relativi risultati non equivalgono a una validazione gold.
+Questo documento riproduce la baseline v1. Le estensioni sono nei protocolli [controlli positivi e sottili](SEMANTIC_CONTROLS.md), [confronto equo e aggregatori](FAIRNESS_EXPERIMENT.md) ed [entity clean](ENTITY_CLEAN_EXPERIMENT.md). La revisione testuale ha rilevato errori e ambiguità nelle perturbazioni originali: i risultati non equivalgono a una validazione gold.
 
 Questa pipeline verifica empiricamente la sensibilità delle metriche alle alterazioni. L'ipotesi che BERTScore/coseno restino alti mentre NLI diminuisce **non è codificata nei risultati**. Ogni valore richiede esecuzione del relativo modello.
 
-Il percorso completo è stato eseguito: [interpretazione](results_semantic_full/interpretazione.md) e [report con grafici](results_semantic_full/report.md). I risultati, inclusi i dati ufficiali OpAI, sono salvati in `results_semantic_full/`; la prima esecuzione solo lessicale resta in `results_semantic/`. Il campione completo contiene 2.407 coppie: 1.200 condizioni controllate, 400 controlli locali, 7 sanity check e 800 coppie OpAI (200 per ciascuno dei quattro confronti adiacenti/cumulativi).
+Il percorso completo è stato eseguito: [interpretazione](results_semantic_full/interpretazione.md) e [report con grafici](results_semantic_full/report.md). I risultati sono in `results_semantic_full/`: 2.407 coppie, comprendenti 1.200 condizioni controllate, 400 controlli locali, 7 sanity check e 800 coppie OpAI (200 per ciascuno dei quattro confronti adiacenti/cumulativi). Il primo output soltanto lessicale è recuperabile nella cronologia Git.
 
 ## Installazione e modelli
 
@@ -26,7 +26,7 @@ I modelli sono pubblici; non servono token né credenziali nuove:
 
 Il downloader risolve la revisione esatta, scarica solo file necessari tramite HTTPS verificato, confronta gli hash LFS quando disponibili e salva `DOWNLOAD_MANIFEST.json`. Nessun remote code viene abilitato. I file restano in `data/models/`, ignorati da Git.
 
-La policy deve consentire `huggingface.co`, `us.aws.cdn.hf.co`, `cas-bridge.xethub.hf.co`, `cdn-lfs.huggingface.co` e `cdn-lfs-us-1.hf.co`. Il precedente blocco HTTP 403 è stato risolto dalla pubblicazione effettuata dall'utente; tutti e tre i checkpoint sono stati scaricati e verificati. I manifest in `results_semantic_full/models_provenance.json` fissano le revisioni e gli SHA-256. Il downloader accetta `--model embedding|bertscore|nli --revision SHA` per ripetere un download sulla revisione registrata.
+Per il download la rete deve consentire `huggingface.co`, `us.aws.cdn.hf.co`, `cas-bridge.xethub.hf.co`, `cdn-lfs.huggingface.co` e `cdn-lfs-us-1.hf.co`. I tre checkpoint eseguiti sono fissati in `results_semantic_full/models_provenance.json`. Il downloader accetta `--model embedding|bertscore|nli --revision SHA` per ripetere il download della revisione registrata.
 
 Ogni stadio esegue in un processo separato per rilasciare la RAM prima del successivo. Device CPU; il run completo usa quattro thread, batch 4 per BERTScore e batch 8 per NLI. Picchi RSS e versioni sono salvati in `*_run.json`; rappresentano la memoria effettivamente osservata nel processo, non la sola dimensione dei pesi.
 
@@ -94,8 +94,8 @@ Per riprodurre il percorso CPU completo (ogni comando va dalla radice del proget
 .venv/bin/python scripts/run_semantic_experiment.py --stage report --data-dir data/semantic_full --output results_semantic_full
 ```
 
-In ripresa si saltano preparazione, export e inizializzazione già completati. Il planner produce 88.900 coppie di evidenza uniche in questo campione. `--require-nli-cache` impedisce inferenze mancanti o fallback inattesi durante l'aggregazione. I controlli di parità, i benchmark CPU, la cronologia di ripresa e la verifica BERTScore rispetto alla libreria standard sono inclusi nei risultati. ONNX non viene chiamato bit-per-bit identico: si registra l'errore numerico osservato e la concordanza delle classi.
+In ripresa si saltano preparazione, export e inizializzazione già completati. Il planner produce 88.900 coppie di evidenza uniche in questo campione. `--require-nli-cache` impedisce inferenze mancanti o fallback inattesi durante l'aggregazione. I metadati finali di run e i controlli di parità e BERTScore restano nei risultati; gli strumenti temporanei di profiling sono recuperabili nella cronologia Git. ONNX non viene chiamato bit-per-bit identico: si registra l'errore numerico osservato e la concordanza delle classi.
 
 Il report rifiuta score di un campione diverso verificando l'hash delle coppie. Embedding e rappresentazioni BERT sono deduplicati per frase; NLI memorizza le coppie uniche e salva checkpoint delle probabilità nella directory dati scelta, ad esempio `data/semantic_full/nli_probability_cache.jsonl`, associati al modello. Non assegna artificialmente entailment 1 alle identità: anche i controlli vengono inferiti dal modello.
 
-Risultati completi: `results_semantic_full/report.md`, `scores.csv`, `metric_summary.csv`, `paired_identity_deltas.csv`, `directional_deltas.csv`, manifest e controlli numerici. Verifica degli artefatti: `.venv/bin/python scripts/validate_semantic_results.py`. I testi completi restano in `data/semantic_full/`, ignorati da Git. Le fixture con modelli simulati verificano il software e **non sostituiscono la validazione dei checkpoint reali**.
+Risultati completi: `results_semantic_full/report.md`, `scores.csv`, `metric_summary.csv`, `paired_identity_deltas.csv`, `directional_deltas.csv`, manifest e controlli numerici. L'esito della verifica finale è conservato in [validation.json](results_semantic_full/validation.json). I testi completi restano in `data/semantic_full/`, ignorati da Git. Le fixture con modelli simulati verificano il software e **non sostituiscono la validazione dei checkpoint reali**.

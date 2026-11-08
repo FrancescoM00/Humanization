@@ -1,122 +1,67 @@
-# Esperimenti di stile e conservazione semantica: Humanization
+# Humanization: stile e conservazione semantica
 
-Pipeline riproducibile per gli esperimenti della tesi: stile umano/macchina, trasferimento fra domini e generatori, conservazione semantica e controlli positivi sulle riscritture. Il PDF fornito è stato usato come riferimento scientifico, non come istruzioni operative.
+Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I risultati sono già disponibili: per consultarli non occorre rilanciare i modelli. Il PDF della tesi è materiale scientifico, non istruzioni operative. Versioni precedenti e strumenti rimossi durante la pulizia sono recuperabili dalla cronologia Git.
 
-**Per continuare nell'app Codex:** leggere [CODEX_HANDOFF.md](CODEX_HANDOFF.md). Il trasferimento completo su GitHub è riuscito: questo branch `main` contiene codice e risultati; il branch `cloud-backup` conserva dataset, modelli, venv e cache tramite Git LFS (22 parti, 1,85 GB compressi). [Contenuti e istruzioni di recupero](TRANSFER_STATUS.md). Le directory originali `data/` e `.venv/` restano ignorate in Git normale: sono salvate negli archivi del branch dedicato.
+## Risultati e protocolli
 
-**Controllo entity clean:** [confronto con la v1](results_semantic_clean/entity_policy_comparison.md), [revisione testuale](results_semantic_clean/clean_entity_text_audit.md) e [protocollo](ENTITY_CLEAN_EXPERIMENT.md). La patch è stata corretta e collegata tramite `--entity-policy clean`, con v1 come default. Sulle stesse 200 fonti sono applicabili 145 sostituzioni; 55 vengono saltate esplicitamente. Dati in `data/semantic_clean/`, risultati in `results_semantic_clean/`: il comparatore controlla tutte le 2.007 coppie estranee alla modifica, includendo OpAI e fixture. Il nome clean non certifica etichette semantiche gold; i limiti NER residui sono documentati.
+| Esperimento | Risultati | Riproduzione |
+| --- | --- | --- |
+| Stile con lunghezza abbinata | [Report](results_length_matched/report.md) | `scripts/run_length_matched_style.py` |
+| Baseline stilometrica e controllo del preprocessing | [Interpretazione](results/interpretazione.md), [pilot](results_pilot/report.md) | `scripts/run_style_experiment.py` |
+| Baseline semantica, Compress/Expand | [Interpretazione](results_semantic_full/interpretazione.md) | [SEMANTIC_EXPERIMENT.md](SEMANTIC_EXPERIMENT.md) |
+| Positivi OpAI e perturbazioni sottili | [Interpretazione](results_semantic_extension/interpretazione.md), [review40](results_semantic_extension/review40.md) | [SEMANTIC_CONTROLS.md](SEMANTIC_CONTROLS.md) |
+| Similarità allineate, errori distribuiti e lunghezza | [Interpretazione](results_semantic_fairness/interpretazione.md) | [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) |
+| Stile nelle frasi OpAI toccate | [Report e casi](results_opai_touched_style/report.md) | `scripts/run_opai_touched_style.py` |
+| Entity clean v2 e controllo numerico | [Interpretazione](results_semantic_clean/interpretazione.md), [34 date/importi/percentuali](results_semantic_clean/numeric34/report.md) | [ENTITY_CLEAN_EXPERIMENT.md](ENTITY_CLEAN_EXPERIMENT.md) |
 
-**Scaricare i nuovi dati da GitHub:** [ZIP con pairs.jsonl e skipped.jsonl](exports/semantic_clean/semantic_clean_pairs.zip), [JSONL completo](exports/semantic_clean/pairs.jsonl) e [istruzioni](exports/semantic_clean/README.md). Queste copie sono sul branch `main`, accessibili dal browser e con `git pull`; tutte le cache scientifiche sono nel backup dati del branch `cloud-backup`. [Patch originale](patches/entity_clean_v2.original.patch) e [patch corretta](entity_clean_v2_corrected.patch) sono conservate entrambe.
+La suite produce [score continui](results_semantic_fairness/continuous_suite/manifest.json); la soglia storica OpAI 0,04075 non si trasferisce ad altri humanizer. NLI mantiene un vantaggio sulle corruzioni testate, ma il minimo dipende dalla lunghezza e può essere superato dalla media su errori distribuiti. Le cautele restano problematiche.
 
-**Controllo sulle 34 date, somme e percentuali:** [report](results_semantic_clean/numeric34/report.md) e [casi con frasi e score](results_semantic_clean/numeric34/cases.csv). Senza nuove inferenze: 18 DATE, 6 MONEY, 10 PERCENT; entailment locale medio 0,002572 contro 0,991547 sulle stesse frasi identiche. Il supporto minimo documentale medio è 0,003436. Il risultato persiste nella famiglia più omogenea; questo controllo con identità non dimostra superiorità sulle parafrasi corrette.
+## Dati, modelli e ripresa
 
-**Confronto equo e robustezza:** [errori distribuiti e stile localizzato](results_semantic_fairness/interpretazione.md), con [protocollo e comandi](FAIRNESS_EXPERIMENT.md). Coseno e BERTScore sono ora allineati per frase e confrontati con gli stessi aggregatori NLI. Sul test appaiato, AUC del minimo: NLI **0,958**, coseno **0,607**, BERTScore **0,534**. Le corruzioni su 2–5 frasi mostrano che media e quota non supportata possono raggiungere o superare il minimo. Il minimo dipende dalla lunghezza; la normalizzazione per fasce mantiene AUC NLI 0,951. Guardie lessicali implementate e valutate, senza un miglioramento complessivo dimostrato.
+- [Scarica pairs.jsonl e skipped.jsonl in ZIP](exports/semantic_clean/semantic_clean_pairs.zip), oppure apri i [file esportati](exports/semantic_clean/README.md): 2.297 coppie del run clean, con 145 sostituzioni applicate e 55 saltate.
+- `main` contiene codice, test, report, CSV e figure. `cloud-backup` conserva dataset, modelli, venv e cache tramite Git LFS: [inventario](TRANSFER_STATUS.md) e [ripristino](backups/README.md).
+- Per continuare in Codex leggere [CODEX_HANDOFF.md](CODEX_HANDOFF.md). La venv archiviata è uno snapshot Linux x86_64/Python 3.12, da ricreare su Windows, macOS o percorsi incompatibili.
 
-La suite esporta [score continui e distribuzioni per sistema](results_semantic_fairness/continuous_suite/manifest.json), senza applicare la soglia storica OpAI ad altri humanizer. Sono state elaborate 3.500 coppie in totale, mantenendo DeBERTa-v3 **base float32**. [Stile sulle frasi effettivamente toccate](results_opai_touched_style/report.md): il segnale prima diluito emerge, ma l'ordine Polish < Paraphrase < Style non vale per l'intensità locale; va distinta dalla copertura dell'intervento. DIPPER e altri humanizer non sono ancora stati eseguiti.
+La politica delle entità rimane `v1` per default; `--entity-policy clean` attiva le guardie nuove. Clean significa più conservativa, non gold semantica: rimangono errori NER e di sottotipo, descritti nell'[audit](results_semantic_clean/clean_entity_text_audit.md). Le review disponibili sono dell'assistente; le nuove annotazioni manuali dell'utente non sono contenute nella patch ricevuta. DIPPER, EditLens e nuovi servizi di humanization non sono stati eseguiti.
 
-L'estensione con controlli positivi e perturbazioni sottili è descritta in [SEMANTIC_CONTROLS.md](SEMANTIC_CONTROLS.md). Usa 300 controlli OpAI Polish/Paraphrase/Style, 562 corruzioni degli stessi output e 152 nuove sfide MGTBench, mantenendo gli esempi precedenti per confronto. La scelta dell'aggregatore usa calibrazione e test con sorgenti separate; le etichette restano proxy semantici. [Revisione testuale dei 40 casi](results_semantic_extension/review40.md), [audit di nove positivi](results_semantic_extension/positive_review9.md) e [movimenti delle feature nelle cinque operazioni OpAI](results_opai_style/report.md) documentano risultati e limiti. La revisione testuale è dell'assistente, non annotazione umana.
+## Eseguire lo stile
 
-**Fase precedente, conservata per confronto:** [interpretazione dei controlli](results_semantic_extension/interpretazione.md) e [AUC e falsi allarmi](results_semantic_extension/aggregator_report.md). La calibrazione sceglieva il minimo bidirezionale: AUC test 0,958, AUC sui sottili appaiati 0,900; 11/153 allarmi sui positivi presunti con soglia calibrata. La soglia è storica, non una raccomandazione per la suite. Le cautele rimosse rimangono un punto debole (AUC circa 0,57, nove casi test). Il rescaling BERTScore e la matrice delle correlazioni sono inclusi.
-
-L'esperimento è stato eseguito: [interpretazione dei risultati](results/interpretazione.md), [report completo](results/report.md) e [metriche](results/classifier_metrics.csv).
-
-Aggiornamento richiesto: [studio con lunghezza abbinata](results_length_matched/report.md), [confronto con il precedente](results_length_matched/comparison_with_original.csv) e [pipeline semantica](SEMANTIC_EXPERIMENT.md). I risultati precedenti sono conservati; per lo stile il nuovo controllo è in `results_length_matched/`.
-
-La fase semantica è completa: [interpretazione](results_semantic_full/interpretazione.md), [report con grafici e IC](results_semantic_full/report.md), [tutte le misure](results_semantic_full/scores.csv) e [asimmetria OpAI](results_semantic_full/opai_asymmetry.csv). Sono stati valutati 200 testi macchina con cinque perturbazioni, controlli identità e 800 coppie OpAI ufficiali: 2.407 coppie complessive. DeBERTa-v3 **base**, float32, è stato mantenuto; 88.900 confronti NLI unici su CPU, con picco osservato di 2,58 GiB per il processo NLI. Il blocco Hugging Face precedente è risolto.
-
-Per verificare gli artefatti già prodotti, senza nuove inferenze: `.venv/bin/python scripts/validate_semantic_results.py`. I comandi per riprodurre l'intero esperimento sono in [SEMANTIC_EXPERIMENT.md](SEMANTIC_EXPERIMENT.md).
-
-Per riprodurre il nuovo controllo: `.venv/bin/python scripts/run_length_matched_style.py`. Usa prefissi della stessa fonte terminati a fine frase con conteggi lessicali spaCy identici nella coppia, tra90 e180 parole e vicini a150. Il modello `word_count_only` serve a verificare il controllo; caratteri e numero di frasi restano diagnostici distinti.
-
-## Riprodurre l'esperimento
-
-Da `/workspace/Humanization` (o dalla radice del checkout):
+Dalla radice del checkout, con Python 3.12:
 
 ```bash
 bash scripts/setup.sh
 .venv/bin/python scripts/download_mgtbench.py --output data/raw
 .venv/bin/python scripts/run_style_experiment.py --raw-dir data/raw --output results
+.venv/bin/python scripts/run_length_matched_style.py
 .venv/bin/python -m pytest -q
 ```
 
-Il download rifiuta di sovrascrivere CSV già presenti. Per usare i dati già scaricati, saltare il secondo comando. I download usano il proxy e la verifica TLS; in questa macchina la rete può richiedere l'esecuzione autorizzata fuori dal sandbox. Non servono API key, GPU o modelli generativi. `setup.sh` installa dipendenze fissate, spaCy `en_core_web_sm` 3.8.0 e il corpus NLTK cmudict usato da textstat.
+Saltare il download se i CSV esistono; il downloader rifiuta sovrascritture. `setup.sh` installa dipendenze fissate, spaCy `en_core_web_sm` 3.8.0 e CMUdict. Dipendenze e ambiente sono in `requirements.txt` e `requirements-lock.txt`; per la semantica usare i file `requirements-semantic*` e i protocolli sopra.
 
-Per ricalcolare soltanto l'analisi su una cache compatibile:
+Per ricalcolare l'analisi stilometrica da una cache compatibile usare `scripts/run_style_experiment.py --reuse-features`. Il seed è 42, `--pairs 300` indica 300 umani e 300 macchine per dominio, `--bootstrap 500` controlla gli IC. La cache è associata a campione, estrattore, schema, modello e versioni.
 
-```bash
-.venv/bin/python scripts/run_style_experiment.py --reuse-features
-```
+## Fonte e preparazione MGTBench
 
-La cache è verificata rispetto a campione, codice dell'estrattore, schema, modello e versioni. Il seed predefinito è 42; `--pairs 300` significa 300 umani **e** 300 macchine per dominio. `--bootstrap 500` controlla gli IC degli effetti e delle metriche. Le dipendenze dirette sono in `requirements.txt`; l'ambiente eseguito è fissato in `requirements-lock.txt`.
+TH-Bench, commit [`5c1d99c`](https://github.com/DrenfongWong/TH-Bench/tree/5c1d99cefee49208206b6fa75d3a628ac9935f86), rimanda ai CSV MGTBench su [Google Drive](https://drive.google.com/drive/folders/1p4iBeM4r-sUKe8TnS4DcYlxvQagcmola). I suoi file `clean` degli attacchi contengono soltanto macchina e non corrispondono direttamente al disegno umano/macchina richiesto.
 
-## Dati: cosa è stato effettivamente usato
+La fonte effettiva è un [mirror pubblico di ricerca](https://github.com/derek33125/AITextDetection/tree/6f289c4cf4e3966e9442d104ea250bae43f3ff9e/Data_Generation/MGTBench), fissato a `6f289c4cf4e3966e9442d104ea250bae43f3ff9e`: `Essay_LLMs.csv`, `WP_LLMs.csv`, `Reuters_LLMs.csv`, 1.000 righe ciascuno, umano e sette generatori allineati. **L'identità byte per byte con l'archivio ufficiale non è stata verificata.** Per CSV ufficiali già disponibili usare `--raw-dir`; il download `--source official` richiede `gdown==5.2.0` opzionale e accesso a Google Drive.
 
-TH-Bench [`5c1d99c`](https://github.com/DrenfongWong/TH-Bench/tree/5c1d99cefee49208206b6fa75d3a628ac9935f86) rimanda ai CSV MGTBench originali su [Google Drive](https://drive.google.com/drive/folders/1p4iBeM4r-sUKe8TnS4DcYlxvQagcmola). I file `clean` prodotti dal suo script degli attacchi sono soltanto macchina, campionati per lunghezza e troncati: non corrispondono direttamente al disegno richiesto.
+La pulizia locale applica `process_spaces`, elimina simmetricamente code senza terminazione plausibile, richiede almeno 50 parole whitespace dopo il taglio, deduplica casefold/whitespace ed esclude macchine identiche a umani. L'euristica gestisce virgolette, abbreviazioni e decimali; non certifica lingua, completezza o assenza di rifiuti/chatbot. Il preprocessing è locale, non TH-Bench certificato.
 
-Il download predefinito usa un [mirror di ricerca pubblico](https://github.com/derek33125/AITextDetection/tree/6f289c4cf4e3966e9442d104ea250bae43f3ff9e/Data_Generation/MGTBench) fissato al commit `6f289c4cf4e3966e9442d104ea250bae43f3ff9e`: `Essay_LLMs.csv`, `WP_LLMs.csv`, `Reuters_LLMs.csv`, 1.000 righe originali ciascuno, con umano e sette generatori allineati per riga. **L'uguaglianza byte per byte con l'archivio ufficiale non è stata verificata**, perché Google Drive è bloccato dalla policy corrente. Non viene sostituito il benchmark con un altro corpus.
+Per dominio: 300 umani unici, un output macchina per riga; 43 per ChatGPT-turbo, Claude, ChatGLM, Dolly, ChatGPT e GPT4All, 42 StableLM. `pair_id` allinea le coppie, `group_id` collega prompt ripetuti. Fonti ed esclusioni sono in `data/raw/SOURCE.json` e `results/data_manifest.json`. Pulire prima del campionamento può cambiare le fonti: il confronto con il pilot delle terminazioni non è causale. Il pilot si riproduce con `--keep-incomplete --output results_pilot`.
 
-Per usare i CSV originali già disponibili, passarne la directory a `--raw-dir`. In alternativa, `scripts/download_mgtbench.py --source official --output data/official` supporta Google Drive con `gdown==5.2.0` opzionale e accesso di rete a `drive.google.com` e `drive.usercontent.google.com`.
+Il successivo controllo di lunghezza usa prefissi a fine frase con conteggi lessicali spaCy identici nella coppia, fra 90 e 180 parole e vicini a 150; `word_count_only` ha AUC 0,5. Caratteri e numero di frasi restano diagnostici distinti.
 
-La pulizia locale è esplicita: `process_spaces` del loader TH-Bench; rimozione simmetrica della coda senza terminazione di frase plausibile; almeno 50 parole whitespace **dopo** questa operazione per entrambe le classi; deduplicazione globale casefold/whitespace; esclusione di output macchina identici a un testo umano. Non si tronca a un numero prefissato di parole e non si rimuovono selettivamente i segnali Wikipedia. La rimozione delle code usa punteggiatura finale con gestione di virgolette, decimali e abbreviazioni comuni: **è un'euristica**, non certifica la completezza grammaticale. Non sono stati verificati lingua e completezza delle frasi con un annotatore, né eliminati tutti i rifiuti o le formule di chatbot. Quindi il campione è una baseline MGTBench preparata localmente, non una riproduzione certificata del preprocessing descritto nel PDF. Gli artefatti residui sono un limite dell'interpretazione.
+## Feature e analisi stilometrica
 
-Il controllo iniziale aveva rilevato terminazioni senza punteggiatura plausibile in 430/900 testi macchina contro 66/900 umani: conservare questo artefatto rischiava di gonfiare il segnale. La prima esecuzione è salvata in `results_pilot/`. Per riprodurla:
+Le 105 feature comprendono lunghezza/variabilità delle frasi, punteggiatura, 16 POS, 58 parole funzionali e frequenza totale, MATTR50 manuale, lessico, leggibilità e sette proxy Wikipedia. Definizioni: [feature_schema.json](results/feature_schema.json) e [features.py](stylometry/features.py).
 
-```bash
-.venv/bin/python scripts/run_style_experiment.py --keep-incomplete --output results_pilot
-```
+Parole lessicali: token `is_alpha`, casefold, senza lemmatizzazione. MATTR considera tutte le finestre di 50 parole e restituisce NaN sotto 50. POS: token non spazio/non punteggiatura, inclusi numeri e frammenti di contrazioni. Le parole funzionali sono forme letterali (`n't` resta distinto da `not`); la punteggiatura conta caratteri anche nelle abbreviazioni. Textstat mantiene le sue convenzioni, con sillabificazione `en_US` e CMUdict locale.
 
-La pulizia avviene **prima** del campionamento, quindi i campioni pilot e principale possono differire: il loro confronto è un controllo descrittivo del preprocessing, non una stima causale appaiata del suo effetto.
+I proxy Wikipedia fissati dal capitolo 2 sono vocabolario AI, enfasi, conclusioni, formule conversazionali, parallelismi negativi, Markdown ed em dash. Non coprono rule of three, profondità semantica, neutralità o correttezza delle citazioni: si verificano questi proxy, non l'intera guida.
 
-Campionamento per ciascun dominio:
+Logistica L2, C=1, classi bilanciate e soglia 0,5; imputazione e scale apprese sul training. Modelli: `style` (esclude conteggi globali, TTR/hapax e proxy), `wikipedia`, `combined`, `length_only`. Confronti: CV a cinque fold per fonte nel dominio, due domini→terzo, generatore escluso con le sue fonti escluse dal training. AUC, balanced accuracy e macro-F1 aggregano predizioni out-of-fold. Gli IC bootstrap per fonte sulle predizioni fisse escludono la variabilità dell'addestramento.
 
-- 300 testi umani unici, ciascuno accoppiato con un solo output macchina della stessa riga;
-- 43 output per ChatGPT-turbo, Claude, ChatGLM, Dolly, ChatGPT, GPT4All e 42 StableLM;
-- selezione casuale con quote fissate, senza scegliere i testi sulla base delle feature o dei risultati;
-- `pair_id` conserva l'allineamento; `group_id` collega anche prompt ripetuti, così train e test restano separati per origine.
+Hedges g: macchina−umano diviso SD pooled, correzione per piccoli campioni, IC per fonte. Test appaiati aggregano coppie collegate; BH per tabella, risultati per dominio/generatore/incrocio. Shortlist: |g|≥0,3, stesso segno nei tre domini e in almeno cinque generatori su sette, massimo 12 feature, pruning Spearman≥0,85. La selezione sull'intero campione è esplorativa e non garantisce i 21 incroci. Candidate: `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn`.
 
-`data/raw/SOURCE.json` e `results/data_manifest.json` registrano provenienza, hash SHA-256, esclusioni e conteggi. I testi grezzi e il campione locale non sono aggiunti a Git; le condizioni dei corpora di origine restano applicabili.
-
-## Feature e confronti
-
-105 feature fisse: lunghezza e variabilità delle frasi, punteggiatura, 16 categorie POS, 58 parole funzionali più frequenza totale, MATTR50 scritto a mano, misure lessicali e leggibilità textstat. Le definizioni sono in `results/feature_schema.json` e `stylometry/features.py`.
-
-Le parole lessicali sono token `is_alpha`, casefolded, non lemmatizzati. MATTR usa tutte le finestre consecutive da 50 parole; sotto 50 restituisce NaN, senza cambiare la finestra. Le POS usano token non-spazio/non-punteggiatura e includono numeri e frammenti di contrazioni. Le parole funzionali sono forme letterali: `n't` non viene trasformato in `not`. I segni di punteggiatura sono conteggi di caratteri, compresi quelli in abbreviazioni. Textstat mantiene le proprie convenzioni di tokenizzazione. La sillabificazione è `en_US`, con cmudict locale; nessun download durante l'estrazione.
-
-I sette proxy Wikipedia sono fissati dal capitolo 2 del PDF: vocabolario AI, enfasi, conclusioni, formule conversazionali, parallelismi negativi, Markdown ed em dash. Non misurano rule of three, profondità semantica, neutralità o correttezza delle citazioni. Quindi l'esperimento verifica **questi proxy**, non l'intera guida.
-
-Modelli confrontati:
-
-| Modello | Input |
-| --- | --- |
-| `style` | Feature stilometriche, escludendo conteggi globali, TTR/hapax e proxy Wikipedia |
-| `wikipedia` | Sette proxy Wikipedia |
-| `combined` | Unione dei due insiemi |
-| `length_only` | Numero di parole, caratteri e frasi, come controllo del confondente lunghezza |
-
-La regressione logistica usa L2, C=1 fisso, pesi bilanciati e soglia 0.5. Imputazione e standardizzazione sono apprese soltanto sul training. Si riportano ROC-AUC, balanced accuracy e macro-F1:
-
-1. CV a cinque fold per gruppi dentro ciascun dominio;
-2. addestramento su due domini e test sul terzo;
-3. generatore escluso dal training, test sul suo output e sui corrispondenti umani, con origine dei testi esclusa dal training.
-
-Le metriche aggregano predizioni out-of-fold, non medie interpretate come repliche indipendenti. IC bootstrap al 95% per gruppi sulle predizioni fisse: non includono tutta la variabilità dell'addestramento. I gruppi sono controllati con asserzioni e `train_group_overlap=0` nell'output.
-
-## Effetti e lista corta
-
-Hedges g usa differenza **macchina − umano** divisa per deviazione standard pooled, con correzione per piccoli campioni. Si conservano medie, SD e IC bootstrap per origine. Test t sulle differenze appaiate, aggregando eventuali coppie collegate nello stesso gruppo; correzione BH separata entro ogni tabella. Sono disponibili aggregato, dominio, generatore e dominio×generatore.
-
-La shortlist richiede |g|≥0.3 e stesso segno nei tre domini, segno coerente in almeno cinque dei sette generatori aggregati, massimo 12 feature e pruning delle correlazioni Spearman≥0.85 in valore assoluto. Sono criteri esplorativi, **non garanzia su tutti i 21 incroci**. La lista viene selezionata sull'intero campione: non viene reinserita nei test per dichiarare una prestazione indipendente. Serve validazione futura su un nuovo campione.
-
-## Risultati e codice
-
-- `results/report.md`: report completo con tabelle e grafici.
-- `results/feature_effects.csv`: effetti per tutte le feature e tutti gli strati.
-- `results/feature_robustness.csv` e `shortlist.json`: selezione, esclusioni e motivi.
-- `results/classifier_metrics.csv`, `predictions.csv`: metriche e predizioni verificabili.
-- `results/features.csv`, `missing_features.csv`: feature estratte senza testi e valori mancanti.
-- `results/*.png` e `*.pdf`: figure esportabili.
-- `results/run_metadata.json`: versioni, parametri e hash del codice.
-- `results/data_quality.csv`: lunghezze e controllo delle terminazioni per dominio e generatore; dettagli delle code rimosse nel manifest.
-- `tests/`: MATTR contro riferimento ingenuo, normalizzazioni, campionamento e deduplica, effetti appaiati, split senza contaminazioni, predizioni OOF.
-
-L'esperimento riguarda separabilità di corpus storici, non prova l'origine di singoli documenti e non valuta ancora testi umanizzati. La sola presenza di una differenza stilistica non dimostra maggiore naturalezza.
+I risultati misurano separabilità e cambiamenti stilistici; non certificano l'origine di un singolo testo o maggiore naturalezza. Condizioni dei corpora e attribuzioni del codice sono in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

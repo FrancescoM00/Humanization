@@ -9,7 +9,7 @@
 | `venv` | `.venv/`, pacchetti installati, spaCy e CMUdict | `python_environment/` |
 | `cache` | `.cache/`, `.pytest_cache/`, `semantic_run.log` del progetto | `runtime_cache/` |
 
-Codice, report, CSV, figure e pacchetti ZIP rimangono normali file del repository. Gli archivi non comprendono `.git`, configurazioni dell'esecutore o credenziali. I dati e i pesi originali non vengono modificati creando il backup.
+Codice, report, CSV, figure e lo ZIP dei dati in `exports/` rimangono normali file del repository. Gli archivi non comprendono `.git`, configurazioni dell'esecutore o credenziali. I dati e i pesi originali non vengono modificati creando il backup. I vecchi bundle di trasferimento sono recuperabili dalla cronologia Git.
 
 ## Recuperare il ramo dei backup
 

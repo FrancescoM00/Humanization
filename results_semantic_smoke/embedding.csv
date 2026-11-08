@@ -1,8 +1,0 @@
-id,pair_id,embedding_cosine,embedding_original_chunks,embedding_modified_chunks,embedding_chunk_token_budget,local_embedding_cosine,embedding_unique_chunks_encoded_cumulative
-sanity:identity,sanity:identity,1.0,1,1,160,1.0,1
-sanity:paraphrase,sanity:paraphrase,0.9766333603865185,1,1,160,0.9766333603865185,2
-sanity:negation,sanity:negation,0.7107525450444094,1,1,160,0.7107525450444094,4
-sanity:entity_substitution,sanity:entity_substitution,0.8759664130853433,1,1,160,0.8759664130853433,6
-sanity:sentence_shuffle,sanity:sentence_shuffle,0.9999999999999998,2,2,160,0.9999999999999998,8
-sanity:truncate,sanity:truncate,0.9060351722022507,2,1,160,0.9060351722022507,8
-sanity:unrelated,sanity:unrelated,0.026781407252993196,1,1,160,0.026781407252993196,9

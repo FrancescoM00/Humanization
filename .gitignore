@@ -7,3 +7,9 @@ data/
 experiment_bundle*.zip
 semantic_run.log
 backups/.build/
+
+# Transient execution output; completed runs are recorded in *_run.json.
+*.log
+*_progress.json
+progress.json
+results_semantic_smoke/

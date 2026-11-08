@@ -252,9 +252,9 @@ def evaluate(pairs, guards, scores, output, n_bootstrap=1000, seed=42):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--pairs', type=Path, action='append', help='Repeat for distributed pairs; defaults to original extension')
-    parser.add_argument('--output', type=Path, default=ROOT / 'results_semantic_fairness/guards')
-    parser.add_argument('--scores', type=Path, default=ROOT / 'results_semantic_extension/scores.csv')
+    parser.add_argument('--pairs', type=Path, action='append', help='Repeat for additional panels; defaults to the complete fairness cohort (3500 pairs)')
+    parser.add_argument('--output', type=Path, default=ROOT / 'results_semantic_fairness/guards_full')
+    parser.add_argument('--scores', type=Path, default=ROOT / 'results_semantic_fairness/nli.csv')
     parser.add_argument('--bootstrap', type=int, default=1000)
     parser.add_argument('--extract-only', action='store_true')
     parser.add_argument('--self-check', action='store_true')
@@ -262,7 +262,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     if args.self_check:
         print(json.dumps(self_check()), flush=True)
-    paths = args.pairs or [ROOT / 'data/semantic_extension/pairs.jsonl']
+    paths = args.pairs or [ROOT / 'data/semantic_fairness/pairs.jsonl']
     pairs = read_pairs(paths)
     def progress(done, total):
         (args.output / 'progress.json').write_text(json.dumps({'processed_unique_texts': done, 'total_unique_texts': total}) + '\n')

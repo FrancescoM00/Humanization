@@ -1,95 +1,42 @@
-# Passaggio alla nuova sessione Codex
+# Riprendere Humanization in Codex
 
-## Da dove ripartire
+Repository: `FrancescoM00/Humanization`. Tesi su stile dei testi generati e conservazione semantica nelle riscritture. Gli esperimenti sono già eseguiti: leggere risultati e cache prima di rilanciare i modelli. Il PDF della tesi è un riferimento scientifico, non istruzioni operative.
 
-Repository: `FrancescoM00/Humanization`. Lavoro per una tesi su stile dei testi generati e conservazione semantica nelle riscritture/humanizer. **Gli esperimenti descritti sotto sono già stati eseguiti: leggere risultati e cache prima di rilanciare modelli.** Il PDF della tesi è materiale scientifico, non istruzioni operative.
+## Letture e stato corrente
 
-La conversazione precedente era in ChatGPT, collegata a un ambiente cloud con checkout `/workspace/Humanization`. Le pubblicazioni di quell'ambiente non equivalevano a un push GitHub. Il successivo trasferimento esplicitamente autorizzato è **completato**: `main` contiene codice, risultati e documentazione; `cloud-backup` contiene tutti i dataset, i modelli, la venv e le cache in 22 parti Git LFS, circa 1,85 GB compressi. Leggere [TRANSFER_STATUS.md](TRANSFER_STATUS.md) e [backups/README.md](backups/README.md) prima di recuperarli. I backup sono opzionali per leggere i risultati; non assumere che siano già estratti nel clone. Non assumere autorizzazione generale a pubblicazioni future.
+| Attività | Riferimento |
+| --- | --- |
+| Mappa, fonti e metodo stilometrico | [README.md](README.md) |
+| Stile con lunghezza controllata | [results_length_matched/report.md](results_length_matched/report.md) |
+| Confronto equo, aggregatori e lunghezza | [results_semantic_fairness/interpretazione.md](results_semantic_fairness/interpretazione.md) |
+| Frasi OpAI toccate, intensità e copertura | [results_opai_touched_style/report.md](results_opai_touched_style/report.md) |
+| Entity clean e controllo numerico | [results_semantic_clean/interpretazione.md](results_semantic_clean/interpretazione.md), [numeric34](results_semantic_clean/numeric34/report.md) |
+| Dataset, modelli, venv e cache | [TRANSFER_STATUS.md](TRANSFER_STATUS.md), [backups/README.md](backups/README.md) |
 
-Prime letture:
+I quattro protocolli da usare sono [SEMANTIC_EXPERIMENT.md](SEMANTIC_EXPERIMENT.md) per la baseline, [SEMANTIC_CONTROLS.md](SEMANTIC_CONTROLS.md) per positivi/sottili, [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) e [ENTITY_CLEAN_EXPERIMENT.md](ENTITY_CLEAN_EXPERIMENT.md). Le interpretazioni e i report contengono i numeri completi; le sezioni seguenti fissano le decisioni da non perdere.
 
-- `README.md`: mappa generale.
-- `ENTITY_CLEAN_EXPERIMENT.md` e `results_semantic_clean/entity_policy_comparison.md`: controllo più recente sulle sostituzioni di entità.
-- `TRANSFER_STATUS.md`: contenuti caricati, branch dei backup e recupero con Git LFS.
-- `results_semantic_fairness/interpretazione.md`: conclusioni aggiornate, confronto equo e limiti.
-- `FAIRNESS_EXPERIMENT.md`: riproduzione della fase più recente senza inferenze inutili.
-- `results_opai_touched_style/report.md`: stile sulle frasi native toccate da OpAI.
-- `results_semantic_extension/interpretazione.md`: fase precedente, controlli positivi e revisioni qualitative.
-- `SEMANTIC_CONTROLS.md` e `SEMANTIC_EXPERIMENT.md`: protocolli e riproduzione.
+## Decisioni sperimentali
 
-## Ultimo controllo richiesto: entity clean v2
+- **Stile:** 300 umani e 300 macchine per ciascuno di Essay, WritingPrompts e Reuters; 105 feature. Il controllo successivo abbina esattamente le parole nei prefissi a fine frase. La shortlist `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn` è esplorativa e richiede validazione indipendente.
+- **Conservazione:** MiniLM per embedding, RoBERTa-base per BERTScore e DeBERTa-v3 **base float32**, anche nel percorso ONNX. Nessuna quantizzazione o sostituzione con xsmall. La pipeline mantiene direzioni forward/reverse e frasi/chunk senza troncamento silenzioso.
+- **Aggregatori:** nel test appaiato, minimo NLI AUC 0,958 contro coseno allineato 0,607 e BERTScore 0,534; con più frasi corrotte la media può raggiungere o superare il minimo. Il minimo dipende dalla lunghezza; la normalizzazione per fasce mantiene AUC NLI 0,951 sul riferimento OpAI.
+- **Suite:** `scripts/export_semantic_suite.py` esporta score continui e distribuzioni. La soglia storica 0,04075 non va applicata a DIPPER o nuovi humanizer. Le guardie lessicali non hanno dimostrato un miglioramento complessivo; la perdita di cautele rimane un limite.
+- **Stile OpAI:** lineage nativa verificata su 200 traiettorie. L'intensità per frase non ordina Polish < Paraphrase < Style; la copertura crescente può ripristinare l'ordine del punteggio documentale. Non scegliere la metrica solo per ottenere l'ordine atteso.
 
-L'utente ha caricato una patch basata sulla propria revisione manuale, chiedendo applicazione, correzione, CLI `--entity-policy clean` e confronto con `results_semantic_full`. Le nuove etichette manuali non sono contenute nella patch: l'audit dell'assistente resta distinto. Il codice aggiunge la condizione `entity_substitution_clean`, rinominata `entity_substitution` dal runner per conservare lo schema, con ID e metadati distinguibili. V1 resta default; tutte le funzioni preesistenti mantengono lo stesso AST salvo l'estensione dell'interfaccia di `generate_perturbation_pairs`.
+## Entity clean e controllo sulle 34 coppie
 
-Corrette guardie per omografi May/may, cognomi di persone distinte, collisioni, possessivi inglobati, simboli monetari esterni e nomi parziali dentro altre entità. Test: 15 originali più 19 regressioni; cinque test sul comparatore. Versione congelata `clean_v2`, `guard_revision=review_fixes_3`.
+La politica predefinita resta **v1**; `--entity-policy clean` attiva `clean_v2`, `guard_revision=review_fixes_3`. Sono state corrette guardie per omografi, cognomi, possessivi, nomi parziali e simboli monetari esterni. Le funzioni v1 conservano il proprio comportamento; `generate_perturbation_pairs` aggiunge la selezione delle condizioni.
 
-Coorte v1 fissa: **145 entity applicate, 55 saltate**, **2.297 coppie totali** con le stesse 800 OpAI. Le altre 2.007 coppie sono integralmente identiche. Embedding e BERTScore ricalcolati; evidenze NLI storiche riusate soltanto sui controlli invariati, con quelle nuove sulle entity clean. DeBERTa-v3 base float32: 87.825 evidenze uniche, 86.413 già in cache e 1.412 nuove. Il confronto numerico finale è in `results_semantic_clean/entity_policy_comparison.md`; usare le 145 fonti comuni e distinguere misure locali/documentali.
+La coorte è quella v1 fissa: **145 entity applicate, 55 saltate, 2.297 coppie totali**, comprese le stesse 800 OpAI. Le 2.007 coppie estranee alla modifica sono identiche e le 61 metriche coincidono entro tolleranza. Il retrieval storico è riusato solo sui controlli invariati, con quello nuovo sulle entity clean. Le probabilità sono associate al medesimo checkpoint: 87.825 evidenze uniche, 86.413 già in cache e 1.412 nuove.
 
-Controllo successivo a costo di sola analisi: `scripts/analyze_clean_numeric_subset.py`, risultati in `results_semantic_clean/numeric34/`. Le 34 entity clean DATE/MONEY/PERCENT (18/6/10) hanno NLI locale 0,002572, minimo documento bidirezionale 0,003436, coseno documento/frase 0,998363/0,954655 e BERTScore 0,999082/0,992778. Controllo identità locale 0,991547. Tutte le 34 hanno entailment locale <0,016, ma l'AUC contro identità è 1 anche per le similarità: non è una prova di superiorità su parafrasi corrette. Solo 12/34 mantengono lo stesso tipo nella v1; la lettura rileva anche modifiche di qualificatori e un caso di decennio. Nessuna nuova inferenza, soglia o modifica dei dati.
+Il controllo successivo `scripts/analyze_clean_numeric_subset.py` riusa gli score di **34 DATE/MONEY/PERCENT (18/6/10)**: entailment locale 0,002572 contro 0,991547 sulle frasi identiche; minimo documento bidirezionale 0,003436. L'AUC contro identità è 1 anche per le similarità: non dimostra superiorità su parafrasi corrette. Solo 12/34 mantengono lo stesso tipo nella v1. I limiti dei qualificatori, della valuta e del caso di decennio sono nel report.
 
-Consegna su GitHub autorizzata dall'utente dopo il fallimento dei download della chat: `main` include codice, test, patch originale/corretta, report e copie scaricabili in `exports/semantic_clean/` (`pairs.jsonl`, `skipped.jsonl`, `semantic_clean_pairs.zip`). Il backup dati di `cloud-backup` include l'intera `data/semantic_clean/`, con allineamento ricalcolato, evidenze congelate, piano NLI e probabilità. I dati originali restano in `data/semantic_clean/`; le esportazioni sono copie identiche, così il ripristino completo dei backup conserva il normale comportamento. Prima di riprendere, leggere i risultati e riusare le cache: evitare di rilanciare modelli per consultare il confronto.
+L'[audit clean](results_semantic_clean/clean_entity_text_audit.md), la [review40](results_semantic_extension/review40.md) e l'[audit dei positivi](results_semantic_extension/positive_review9.md) sono revisioni dell'assistente. La patch ricevuta non contiene le nuove etichette manuali dell'utente. I proxy automatici non sono gold semantici; un NLI basso non certifica la validità della perturbazione. Restano errori NER, anche aziende classificate PERSON e città sostituite con paesi.
 
-## Aggiornamento più recente: confronto equo e robustezza
+## Ripresa pratica e pulizia
 
-Completato il confronto sulle stesse frasi/chunk e sugli stessi aggregatori: ogni ipotesi usa la similarità massima con l'originale, poi media, q10 o minimo, in entrambe le direzioni. AUC nel test appaiato precedente: minimo NLI **0,958**, coseno **0,607**, BERTScore riscalato **0,534**. La limitazione BERTScore agli stessi tre candidati NLI non cambia il risultato. Non generalizzare il limite delle similarità a ogni tipo di riscrittura.
+`main` conserva codice attivo, test, report, CSV, figure e [dati esportati](exports/semantic_clean/README.md). `cloud-backup` conserva dataset, modelli e cache; le directory originali `data/` e `.venv/` restano ignorate. La venv è uno snapshot Linux x86_64/Python 3.12, non portabile automaticamente su Windows o macOS. I pesi sono in `data/models/`, i Parquet ufficiali in `data/opai/official_parquet/`; ciascun protocollo indica le cache necessarie.
 
-Run complessivo: **3.500 coppie**, le 2.621 precedenti più 879 nuove. Il pannello aggiuntivo principale contiene 87 positivi e 400 negativi, 50 sorgenti per famiglia, nessuna sovrapposta alle vecchie 99; split 25/25. Corruzioni annidate su 1/2/3/5 frasi. Da due errori, media e quota non supportata possono superare il minimo; q10 recupera. Il pannello sottile è prevalentemente numerico, non una distribuzione di errori reali degli humanizer. DeBERTa-v3 base float32 conservato; 15.198 nuove evidenze uniche calcolate, senza rifare le precedenti.
+La pulizia ha rimosso vecchi bundle, log e snapshot di avanzamento, il primo output lessicale e copie intermedie/strumenti di profiling. Sono conservati report scientifici, pilot, metadati di run, provenienza, validation finale e audit. Le versioni rimosse restano recuperabili nella cronologia Git; non ricreare gli artefatti temporanei per leggere i risultati.
 
-Il minimo NLI correla con la lunghezza sui positivi (rho −0,316). Un controllo a coppia fissa quantifica il calo del minimo atteso da 0,952 a 0,809 passando da 5 a 40 unità ipotesi campionate; è un effetto di molteplicità, non un test su documenti troncati. Fasce ≤14, 15–23, >23 frasi apprese solo sulla calibrazione: l'AUC del minimo NLI trasformato in percentile di riferimento resta **0,951**. Il riferimento OpAI non è automaticamente valido su DIPPER.
-
-Le quattro guardie lessicali conservano conteggi, delta e valori numerici normalizzati. NLI+guardie L2: AUC **0,938**, inferiore all'NLI solo. Le cautele restano irrisolte: nove casi test, lessico v1 incompleto, compensazioni documentali e due proxy che rimuovono solo possibly lasciando could. Leggere l'audit per frase; non scambiare conteggio ripristinato per modalità della proposizione ripristinata.
-
-Stile: lineage ordinale nativa verificata su 200 traiettorie. Sullo stesso sottoinsieme test, ΔMATTR Paraphrase è +0,02198 nei passaggi cambiati contro +0,00747 sull'intero testo: il segnale si diluiva. La distanza primaria RMS per frase marcata dà Polish/Paraphrase/Style **0,366/0,717/0,656**. Non soddisfa l'ordine atteso; la distanza pesata per copertura dà 0,152/0,369/0,425, ma include il budget crescente per costruzione. Distinguere intensità e copertura, senza scegliere la metrica solo perché restituisce l'ordine desiderato.
-
-**Output operativo aggiornato:** `scripts/export_semantic_suite.py` esporta punteggi continui per coppia e distribuzioni per humanizer/condizione; non emette verdetti o applica soglie. La soglia storica 0,04075 qui sotto non va usata come risultato operativo. DIPPER e nuovi servizi non sono stati eseguiti. Dataset/cache di questa fase: `data/semantic_fairness/`; risultati già pronti in `results_semantic_fairness/` e `results_opai_touched_style/`.
-
-## 1. Stile umano/macchina
-
-Usati Essay, WritingPrompts e Reuters in inglese: 300 umani + 300 macchine per dominio, 1.800 testi e 900 coppie di origine. TH-Bench rimanda a MGTBench; la fonte effettiva è un mirror pubblico MGTBench fissato al commit `6f289c4cf4e3966e9442d104ea250bae43f3ff9e`. Non è stata verificata l'identità dei byte con l'archivio ufficiale Google Drive; la pulizia locale è documentata, non una riproduzione certificata dei file `clean` degli attacchi TH-Bench.
-
-Estratte 105 feature fisse con spaCy `en_core_web_sm` 3.8.0, textstat e MATTR50 manuale: frasi, punteggiatura, POS, parole funzionali, diversità lessicale, leggibilità e sette proxy Wikipedia. Effetti Hedges g, IC per gruppi sorgente e regressione logistica L2 con preprocessing appreso solo sul training; trasferimento fra domini e generatori senza sovrapposizione di origine.
-
-Corretto il confondente lunghezza: prefissi terminati a fine frase, 90–180 parole lessicali spaCy, esattamente uguali nella coppia, vicini a 150. `word_count_only` ha AUC 0,5. Lo stile trasferisce fra domini con AUC circa 0,670 Essay,0,759 Reuters,0,580 WritingPrompts; i proxy Wikipedia circa 0,576/0,537/0,499.
-
-Shortlist esplorativa: `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn`. È selezionata sull'intero campione e richiede validazione indipendente. Risultati aggiornati: `results_length_matched/`; precedenti conservati in `results/` e `results_pilot/`.
-
-## 2. Conservazione semantica: primo esperimento
-
-Su 200 testi macchina MGTBench idonei, applicate negazione, entity swap, shuffle, troncamento e rimozione casuale di parole, con identità e controlli locali. Metriche: ROUGE-L, BLEU, coseno MiniLM, BERTScore RoBERTa-base e NLI bidirezionale DeBERTa-v3 **base**, float32. Documenti suddivisi in frasi/chunk senza troncamento silenzioso; per ogni ipotesi NLI si recuperano fino a 3 evidenze e si aggrega il supporto massimo.
-
-Negazione: coseno/BERTScore documentali circa 0,998/0,999; NLI medio0,894. Sulla frase alterata entailment0,001 e contradiction0,998; minimo documentale da0,983 a0,064. Il crollo è locale, diluito dalla media. Il coseno locale scende a0,869: evitare «il coseno non vede la negazione» come affermazione generale.
-
-OpAI ufficiale: Compress adiacente v3→v4, Expand v4→v5; confronti con v0 secondari cumulativi. Asimmetria forward−reverse circa +0,067 Compress e −0,306 Expand. Compressioni moderate possono preservare l'essenziale: reverse alto non è automaticamente un difetto. Risultati: `results_semantic_full/`, 2.407 coppie e 88.900 evidenze NLI uniche.
-
-## 3. Controlli positivi, sottili e scelta dell'aggregatore
-
-Run della fase precedente: **2.621 coppie** = 1.607 controlli precedenti + 300 positivi OpAI (100 Polish, 100 Paraphrase, 100 Style) + 562 corruzioni degli stessi output + 152 sfide sottili MGTBench. Le sottili MGTBench sono 50 numeri, 50 quantificatori, 39 cautele rimosse, 13 dettagli aggiunti; quote inferiori esplicite per applicabilità.
-
-Il confronto principale usa lo stesso originale→buon edit contro originale→stesso edit corrotto, riducendo il confondente OpAI/MGTBench. Selezione indipendente dagli score; split e bootstrap per sorgente, condivisi da editor e varianti. Aggregatore scelto solo sulla calibrazione, poi valutato su test separato.
-
-La calibrazione sceglie **minimo bidirezionale**: AUC test 0,958 (IC 95% 0,931–0,979), soli sottili appaiati 0,900 (0,820–0,964). Media 0,929/0,885; q10 0,728/0,657; quota non supportata 0,908/0,833. Soglia supporto minimo **<0,0407498665**: 11/153 allarmi sui positivi presunti test (7,2%); sensibilità 83,1% complessiva, 70,7% sui sottili trasferendo la stessa soglia. Non è una soglia universale.
-
-Limite: cautele rimosse AUC 0,571, 9 casi test, sensibilità 13,3%; numeri semplici AUC 0,970, 24 casi; quantificatori0,931, 15 casi ma sensibilità 50%; un solo dettaglio test, non conclusivo. Le etichette sono **presunte/intenzionali, non gold umane**.
-
-Letti 40 casi indipendentemente dagli score individuali: 22 puliti, 12 con riserve, 6 invalidi; errori NER, scope e duplicazioni. Audit di 9 positivi: 5 conservazioni chiare, 4 con riserve. È revisione qualitativa dell'assistente, non annotazione umana. Non usare la contraddizione NLI per validare circolarmente le perturbazioni.
-
-BERTScore riscalato con baseline ufficiale F 0,814463: negazione locale 0,915, fixture non correlata 0,274; ranking/AUC invariati. BLEU/ROUGE Spearman 0,986 nel confronto OpAI appaiato: BLEU resta secondario. Risultati: `results_semantic_extension/`, inclusi score, selezione, allarmi, correlazioni e revisioni.
-
-## 4. Stile nelle riscritture OpAI
-
-200 traiettorie comuni, 188 sorgenti, 1.000 coppie nelle cinque operazioni, 105 feature. Paraphrase aumenta MATTR50 di 0,00795; Style Rewrite lunghezza parole di 0,109 caratteri; Expand lunghezza frasi di 3,77 parole. Controllo prefissi di uguale lunghezza su 336 coppie. Effetti appaiati per fonte e BH; cambiamenti stilistici non provano naturalezza. Codice: `scripts/run_opai_style.py`; risultati: `results_opai_style/`.
-
-## Ripresa pratica senza nuove inferenze
-
-Dalla radice del checkout, se dati/ambiente sono disponibili:
-
-```bash
-.venv/bin/python scripts/analyze_semantic_extension.py --bootstrap 1000
-.venv/bin/python scripts/run_semantic_experiment.py --stage report --data-dir data/semantic_full --output results_semantic_full
-```
-
-I report esistenti sono già pronti. Non eseguire `run_semantic_controls.sh` o gli stadi neurali soltanto per leggerli. Cache cruciali in `data/semantic_full/`, `data/semantic_extension/`; pesi in `data/models/`; OpAI Parquet locali in `data/opai/official_parquet/`.
-
-L'ambiente originale è Linux x86_64, Python 3.12, Torch CPU 2.7.1, quattro thread, modelli in processi separati; NLI ha mantenuto il base sotto 4 GiB per processo. Una `.venv` copiata non è portabile automaticamente su macOS/Windows o percorsi diversi. Su Linux compatibile ricrearla se necessario con `bash scripts/setup.sh`, poi installare `requirements-semantic-lock.txt` usando l'indice CPU PyTorch. Su macOS adattare i pin specifici della piattaforma, soprattutto Torch `+cpu`. Downloader: `download_mgtbench.py`, `download_opai.py`, `download_semantic_models.py`. Revisioni e checksum modelli in `results_semantic_full/models_provenance.json`. Hugging Face richiede accesso ai domini elencati in `SEMANTIC_EXPERIMENT.md`.
-
-Priorità successiva: valutazione degli humanizer e annotazione umana delle coppie, riusando codice e risultati. L'utente chiede di dedicare il tempo ai controlli sperimentali, evitando altri strati di infrastruttura non necessari.
+La fonte MGTBench effettiva è un mirror fissato, non verificato byte per byte contro Google Drive. La separazione per fonte resta necessaria in split e bootstrap. DIPPER, EditLens e nuovi servizi non sono stati valutati: la priorità successiva è misurare gli humanizer reali e raccogliere annotazioni umane, riusando le pipeline disponibili.

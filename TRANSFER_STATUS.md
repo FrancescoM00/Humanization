@@ -1,64 +1,32 @@
-# Trasferimento su GitHub completato
+# Dati e backup su GitHub
 
 Repository: [FrancescoM00/Humanization](https://github.com/FrancescoM00/Humanization).
 
-## Contenuti disponibili
+- **`main`** contiene codice attivo, test, dipendenze fissate, report, CSV, figure, patch originale/corretta e manifest dei backup.
+- **[`cloud-backup`](https://github.com/FrancescoM00/Humanization/tree/cloud-backup/backups)** conserva dataset, modelli, venv e cache in archivi Git LFS. Le parti pesanti non vengono scaricate dal normale checkout di `main`.
 
-- **`main`**: tutto il codice sperimentale, test, dipendenze fissate, report, CSV, grafici, ZIP delle versioni precedenti, [riepilogo per Codex](CODEX_HANDOFF.md), manifest dei backup e script di ripristino.
-- **[`cloud-backup`](https://github.com/FrancescoM00/Humanization/tree/cloud-backup/backups)**: archivi completi dei dataset, dei modelli, della venv e delle cache, memorizzati tramite **Git LFS**. Il caricamento di tutti gli oggetti LFS e del ramo è riuscito.
+## File pronti da scaricare
 
-Le parti pesanti non sono presenti nel working tree di `main`: aprire il codice e leggere i risultati non richiede di scaricarle. Il normale ZIP del codice non include i backup pesanti; usare Git LFS come descritto sotto.
+[exports/semantic_clean/](exports/semantic_clean/README.md) contiene `pairs.jsonl`, `skipped.jsonl` e lo [ZIP da circa 1,4 MB](exports/semantic_clean/semantic_clean_pairs.zip). Sono le 2.297 coppie definitive del run clean, con 145 sostituzioni applicate e 55 saltate. Con `git pull` arrivano direttamente nella cartella `exports/` del clone.
 
-Aggiornamento dell'8 novembre 2026: pubblicato il controllo **entity clean v2**, con codice, test, patch originale e corretta, report e CSV. I dati pronti da scaricare sono in [exports/semantic_clean/](exports/semantic_clean/README.md) sul branch `main`: 2.297 coppie, 145 sostituzioni applicate e 55 saltate. Il backup dataset include l'intera `data/semantic_clean/`, con allineamenti e probabilità NLI; sono aggiornate anche le piccole cache di esecuzione. Pesi e venv sono gli stessi già archiviati. [Protocollo e risultati](ENTITY_CLEAN_EXPERIMENT.md).
+I report e i protocolli sono indicizzati nel [README](README.md); per continuare in Codex leggere [CODEX_HANDOFF.md](CODEX_HANDOFF.md). Le versioni precedenti e i bundle rimossi durante la pulizia sono recuperabili dalla cronologia Git. La cronologia completa della chat non è contenuta nel repository.
 
-Aggiornamento del 5 novembre 2026: aggiunti codice e risultati del confronto semantico equo e dello stile localizzato. Il componente dataset è stato aggiornato con tutte le 3.500 coppie, i nuovi allineamenti, le probabilità NLI e le cache stilometriche. Modelli e venv sono gli stessi già trasferiti. Leggere [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) per riprendere questa fase.
+## Inventario del backup
+
+Lo snapshot aggiornato all'8 novembre 2026 contiene anche tutta `data/semantic_clean/`: allineamenti, copia del retrieval ricalcolato, piano NLI e probabilità. Il precedente campione fairness di 3.500 coppie e le altre fasi restano inclusi. Modelli e venv sono quelli già archiviati; l'aggiornamento più recente riguarda dati e cache di esecuzione.
 
 | Componente | Contenuto originale | Parti | Byte compressi |
 | --- | --- | ---: | ---: |
-| Dataset | `data/`, escluso `data/models/`: corpora, campioni, coppie, cache e probabilità | 2 | 171.434.235 |
-| Modelli | Tutto `data/models/`, inclusi MiniLM, RoBERTa, DeBERTa-v3 base e ONNX | 13 | 1.160.384.762 |
-| Venv | Tutto `.venv/`, inclusi pacchetti, spaCy e CMUdict | 6 | 518.027.092 |
-| Cache | `.cache/`, `.pytest_cache/` e `semantic_run.log` del progetto | 1 | 15.194 |
-| **Totale** | **4.365.132.616 byte complessivi nei quattro componenti** | **22** | **1.849.861.283** |
+| Dataset | `data/`, escluso `data/models/` | 2 | 171.434.235 |
+| Modelli | MiniLM, RoBERTa, DeBERTa-v3 base e ONNX in `data/models/` | 13 | 1.160.384.762 |
+| Venv | Pacchetti, spaCy e CMUdict in `.venv/` | 6 | 518.027.092 |
+| Cache | Snapshot delle cache di esecuzione del progetto | 1 | 15.194 |
+| **Totale** | **4.365.132.616 byte originali** | **22** | **1.849.861.283** |
 
-Ogni parte è al massimo 90 MiB. Le dimensioni e gli SHA-256 sono in [backups/manifest.json](backups/manifest.json). Il trasferimento iniziale era stato verificato con ripristino integrale in una directory temporanea, inclusi i symlink. L'aggiornamento sostituisce gli archivi dei dati e delle cache di esecuzione; i dati originali non sono stati sostituiti.
+Ogni parte è al massimo 90 MiB. Dimensioni e SHA-256 sono nel [manifest](backups/manifest.json); il trasferimento iniziale era stato verificato con ripristino in una directory temporanea. Gli archivi escludono credenziali, `.git` e configurazioni private dell'esecutore.
 
-Non sono inclusi credenziali, `.git`, configurazioni private dell'esecutore o l'intero sistema operativo. La venv è conservata integralmente come **snapshot Linux x86_64, Python 3.12.14**; il suo interprete base è esterno alla venv e gli shebang contengono percorsi assoluti. Su macOS, Windows o percorsi diversi va ricreata dai lockfile. Non viene presentata come ambiente portabile.
+## Recuperare i componenti
 
-## Riprendere nell'app Codex
+Le istruzioni canoniche per installare Git LFS, recuperare il ramo ed estrarre un componente sono in [backups/README.md](backups/README.md). Il normale ZIP del codice non comprende le parti LFS pesanti. Servono Python 3.12 e `zstd`; il restorer preserva componenti esistenti, salvo sostituzione esplicita.
 
-1. Aprire/clonare `FrancescoM00/Humanization`, branch `main`.
-2. Creare una nuova sessione e chiedere di leggere **`CODEX_HANDOFF.md`** e **`README.md`**.
-3. Leggere prima i risultati esistenti; evitare di rilanciare inferenze soltanto per consultare il lavoro.
-4. Recuperare i backup soltanto quando servono dati, modelli o cache locali.
-
-La cronologia completa di ChatGPT non è contenuta nel repository. Il riepilogo documenta obiettivi, esperimenti, conclusioni, limiti e passi successivi.
-
-## Recuperare i backup dal ramo dedicato
-
-Servono Git LFS, Python 3.12 e `zstd`. Dalla radice del clone:
-
-```bash
-git lfs install
-git fetch origin cloud-backup
-git lfs fetch origin FETCH_HEAD --include='backups/**'
-git restore --source=FETCH_HEAD --worktree -- backups/
-```
-
-Per vedere o ripristinare un componente:
-
-```bash
-python scripts/restore_backups.py --component models --list
-python scripts/restore_backups.py --component data
-python scripts/restore_backups.py --component models
-```
-
-Per estrarre tutti i componenti in una directory vuota:
-
-```bash
-python scripts/restore_backups.py --component all --root /percorso/Humanization-ripristinato
-```
-
-Il restorer rifiuta di sovrascrivere componenti esistenti senza `--overwrite`. Preservare le modifiche locali a `backups/` prima del comando `git restore`. Dettagli in [backups/README.md](backups/README.md).
-
-L'autorizzazione dell'utente riguardava questo trasferimento completo; non autorizza automaticamente pubblicazioni future.
+La venv è uno **snapshot Linux x86_64/Python 3.12.14**, con interprete esterno e percorsi assoluti. Su Windows, macOS o percorsi diversi va ricreata dai lockfile; dati e modelli restano riutilizzabili. Questa limitazione è spiegata nel documento di ripristino.

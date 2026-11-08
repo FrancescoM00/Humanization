@@ -1,8 +1,0 @@
-id,pair_id,bert_chunk_precision,bert_chunk_recall,bert_chunk_f1,bert_original_chunks,bert_modified_chunks,bert_num_layers,bert_idf,bert_rescale_with_baseline,local_bert_precision,local_bert_recall,local_bert_f1,local_bert_protocol,bert_unique_chunks_encoded_cumulative,bert_unique_chunk_pairs_scored_cumulative
-sanity:identity,sanity:identity,1.0000001192092896,1.0000001192092896,1.0000001192092896,1,1,10,False,False,1.0000001192092896,1.0000001192092896,1.0000001192092896,standard_sentence,1,1
-sanity:paraphrase,sanity:paraphrase,0.954852819442749,0.9767564535140991,0.9656804474945937,1,1,10,False,False,0.954852819442749,0.9767564535140991,0.9656804474945937,standard_sentence,2,2
-sanity:negation,sanity:negation,0.9533181190490723,0.9747424125671387,0.9639112341840403,1,1,10,False,False,0.9533181190490723,0.9747424125671387,0.9639112341840403,standard_sentence,4,3
-sanity:entity_substitution,sanity:entity_substitution,0.9644566774368286,0.9644566774368286,0.9644566774368286,1,1,10,False,False,0.9644566774368286,0.9644566774368286,0.9644566774368286,standard_sentence,6,4
-sanity:sentence_shuffle,sanity:sentence_shuffle,1.0,1.0,1.0,2,2,10,False,False,1.0,1.0,1.0,chunk_matched_approximation,8,8
-sanity:truncate,sanity:truncate,1.0,0.9908398687839508,0.9953988608729016,2,1,10,False,False,1.0,0.9908398687839508,0.9953988608729016,chunk_matched_approximation,8,8
-sanity:unrelated,sanity:unrelated,0.855926513671875,0.8749780654907227,0.8653474421994513,1,1,10,False,False,0.855926513671875,0.8749780654907227,0.8653474421994513,standard_sentence,9,9

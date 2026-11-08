@@ -1,9 +1,0 @@
-{
-  "pid": 8626,
-  "kernel_vm_hwm_mib": 2636.7265625,
-  "observed_rss_mib": 2636.7265625,
-  "sampling_interval_seconds": 0.05,
-  "samples": 17550,
-  "elapsed_seconds": 887.7425159570003,
-  "process_exited": true
-}

@@ -69,7 +69,7 @@ Sono segnali lessicali, non prove di errore. Nel confronto congelato, la regress
 
 Le rimozioni di cautela restano problematiche: la guardia globale di conteggio ha AUC 0,444 sui nove casi, contro 0,571 dell'NLI. L'audit per frase mostra che alcuni cambiamenti si compensano nei totali o sono espressi con parole diverse; il lessico v1 omette anche marker comuni come maybe e can. Non è corretto inferire dal ritorno al conteggio originale che sia stata ripristinata la modalità della stessa proposizione. Due negativi eliminano soltanto possibly da could possibly lasciando could: non sono esempi gold di completa eliminazione della possibilità.
 
-Come diagnostica secondaria, la perdita di hedge segnala 39/39 rimozioni dirette MGTBench e 14/153 positivi presunti OpAI. La prima è copertura della regola applicata, non accuratezza semantica; il confronto usa corpora diversi. Le guardie vengono mantenute come avvisi interpretabili, ma la chiusura del problema richiede espressioni e scope meglio allineati e casi annotati. [Report](guards_full/report.md), [audit delle nove frasi](guards/hedge_source_alignment_audit.md).
+Come diagnostica secondaria, la perdita di hedge segnala 39/39 rimozioni dirette MGTBench e 14/153 positivi presunti OpAI. La prima è copertura della regola applicata, non accuratezza semantica; il confronto usa corpora diversi. Le guardie vengono mantenute come avvisi interpretabili, ma la chiusura del problema richiede espressioni e scope meglio allineati e casi annotati. [Report](guards_full/report.md), [audit delle nove frasi](guards_full/hedge_source_alignment_audit.md).
 
 ## 5. Stile sulle frasi toccate
 

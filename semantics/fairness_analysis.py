@@ -523,7 +523,7 @@ def _plots_and_report(frame, quality, auc, adjusted_auc, length, summary, output
              'Gli editor OpAI non sono humanizer intercambiabili: DIPPER e altri humanizer non sono stati eseguiti qui. '
              'La precedente soglia 0,04075 rimane soltanto nel file storico diagnostico, senza essere adottata come risultato trasferibile. '
              'Qualunque soglia operativa futura richiede una calibrazione sulla distribuzione bersaglio.','',
-             'Le guardie lessicali complementari e il loro confronto con NLI sono in `guards/`: '
+             'Le guardie lessicali complementari e il loro confronto con NLI sono in `guards_full/`: '
              'rilevano cambi di cautele, negazioni, valori numerici e quantificatori, senza certificare da sole un errore semantico.','',
              'File completi: `fair_metric_auc.csv`, `fair_primary_comparison.csv`, `fair_auc_by_stratum.csv`, '
              '`length_adjusted_auc.csv`, `continuous_score_distributions.csv`, `analysis_manifest.json`. '
