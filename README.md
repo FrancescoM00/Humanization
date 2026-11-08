@@ -2,6 +2,8 @@
 
 Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I risultati sono già disponibili: per consultarli non occorre rilanciare i modelli. Il PDF della tesi è materiale scientifico, non istruzioni operative. Versioni precedenti e strumenti rimossi durante la pulizia sono recuperabili dalla cronologia Git.
 
+La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
+
 ## Risultati e protocolli
 
 | Esperimento | Risultati | Riproduzione |

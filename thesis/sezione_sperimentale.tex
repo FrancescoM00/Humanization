@@ -1,0 +1,998 @@
+% Generato da sezione_sperimentale.md con compila.sh.
+\section{Parte sperimentale: costruzione e verifica della suite}\label{parte-sperimentale-costruzione-e-verifica-della-suite}
+
+\subsection{Obiettivi e raccordo con la proposta teorica}\label{obiettivi-e-raccordo-con-la-proposta-teorica}
+
+La suite descritta nella sezione precedente considera la text humanization come una trasformazione che coinvolge proprietà differenti del testo. Una riscrittura può modificare lo stile senza alterare le informazioni, oppure conservare gran parte delle parole introducendo una variazione di significato. La valutazione richiede pertanto di osservare separatamente questi aspetti, prima di stabilire come combinarli in un giudizio complessivo.
+
+La parte sperimentale sviluppa questa impostazione attraverso due componenti: l'analisi stilometrica e la conservazione semantica. Nel primo caso si vuole verificare se le caratteristiche proposte siano effettivamente informative sui dati disponibili, quanto dipendano dal dominio e dal generatore e come cambino durante il rewriting. Nel secondo caso si esamina il comportamento delle metriche quando il testo viene modificato in modo controllato, distinguendo la somiglianza fra formulazioni dal supporto delle informazioni espresse.
+
+Si mantiene la notazione \(X\) per il testo di partenza e \(X'\) per quello trasformato. La rappresentazione stilometrica è indicata con \(\phi(X)\), mentre \(\Delta\phi=\phi(X')-\phi(X)\) descrive la direzione del cambiamento. Un valore elevato di distanza non viene interpretato automaticamente come maggiore naturalezza: indica che la trasformazione ha modificato le proprietà osservate. Analogamente, un'elevata similarità semantica non viene assunta come prova che tutte le informazioni siano state conservate.
+
+Il lavoro è organizzato intorno a cinque domande sperimentali. La prima riguarda l'esistenza di differenze stilometriche fra testi umani e macchina dopo aver controllato la lunghezza. La seconda considera il trasferimento di queste differenze fra domini e generatori. La terza riguarda la capacità delle metriche semantiche di segnalare variazioni locali, anche quando il documento rimane complessivamente simile. La quarta verifica quanto il risultato dipenda dall'aggregazione degli score e dal numero di frasi. La quinta esamina il cambiamento stilistico nelle riscritture OpAI, separando il documento completo dalle sole frasi interessate dall'editing.
+
+Queste prove costituiscono una validazione dei componenti della suite. La regressione logistica sulle feature misura il segnale umano/macchina disponibile nella rappresentazione stilometrica; non coincide con il pool di detector e con la valutazione degli attacchi prospettati nella parte teorica. L'applicazione sistematica a DIPPER e ad altri humanizer, la misura dell'evasione, la perplexity autoregressiva e il giudizio di un LLM rimangono sviluppi successivi. Gli esperimenti riportati qui sono stati effettivamente eseguiti su testi inglesi e non permettono di estendere direttamente le conclusioni ad altre lingue.
+
+\subsection{Dati, campioni e unità di analisi}\label{dati-campioni-e-unituxe0-di-analisi}
+
+\subsubsection{Il campione umano/macchina da MGTBench}\label{il-campione-umanomacchina-da-mgtbench}
+
+Il punto di partenza è costituito dai tre domini inglesi Essay, WritingPrompts e Reuters, utilizzati nel contesto di TH-Bench {[}3, 24{]} e MGTBench {[}20{]}. Le righe del dataset collegano un testo umano alle generazioni prodotte da più modelli sulla stessa origine. Questo allineamento permette di costruire un confronto appaiato, riducendo il rischio che le differenze osservate dipendano soltanto da argomenti completamente diversi.
+
+È necessario distinguere la provenienza effettiva dei file dalla descrizione del benchmark. I CSV sono stati ottenuti da un mirror pubblico di ricerca, fissato a una revisione specifica, che contiene i file \nolinkurl{Essay_LLMs.csv}, \nolinkurl{WP_LLMs.csv} e \nolinkurl{Reuters_LLMs.csv}. Ciascuno comprende 1.000 righe con testo umano e sette generatori. Il collegamento ai CSV ufficiali riportato da TH-Bench rimanda invece a Google Drive: non è stata verificata l'identità byte per byte fra tale archivio e il mirror utilizzato. Il campione deve quindi essere descritto come una preparazione locale di dati MGTBench, non come una riproduzione certificata dei file \texttt{clean} distribuiti per gli attacchi TH-Bench.\footnote{Mirror MGTBench nel repository \nolinkurl{derek33125/AITextDetection}, revisione \texttt{6f289c4cf4e3966e9442d104ea250bae43f3ff9e}, cartella \nolinkurl{Data_Generation/MGTBench}. Il loader TH-Bench di riferimento è fissato a \texttt{5c1d99cefee49208206b6fa75d3a628ac9935f86}.}
+
+La preparazione applica la normalizzazione degli spazi prevista dal loader TH-Bench, elimina simmetricamente le code senza una terminazione di frase plausibile e richiede almeno 50 parole separate da spazi dopo questo passaggio. Si eseguono inoltre la deduplicazione globale, senza distinguere maiuscole e minuscole, e l'esclusione degli output macchina identici a un testo umano. L'euristica per la coda gestisce casi comuni di virgolette, abbreviazioni e numeri decimali; non certifica però la correttezza grammaticale, la lingua o l'assenza di formule di rifiuto. La pulizia agisce prima del campionamento e non utilizza le feature stilometriche per scegliere gli esempi.
+
+Per ciascun dominio sono selezionati 300 testi umani e 300 testi macchina. Ogni umano viene associato a un solo output della stessa riga, ottenendo 900 coppie e 1.800 testi complessivi. Le quote sono di 43 esempi per ChatGPT-turbo, Claude, ChatGLM, Dolly, ChatGPT e GPT4All e di 42 per StableLM, in ciascun dominio. I nomi identificano i generatori già presenti nel corpus: non sono state eseguite nuove chiamate a questi modelli durante il campionamento.
+
+Il codice conserva identificatori distinti per testo, coppia e gruppo di origine. Quest'ultimo collega anche eventuali prompt ripetuti e viene utilizzato per separare training e test. Due testi collegati alla stessa origine non devono essere trattati come osservazioni indipendenti soltanto perché hanno un identificativo diverso.
+
+\subsubsection{OpAI-Bench e le versioni adiacenti}\label{opai-bench-e-le-versioni-adiacenti}
+
+La seconda fonte è il dataset ufficiale OpAI-Bench {[}30, 34{]}, scaricato a una revisione fissata. Sono conservati i 16 file Parquet originali e i relativi metadati. Le operazioni considerate sono Polish, Paraphrase, Style Rewrite, Compress ed Expand. Poiché le versioni sono cumulative, il confronto principale usa le transizioni adiacenti: \(v_0\rightarrow v_1\), \(v_1\rightarrow v_2\), \(v_2\rightarrow v_3\), \(v_3\rightarrow v_4\) e \(v_4\rightarrow v_5\). Confrontare direttamente una versione avanzata con \(v_0\) includerebbe anche tutte le modifiche precedenti.\footnote{Dataset ufficiale \nolinkurl{OpAI-Bench1/OpAI-Bench} su Hugging Face, revisione \texttt{072c03c7051409346aaba05168d183cf6d863ee9}; codice VILA-Lab/OpAI-Bench alla revisione \texttt{739d647bab87c7d3c7a86d3df6c008945af5c4a2}.}
+
+L'editing OpAI parte da un originale umano. Queste coppie sono quindi utili per studiare operazioni di riscrittura e controlli di conservazione, ma non rappresentano direttamente l'intero processo macchina--humanizer previsto per una fase successiva. Inoltre, l'etichetta dell'operazione descrive l'intervento richiesto al modello: non garantisce che il risultato abbia conservato ogni informazione o che ogni frase selezionata sia stata effettivamente modificata.
+
+Per lo studio stilometrico delle cinque operazioni sono impiegate 200 traiettorie comuni, corrispondenti a 188 fonti distinte e 1.000 coppie adiacenti. Per la prima analisi semantica di Compress ed Expand si usano fino a 200 traiettorie per ciascun confronto, includendo anche confronti cumulativi secondari. Le diverse analisi non condividono necessariamente la medesima selezione di traiettorie; i loro conteggi vengono pertanto mantenuti separati.
+
+\subsubsection{Costruzione progressiva dei controlli semantici}\label{costruzione-progressiva-dei-controlli-semantici}
+
+Il campione semantico MGTBench viene selezionato dai documenti completi del primo studio stilometrico, non dai prefissi successivamente abbinati per lunghezza. Si cercano 200 testi macchina sui quali siano applicabili tutte le perturbazioni iniziali. Fra i 900 testi macchina di partenza, 538 risultano idonei al protocollo; la selezione finale comprende 67 Essay, 67 Reuters e 66 WritingPrompts, con bilanciamento anche fra generatori. Il campionamento usa il seed 42 e non dipende dai punteggi delle metriche.
+
+Le estensioni successive riutilizzano parte di queste coppie e aggiungono controlli diversi. Per evitare di confondere il numero dei confronti con quello dei documenti indipendenti, la composizione dei principali insiemi è riportata separatamente.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3000}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4000}}@{}}
+\caption{Composizione degli insiemi semantici. Le righe sono fasi parzialmente sovrapposte e non campioni indipendenti da sommare.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Insieme
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Composizione dei confronti
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Totale
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Insieme
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Composizione dei confronti
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Totale
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Baseline semantica & 1.200 condizioni MGTBench, 400 identità locali, 7 fixture, 800 coppie OpAI & 2.407 \\
+Controlli positivi e sottili & 1.607 confronti della baseline, 300 positivi OpAI, 562 corruzioni appaiate, 152 sottili MGTBench & 2.621 \\
+Robustezza e confronto equo & 2.621 precedenti, 392 corruzioni esplorative, 87 nuovi positivi e 400 negativi distribuiti & 3.500 \\
+Variante entity clean & 2.007 coppie invariate, 145 nuove entity e 145 identità locali corrispondenti & 2.297 \\
+\end{longtable}
+\endgroup
+
+Nelle analisi con apprendimento o calibrazione, tutte le varianti di una stessa fonte rimangono nello stesso split. Nei confronti appaiati viene mantenuta la corrispondenza fra originale e trasformazioni; negli intervalli di confidenza il ricampionamento avviene per fonte. Le etichette semantiche derivate dalle operazioni sono ipotesi sperimentali: una perturbazione applicata correttamente a livello di stringa non è automaticamente una contraddizione valida.
+
+\subsection{Implementazione delle feature stilometriche}\label{implementazione-delle-feature-stilometriche}
+
+L'estrattore produce 105 feature con una procedura identica per umano, macchina e testo riscritto. Si utilizza spaCy {[}47{]} con il modello inglese piccolo \texttt{en\_core\_web\_sm}, mentre gli indicatori di leggibilità sono calcolati con textstat. MATTR è implementato direttamente, in modo da rendere esplicita la gestione delle finestre e dei testi brevi.
+
+Le parole lessicali sono i token per i quali spaCy assegna \texttt{is\_alpha}; vengono convertite in minuscolo, senza lemmatizzazione. Le misure lessicali, le POS e la lunghezza rispetto agli spazi non condividono necessariamente lo stesso denominatore. Nello specifico, la distribuzione POS esclude spazi e punteggiatura ma include numeri e frammenti di contrazioni. Queste convenzioni devono essere mantenute costanti quando si confrontano i testi.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3000}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3000}}@{}}
+\caption{Composizione delle 105 feature. Il proxy em dash appartiene già alla punteggiatura: i proxy Wikipedia usati nel modello dedicato sono sette, senza aggiungere una centoseiesima feature.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Famiglia
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Numero di feature
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Contenuto principale
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Famiglia
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Numero di feature
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Contenuto principale
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Conteggi globali & 3 & Parole, caratteri e frasi \\
+Struttura delle frasi & 3 & Lunghezza media, deviazione standard e coefficiente di variazione \\
+Lessico & 4 & Lunghezza delle parole, TTR, hapax e MATTR \\
+Punteggiatura & 11 & Frequenze complessive e per tipologia \\
+POS & 16 & Frequenze normalizzate delle categorie grammaticali \\
+Parole funzionali & 59 & 58 forme prefissate e frequenza totale \\
+Leggibilità & 3 & Indicatori calcolati a partire da textstat \\
+Altri proxy Wikipedia & 6 & Lessico, enfasi, conclusioni, formule conversazionali, parallelismi e Markdown \\
+\end{longtable}
+\endgroup
+
+Per la struttura delle frasi si riprendono media e deviazione standard definite nella parte teorica; il codice usa la deviazione standard della popolazione delle frasi del documento. Il coefficiente di variazione divide la deviazione per la lunghezza media. È così possibile distinguere testi con frasi mediamente lunghe da testi nei quali la lunghezza varia molto, anche quando la media è simile.
+
+La finestra MATTR è fissata a 50 parole {[}46{]}. Per ogni posizione si calcola la quota di tipi lessicali distinti nella finestra, quindi si mediano tutte le finestre disponibili. Un contatore aggiornato allo scorrimento permette di evitare il ricalcolo completo del vocabolario a ogni passo. Sotto le 50 parole il risultato rimane mancante: non si modifica la finestra e non si assegna zero. Questa decisione è particolarmente rilevante per le analisi sulle singole frasi.
+
+Le parole funzionali sono forme letterali, non classi semantiche ricostruite dal contesto. Per esempio, \texttt{n\textquotesingle{}t} e \texttt{not} sono trattati secondo la tokenizzazione e non vengono fusi automaticamente. Le frequenze dei singoli segni di punteggiatura contano i caratteri del segno; l'indicatore complessivo \texttt{punct\_total\_per100} conta invece i token spaCy di punteggiatura. È una distinzione implementativa che impedisce di interpretare tutte le colonne come semplici conteggi di caratteri.
+
+Gli indicatori di leggibilità, fra cui quelli collegati a Flesch {[}23{]}, descrivono aspetti superficiali della forma. Non costituiscono una misura diretta di correttezza, naturalezza o qualità argomentativa. Lo stesso limite vale per i sette proxy ricavati da Wikipedia {[}1{]}: il codice rende operative alcune ricorrenze osservabili, non la valutazione completa del contenuto e delle citazioni prevista dalla guida. In particolare, non vengono implementati come giudizi affidabili la superficialità dell'analisi, la neutralità, la correttezza delle fonti o la rule of three.
+
+\subsection{Separabilità umano/macchina e protocolli di trasferimento}\label{separabilituxe0-umanomacchina-e-protocolli-di-trasferimento}
+
+\subsubsection{Effetti delle singole feature}\label{effetti-delle-singole-feature}
+
+Per ogni feature si confrontano media e variabilità nelle due classi. L'effetto standardizzato è espresso attraverso Hedges \(g\), con segno positivo quando la media macchina è maggiore di quella umana:
+
+\begin{equation}
+\begin{aligned}
+g&=J\,\frac{\bar f_M-\bar f_H}{s_p},\\
+s_p^2&=\frac{(n_H-1)s_H^2+(n_M-1)s_M^2}{n_H+n_M-2},\\
+J&\simeq 1-\frac{3}{4(n_H+n_M-2)-1}.
+\end{aligned}
+\end{equation}
+
+Le quantità \(n_H\) e \(n_M\) indicano il numero di osservazioni disponibili nelle due classi; \(s_H\) e \(s_M\) sono le rispettive deviazioni standard. La standardizzazione permette di confrontare misure espresse su scale diverse. Un effetto grande sul campione aggregato, tuttavia, può nascondere direzioni differenti fra i domini.
+
+Si calcolano quindi gli effetti complessivi, per dominio, per generatore e per incrocio dominio--generatore. I test appaiati utilizzano differenze collegate alla stessa origine, aggregate prima di trattarle come osservazioni indipendenti; la correzione Benjamini--Hochberg è applicata entro ciascuna tabella. Gli intervalli sono ottenuti ricampionando i gruppi sorgente. Questo evita di gonfiare la numerosità trattando come indipendenti testi derivati dalla medesima fonte.
+
+\subsubsection{Il classificatore come misura del segnale complessivo}\label{il-classificatore-come-misura-del-segnale-complessivo}
+
+Accanto alle singole feature viene addestrata una regressione logistica L2, con \(C=1\), classi bilanciate e soglia 0,5 per le misure binarie. Imputazione dei valori mancanti e standardizzazione sono apprese esclusivamente sul training. Sono confrontate quattro rappresentazioni: 93 feature stilometriche, sette proxy Wikipedia, la loro unione di 100 feature e tre conteggi globali come controllo della lunghezza. Le feature stilometriche escludono i conteggi globali, TTR e hapax, oltre ai proxy dedicati.
+
+Il classificatore serve a valutare quanto segnale sia presente complessivamente nelle feature; non viene proposto come detector definitivo. In particolare, le sue AUC non sono le prestazioni di un classificatore addestrato soltanto sulle quattro feature della shortlist finale.
+
+Si considerano tre protocolli. Il primo usa una cross-validation a cinque fold nel dominio, mantenendo separati i gruppi sorgente. Il secondo addestra su due domini e valuta sul terzo. Il terzo esclude un generatore dal training e tiene fuori anche le fonti corrispondenti ai testi del test; vengono ottenute predizioni per i suoi output e per gli umani collegati. Le metriche principali sono ROC-AUC, balanced accuracy e macro-F1, calcolate sulle predizioni out-of-fold. Gli intervalli bootstrap delle prestazioni mantengono fisse queste predizioni e non comprendono tutta la variabilità di un nuovo addestramento.
+
+Nella prima analisi, la rappresentazione stilometrica raggiunge AUC circa 0,922, 0,943 e 0,879 entro Essay, Reuters e WritingPrompts. Il trasferimento fra domini è più debole: circa 0,779, 0,843 e 0,535. Anche i soli conteggi globali trasferiscono con AUC elevate, circa 0,849, 0,884 e 0,780. Quest'ultimo risultato motiva un controllo specifico: una buona separazione potrebbe dipendere in parte da differenze di lunghezza e preparazione del corpus, anziché da caratteristiche stilistiche stabili.
+
+\subsection{Controllo della lunghezza e shortlist delle feature}\label{controllo-della-lunghezza-e-shortlist-delle-feature}
+
+\subsubsection{Abbinamento esatto a fine frase}\label{abbinamento-esatto-a-fine-frase}
+
+Il controllo successivo cerca prefissi terminati a fine frase con lo stesso numero di parole lessicali nei due testi della medesima riga originale. I prefissi devono contenere fra 90 e 180 parole, privilegiando un conteggio vicino a 150. La procedura rilegge i CSV, individua le coppie applicabili e usa un'assegnazione a costo minimo per mantenere le quote dei generatori, la deduplicazione e un solo output per origine.
+
+Non si tratta quindi di un semplice taglio degli stessi 1.800 documenti iniziali: possono cambiare sia le fonti selezionate sia il passaggio osservato. La differenza di prestazioni fra prima analisi e controllo è descrittiva e non isola causalmente il solo effetto della lunghezza. All'interno del nuovo campione, invece, l'uguaglianza del conteggio lessicale è esatta in ogni coppia.
+
+Si conservano 900 coppie e 1.800 testi. Il numero medio di parole è circa 149 in entrambe le classi. Un classificatore che utilizza soltanto il conteggio delle parole ottiene AUC 0,5 in tutti i protocolli: questo conferma che il controllo ha eliminato il segnale di quella specifica variabile. Caratteri e numero di frasi rimangono liberi di variare e non devono essere confusi con il conteggio abbinato.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.2581}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1452}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1452}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.3065}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 8\tabcolsep) * \real{0.1452}}@{}}
+\caption{AUC nel trasferimento fra domini. La prima analisi e il controllo di lunghezza non hanno necessariamente le stesse fonti; il confronto non è una stima causale appaiata della sola lunghezza.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Dominio di test
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Stile, prima analisi
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Stile, lunghezza abbinata
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+IC 95\% dello stile abbinato
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Wikipedia, lunghezza abbinata
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Dominio di test
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Stile, prima analisi
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Stile, lunghezza abbinata
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+IC 95\% dello stile abbinato
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Wikipedia, lunghezza abbinata
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Essay & 0,779 & 0,670 & {[}0,626; 0,712{]} & 0,576 \\
+Reuters & 0,843 & 0,759 & {[}0,722; 0,796{]} & 0,537 \\
+WritingPrompts & 0,535 & 0,580 & {[}0,538; 0,620{]} & 0,499 \\
+\end{longtable}
+\endgroup
+
+Nel campione abbinato le AUC entro dominio sono circa 0,876, 0,928 e 0,881. Il segnale stilometrico rimane quindi presente, ma si trasferisce in modo limitato, soprattutto verso WritingPrompts. Il trasferimento fra generatori varia a sua volta: circa 0,933 per GPT4All, 0,920 per ChatGLM, 0,907 per ChatGPT e 0,866 per ChatGPT-turbo, contro 0,798 per Dolly, 0,678 per Claude e 0,669 per StableLM. Un risultato ottenuto su un solo modello non descrive quindi il comportamento dell'intera classe macchina.
+
+I proxy Wikipedia non mostrano una separazione generale robusta nel trasferimento fra domini. Questo esito riguarda le sette approssimazioni implementate, su questi dati: non dimostra che tutte le osservazioni della guida siano inutili, né che gli indizi qualitativi possano essere convertiti senza perdita in un detector automatico.
+
+\subsubsection{Selezione esplorativa}\label{selezione-esplorativa}
+
+La shortlist richiede un effetto di modulo almeno 0,3 in ognuno dei tre domini, lo stesso segno fra domini e una direzione coerente in almeno cinque generatori su sette. Si limita inoltre la ridondanza con soglia di correlazione \(|\rho_{\mathrm{Spearman}}|\geq0{,}85\) e un massimo di 12 feature. I criteri sono euristiche di selezione, non una preregistrazione indipendente. La selezione usa l'intero campione abbinato e richiede una successiva validazione esterna.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrrrl@{}}
+\caption{Shortlist esplorativa dopo il controllo della lunghezza; le frequenze POS sono proporzioni.}\tabularnewline
+\toprule\noalign{}
+Feature & Media umana & Media macchina & Hedges \(g\) & IC 95\% di \(g\) \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Feature & Media umana & Media macchina & Hedges \(g\) & IC 95\% di \(g\) \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{pos\_num} & 0,02360 & 0,01373 & \ensuremath{-}0,417 & {[}\ensuremath{-}0,494; \ensuremath{-}0,351{]} \\
+\texttt{pos\_cconj} & 0,03167 & 0,03937 & +0,444 & {[}+0,355; +0,528{]} \\
+\texttt{mattr\_50} & 0,80976 & 0,77708 & \ensuremath{-}0,684 & {[}\ensuremath{-}0,779; \ensuremath{-}0,607{]} \\
+\texttt{pos\_propn} & 0,07171 & 0,05340 & \ensuremath{-}0,338 & {[}\ensuremath{-}0,410; \ensuremath{-}0,264{]} \\
+\end{longtable}
+\endgroup
+
+Nel campione, i testi macchina hanno minore diversità lessicale MATTR, meno numerali e nomi propri e una maggiore frequenza di congiunzioni coordinanti. La coerenza richiesta per generatore non garantisce però stabilità in tutti i 21 incroci dominio--generatore. Inoltre, numerali e nomi propri riflettono anche il contenuto: il risultato non autorizza a modificarli per rendere un testo più simile alla classe umana. Questo costituisce un punto di collegamento con la componente semantica, che deve controllare proprio la conservazione delle informazioni.
+
+La shortlist è cambiata rispetto alla prima analisi, nella quale comparivano anche indicatori di leggibilità, punteggiatura e altre POS. Questa variazione mostra l'utilità del controllo: una feature può essere informativa in un confronto iniziale senza costituire un indicatore stabile dopo aver modificato il disegno sperimentale.
+
+\subsection{Generazione delle perturbazioni e controlli semantici}\label{generazione-delle-perturbazioni-e-controlli-semantici}
+
+La conservazione semantica viene studiata inizialmente attraverso modifiche controllate, per le quali sono disponibili sia il documento completo sia la posizione dell'intervento. Per ciascuno dei 200 testi macchina vengono prodotte cinque trasformazioni e una condizione identità. Gli identificatori e il generatore casuale dipendono in modo deterministico dalla fonte, dal testo, dal seed e dal tipo di perturbazione: modificare una condizione non cambia automaticamente le scelte casuali delle altre.
+
+La negazione interviene su una frase dichiarativa applicabile, utilizzando ausiliari e forme verbali compatibili con l'inserimento di \texttt{not}. Vengono evitati diversi casi già negativi, interrogativi, modali o con scope ambiguo. Si tratta comunque di una costruzione di candidati alla contraddizione: il controllo grammaticale non risolve ogni possibile lettura del contesto.
+
+La sostituzione di entità usa gli span individuati dal NER di spaCy e un dizionario di alternative. Nella politica iniziale sono ammesse persone, organizzazioni, luoghi, date, orari, importi, percentuali e altri valori. Le occorrenze della stessa forma sono sostituite in modo coerente; non è però disponibile una risoluzione generale della coreferenza. Un cambiamento di referente può introdurre un'informazione non supportata senza contraddire logicamente l'originale.
+
+Lo shuffle cambia la posizione delle frasi mantenendone il contenuto. Il troncamento conserva un prefisso, a fine frase, corrispondente a circa il 70\% delle frasi. La cancellazione elimina circa il 15\% dei token lessicali selezionabili. Queste condizioni hanno significati differenti: riordinare proposizioni può conservarne i fatti, troncare può eliminare informazione, cancellare parole può compromettere sia il contenuto sia la grammaticalità. Non vengono quindi riunite sotto l'ipotesi che ogni trasformazione debba produrre una contraddizione.
+
+Le condizioni non applicabili sono rappresentate esplicitamente con stato \texttt{skipped}, testo modificato assente e motivazione. La selezione iniziale di fonti idonee permette di ottenere 200 esempi applicati per ciascuna condizione della baseline; nelle estensioni più restrittive si conserva invece la mancata applicabilità, senza riempire le quote con identità artificiali.
+
+Per negazione ed entità vengono registrati gli offset originali, la frase bersaglio prima e dopo, la regola e le modifiche applicate. Si aggiunge un controllo identità sulla stessa frase di partenza: permette di verificare se un entailment locale basso derivi dall'alterazione oppure da una frase già difficile anche quando confrontata con sé stessa. Le 400 identità locali si aggiungono alle 1.200 condizioni documentali.
+
+Sono inoltre presenti sette fixture brevi, definite separatamente: identità, parafrasi attiva/passiva, negazione, cambiamento dell'orario di uno stesso incontro, riordino di due proposizioni, perdita di una proposizione e confronto non correlato. Questi esempi verificano casi logici attesi e il funzionamento del codice; non costituiscono un campione sufficiente per stimare l'accuratezza del modello sul corpus. Vanno distinti dalla successiva revisione qualitativa di 40 perturbazioni.
+
+\subsection{Metriche implementate e trattamento dei testi lunghi}\label{metriche-implementate-e-trattamento-dei-testi-lunghi}
+
+\subsubsection{Sovrapposizione lessicale e rappresentazioni distribuite}\label{sovrapposizione-lessicale-e-rappresentazioni-distribuite}
+
+ROUGE-L {[}22{]} misura la sovrapposizione mediante la sottosequenza comune più lunga, mentre BLEU {[}45{]} utilizza precisioni di n-grammi e penalizzazione della brevità. Le implementazioni adottate riportano entrambi sulla scala 0--1. Queste metriche forniscono un riferimento lessicale e consentono di osservare effetti differenti dell'ordine e della quantità di testo conservata, ma non verificano da sole la verità delle proposizioni.
+
+Per il coseno viene utilizzato \texttt{all-MiniLM-L6-v2}, tramite Sentence Transformers.\footnote{Scheda del checkpoint Sentence Transformers: \url{https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2}, revisione usata \texttt{1110a243fdf4706b3f48f1d95db1a4f5529b4d41}.} Il documento non viene passato interamente a un encoder che ne tronchi la coda: viene suddiviso in frasi e, quando necessario, in chunk più brevi. Per la prima segmentazione il budget è 160 token del tokenizer dell'embedding. Se una frase supera il limite viene ulteriormente divisa, mantenendo tutto il contenuto non costituito da spazi.
+
+Indicando con \(e(s_i)\) il vettore normalizzato di una unità e con \(\ell_i\) il suo numero di token, si costruisce una rappresentazione documentale normalizzata:
+
+\begin{equation}
+v(X)=\frac{\sum_i\ell_i e(s_i)}{\left\|\sum_i\ell_i e(s_i)\right\|_2},
+\qquad C(X,X')=v(X)^\top v(X').
+\end{equation}
+
+Questo permette di processare documenti lunghi senza perdere le frasi finali. Rimane però un'aggregazione: una modifica localizzata può contribuire poco alla media rispetto a tutte le unità invariate. Per negazione ed entità viene pertanto calcolato anche il coseno delle frasi bersaglio.
+
+BERTScore {[}38{]} utilizza le rappresentazioni contestuali di RoBERTa-base, al decimo layer, con IDF disattivato.\footnote{Scheda di RoBERTa-base: \url{https://huggingface.co/FacebookAI/roberta-base}, revisione usata \texttt{e2da8e2f811d1448a5b465c236feacd80ffbac7b}.} Il confronto fra token segue il matching greedy previsto dalla metrica. Per il documento viene adottata un'approssimazione \emph{chunk-matched}: sono considerate tutte le coppie di chunk, ciascun chunk modificato seleziona il riferimento con F1 maggiore e contribuisce alla precisione; il recall procede in direzione inversa. Precisione e recall sono aggregati con pesi di token e combinati nella media armonica.
+
+Questa procedura è necessaria per la copertura dei documenti lunghi, ma non va presentata come BERTScore standard applicato a un unico documento senza limiti. I confronti locali utilizzano il protocollo standard quando il target rientra nel budget e quello a chunk nei pochi casi che richiedono ulteriore divisione. Il protocollo effettivo è registrato per coppia. Nella baseline le 200 negazioni locali sono confrontabili con il protocollo standard; fra le entità, tre target richiedono l'approssimazione a chunk.
+
+La scala di BERTScore viene inoltre esaminata con la riscalatura rispetto alla baseline ufficiale inglese del modello, il cui valore F è \(b_F=0{,}814463\):
+
+\begin{equation}
+F_{\mathrm{riscalato}}=\frac{F-b_F}{1-b_F}.
+\end{equation}
+
+La trasformazione è applicabile agli score già calcolati, senza nuove inferenze. Essendo affine e crescente, non cambia ranking e AUC; modifica la leggibilità della scala. Rimane comunque una trasformazione della stessa misura, non una calibrazione in probabilità di conservazione semantica. Nel confronto non correlato delle fixture, il valore locale grezzo di circa 0,865 diventa circa 0,274: un esempio utile per leggere la scala, non una distribuzione di rumore stimata su un corpus indipendente.
+
+\subsubsection{Natural Language Inference nelle due direzioni}\label{natural-language-inference-nelle-due-direzioni}
+
+Per l'NLI si utilizza DeBERTa-v3 base addestrato su MNLI, FEVER e ANLI, mantenendo precisione float32.\footnote{Scheda del checkpoint NLI: \url{https://huggingface.co/MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli}, revisione usata \texttt{6f5cf0a2b59cabb106aca4c287eed12e357e90eb}.} Il modello restituisce probabilità delle classi entailment, neutral e contradiction; la corrispondenza fra indice e classe viene letta dalla configurazione del checkpoint. Il risultato è un giudizio appreso dal modello, non una dimostrazione logica o una verifica fattuale rispetto al mondo esterno.
+
+Nella direzione forward si chiede quanto l'originale supporti il modificato; nella reverse quanto il modificato supporti l'originale. Per ogni unità ipotesi vengono recuperate fino a tre unità evidenza mediante MiniLM. Si applica l'NLI a ciascuna coppia e si conserva il massimo entailment. Se \(t_i\) è una unità di \(X'\) e \(\mathcal C(i)\) il suo insieme di candidati in \(X\), il supporto è:
+
+\begin{equation}
+s_i^{\rightarrow}=\max_{j\in\mathcal C(i)}
+P_{\mathrm{NLI}}\bigl(\mathrm{entailment}\mid s_j,t_i\bigr).
+\end{equation}
+
+La direzione inversa è costruita analogamente. Contraddizione e neutralità vengono riassunte sull'evidenza selezionata per il miglior supporto; la massima contraddizione fra tutti i candidati è registrata separatamente. Le due quantità non devono essere confuse, perché un'evidenza irrilevante può produrre una contraddizione elevata senza rappresentare il miglior confronto per l'ipotesi.
+
+Il budget NLI è 384 token per coppia, inclusi i token speciali. Le unità vengono ulteriormente suddivise quando necessario; di conseguenza, non coincidono sempre con frasi grammaticali complete. Il confronto locale delle perturbazioni parte direttamente dalle frasi target e riduce il problema del retrieval, ma può richiedere a sua volta sottochunk. Non si applica un troncamento silenzioso che elimini il punto modificato.
+
+Il massimo su tre evidenze è un'approssimazione pratica. Se l'informazione necessaria è distribuita fra frasi diverse, nessuna singola evidenza potrebbe essere sufficiente; se il retrieval non trova il passo corretto, un supporto basso non certifica una contraddizione. Questi limiti rientrano nell'interpretazione degli score documentali.
+
+\subsubsection{Aggregazione sul documento}\label{aggregazione-sul-documento}
+
+Per una direzione con \(m\) unità ipotesi, vengono considerate media, minimo, decimo percentile e quota non supportata:
+
+\begin{equation}
+\begin{aligned}
+S_{\mathrm{media}}&=\frac{1}{m}\sum_{i=1}^{m}s_i,&
+S_{\min}&=\min_i s_i,\\
+S_{q10}&=Q_{0.10}(s_1,\ldots,s_m),&
+U&=\frac{1}{m}\sum_{i=1}^{m}\mathbf 1[s_i<0.5].
+\end{aligned}
+\end{equation}
+
+La media descrive il supporto complessivo, il minimo il caso peggiore, il percentile una porzione debole del documento e \(U\) la quota di unità sotto una soglia locale di supporto. La soglia 0,5 usata per questa quota è una convenzione per unità e non coincide con una soglia calibrata sul documento.
+
+Per una valutazione bidirezionale di conservazione si prende il minore fra gli score delle due direzioni, mentre per la quota non supportata si prende il massimo:
+
+\begin{equation}
+S_A^{\mathrm{bi}}=\min\{S_A^{\rightarrow},S_A^{\leftarrow}\},
+\qquad U^{\mathrm{bi}}=\max\{U^{\rightarrow},U^{\leftarrow}\}.
+\end{equation}
+
+La differenza \(S_{\mathrm{media}}^{\rightarrow}-S_{\mathrm{media}}^{\leftarrow}\) viene invece conservata per studiare l'asimmetria. Un reverse basso è compatibile con perdita di informazione, un forward basso con aggiunta di contenuti non supportati; il pattern non ne identifica automaticamente la causa, poiché intervengono anche gli errori del modello e del retrieval.
+
+\subsection{Primo esperimento semantico: risultati e asimmetria}\label{primo-esperimento-semantico-risultati-e-asimmetria}
+
+\subsubsection{Documento completo e frase modificata}\label{documento-completo-e-frase-modificata}
+
+Le medie della baseline sui 200 testi mostrano quanto l'aggregazione possa modificare la lettura del medesimo intervento.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.2241}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1552}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1552}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1552}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1552}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1552}}@{}}
+\caption{Score medi documentali della baseline. L'ultima colonna è la media dei minimi forward per documento, non il minimo bidirezionale. BERTScore è qui non riscalato.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Condizione
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Coseno doc.
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+BERTScore doc.
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI medio forward
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI medio reverse
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo forward
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Condizione
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Coseno doc.
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+BERTScore doc.
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI medio forward
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI medio reverse
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo forward
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Identità & 1,000 & 1,000 & 0,992 & 0,992 & 0,983 \\
+Negazione & 0,998 & 0,999 & 0,894 & 0,898 & 0,064 \\
+Entità v1 & 0,969 & 0,996 & 0,798 & 0,813 & 0,018 \\
+Shuffle & 0,999 & 0,999 & 0,989 & 0,987 & 0,963 \\
+Troncamento & 0,958 & 0,979 & 0,992 & 0,669 & 0,985 \\
+Cancellazione & 0,982 & 0,962 & 0,929 & 0,534 & 0,575 \\
+\end{longtable}
+\endgroup
+
+La negazione è il caso più evidente di diluizione. La media NLI sul documento rimane 0,894, perché gran parte delle unità è invariata. Sulla frase modificata l'entailment forward scende invece a 0,00113, contro 0,99373 dell'identità della stessa frase, e la contraddizione arriva a circa 0,99759. Il minimo forward medio passa da 0,98268 nei documenti identici a 0,06379 nei negati.
+
+Anche le similarità devono essere lette alla stessa scala di osservazione. Il coseno locale della negazione è circa 0,869, rispetto al valore documentale 0,998: non è corretto affermare che il coseno non rilevi mai una negazione. BERTScore locale rimane circa 0,984 grezzo e 0,915 riscalato, mentre quello documentale rimane circa 0,999 grezzo. La questione riguarda quindi sia la sensibilità della rappresentazione sia la quota di testo sulla quale si aggrega.
+
+Per le entità v1 il coseno locale è circa 0,848, BERTScore 0,982 e l'entailment forward 0,0135. La sostituzione produce spesso basso supporto, ma il risultato del classificatore non convalida la qualità del negativo: un errore NER può generare un testo improprio e, proprio per questo, molto facile da distinguere.
+
+Lo shuffle mantiene alto il supporto NLI. Questo comportamento è coerente con un'aggregazione di proposizioni recuperate indipendentemente dall'ordine: non verifica la coerenza temporale, le anafore o la qualità discorsiva. ROUGE-L scende invece a circa 0,492, mentre BLEU resta circa 0,968, perché molti n-grammi interni alle frasi sopravvivono al riordino. Sul confronto OpAI appaiato successivo, ROUGE-L e BLEU presentano correlazione di Spearman circa 0,986. BLEU viene mantenuto per confrontabilità, ma il suo contributo informativo aggiuntivo è limitato in questo insieme di trasformazioni.
+
+Questi primi risultati motivano l'impiego dell'entailment, ma non bastano per stabilire una superiorità generale dell'NLI: confrontare un minimo documentale costruito da confronti locali con una media documentale introduce un vantaggio di aggregazione. Questa criticità viene affrontata esplicitamente negli esperimenti successivi.
+
+\subsubsection{Compress ed Expand in OpAI}\label{compress-ed-expand-in-opai}
+
+Il troncamento estrattivo offre un controllo direzionale: l'originale supporta la versione corta con media forward circa 0,992, mentre il reverse scende a 0,669. Con OpAI si verifica se un andamento simile emerga anche nelle trasformazioni generative.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1579}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1447}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1711}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1316}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1316}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1316}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 12\tabcolsep) * \real{0.1316}}@{}}
+\caption{Asimmetria sulle versioni adiacenti OpAI. Gli score sono medie direzionali; le fonti possono essere condivise fra traiettorie.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Operazione
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Confronto
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Coppie / fonti
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Rapporto di lunghezza mediano
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI forward
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI reverse
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+\(\Delta\)
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Operazione
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Confronto
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Coppie / fonti
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Rapporto di lunghezza mediano
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI forward
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+NLI reverse
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+\(\Delta\)
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Compress & \(v_3\rightarrow v_4\) & 200 / 190 & 0,913 & 0,986 & 0,920 & +0,0668 \\
+Expand & \(v_4\rightarrow v_5\) & 200 / 188 & 1,190 & 0,680 & 0,986 & \ensuremath{-}0,3059 \\
+\end{longtable}
+\endgroup
+
+Gli intervalli del delta sono {[}+0,0559; +0,0793{]} per Compress e {[}\ensuremath{-}0,3318; \ensuremath{-}0,2806{]} per Expand. Nell'espansione il testo modificato tende quindi a supportare l'originale più di quanto avvenga nella direzione opposta. La compressione mostra un'asimmetria più contenuta, ma il taglio mediano è soltanto dell'8,7\% circa e l'operazione può conservare l'informazione essenziale: un reverse alto non è automaticamente un difetto della metrica.
+
+Sono mantenuti anche gli output che non cambiano o non rispettano la direzione di lunghezza attesa. Le etichette Compress ed Expand non vengono trasformate in verità semantiche. Un'espansione può esplicitare contenuti già impliciti e una compressione può parafrasare senza perdere un fatto essenziale; l'asimmetria è pertanto un indicatore da interpretare rispetto al compito.
+
+\subsection{Controlli positivi, perturbazioni sottili e verifica qualitativa}\label{controlli-positivi-perturbazioni-sottili-e-verifica-qualitativa}
+
+La baseline comprende soprattutto interventi che modificano il testo. Per valutare gli allarmi su riscritture plausibilmente corrette sono aggiunte 300 coppie OpAI: 100 Polish, 100 Paraphrase e 100 Style Rewrite, su 100 traiettorie e 99 fonti. La conservazione viene assunta come etichetta operativa dell'editing, non certificata da una valutazione umana completa.
+
+Per ciascun negativo appaiato si corrompe lo stesso output positivo, mantenendo invariati input, editor e operazione. In questo modo il confronto non oppone soltanto positivi OpAI a negativi MGTBench, che potrebbero differire per dominio o stile indipendentemente dalla conservazione. Sono prodotte 562 corruzioni applicabili: 189 negazioni, 251 sostituzioni di entità, 50 numeri, 43 quantificatori, 24 cautele e cinque dettagli aggiunti.
+
+Si aggiungono inoltre 152 perturbazioni sottili MGTBench: 50 cambiamenti numerici, 50 rafforzamenti dei quantificatori, 39 rimozioni di cautela e 13 aggiunte di un dettaglio. Un rafforzamento da una quantità limitata a una più generale o l'aggiunta di un orario possono introdurre informazioni non supportate senza produrre una contraddizione. Le quote inferiori in alcune famiglie dipendono dall'applicabilità delle regole e non vengono compensate con esempi fittizi.
+
+L'insieme principale appaiato contiene 280 positivi collegati e 562 negativi, su 94 fonti. La calibrazione usa 139 positivi e 297 negativi, su 46 fonti; il test usa 141 positivi e 265 negativi, su 48 fonti. I 20 positivi per i quali non è stata prodotta una corruzione rimangono comunque nella diagnostica degli allarmi. Tutte le varianti della stessa fonte sono assegnate allo stesso split con una regola deterministica indipendente dagli score.
+
+Le AUC utilizzano un orientamento stabilito prima del confronto: supporto e similarità maggiori indicano conservazione, i loro opposti indicano rischio. Non si ribalta a posteriori una AUC inferiore a 0,5 per far apparire utile una metrica. I pesi bilanciano il contributo delle fonti entro ciascuna classe e gli intervalli utilizzano 1.000 ricampionamenti per fonte.
+
+La calibrazione iniziale seleziona il minimo bidirezionale fra gli aggregatori candidati. Sul test esso ottiene AUC 0,958 nel confronto principale e 0,900 sui soli sottili appaiati. Una soglia sperimentale sul minimo documentale, ricavata dai positivi di calibrazione, corrisponde a supporto minimo inferiore a circa 0,04075 e produce 11 allarmi sui 153 positivi presunti del test completo. Questa soglia è un risultato storico del protocollo OpAI: non viene adottata come criterio generale della suite e non è stata validata su humanizer che riscrivono molto più intensamente.
+
+Il sottotipo delle cautele evidenzia un limite: AUC circa 0,571 e sensibilità secondaria pesata per fonte circa 13,3\%, su nove coppie test provenienti da appena cinque fonti. La perdita di un'espressione di incertezza può quindi sfuggire al modello anche quando il testo diventa più assertivo. L'esiguità e la qualità delle etichette impediscono di leggere questo numero come una stima definitiva, ma motivano un controllo lessicale complementare.
+
+Per controllare la qualità delle perturbazioni è stata svolta una lettura qualitativa assistita di 40 coppie, 20 negazioni e 20 entità. I giudizi disponibili sono 22 casi validi, 12 con riserve e sei invalidi; gli errori riguardano soprattutto NER, scope e coerenza delle sostituzioni. Un audit di nove positivi individua cinque conservazioni chiare e quattro casi con riserve. Si tratta di revisioni dell'assistente, non di un gold standard umano né di una misura di accordo fra annotatori.
+
+Il successivo riesame manuale dell'autore ha motivato una proposta di correzione della politica delle entità. Le nuove etichette di tale riesame non sono però incluse nei file della patch ricevuta e non sono state usate per calcolare i tassi o le AUC riportati. È importante mantenere questa distinzione: la contraddizione restituita dall'NLI non può essere utilizzata come prova indipendente che un negativo costruito per valutarlo sia corretto.
+
+\subsection{Confronto equo fra similarità ed entailment}\label{confronto-equo-fra-similarituxe0-ed-entailment}
+
+Per affrontare il possibile vantaggio dovuto all'aggregazione, coseno e BERTScore sono ricalcolati a livello di frase/chunk, utilizzando le stesse unità dell'NLI. Per ogni unità del modificato si cerca la similarità massima con le unità dell'originale; i massimi sono poi aggregati con media, decimo percentile e minimo. Si ripete il procedimento nella direzione inversa e si mantiene il minore dei due score di conservazione.
+
+Se \(\operatorname{sim}\) indica una delle similarità considerate, il supporto allineato ha quindi la forma:
+
+\begin{equation}
+a_i^{\rightarrow}=\max_j\operatorname{sim}(s_j,t_i).
+\end{equation}
+
+L'espressione è analoga a quella del supporto NLI, pur misurando una proprietà diversa. Coseno e BERTScore considerano tutte le unità dell'altro documento, mentre l'NLI mantiene i tre candidati recuperati. Come controllo aggiuntivo BERTScore viene limitato anche agli stessi tre candidati: questo permette di verificare se il diverso numero di confronti spieghi il risultato.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrrr@{}}
+\caption{AUC del confronto equo sul test appaiato: 141 positivi presunti, 265 alterazioni e 48 fonti. Ogni colonna impiega lo stesso aggregatore per le tre famiglie.}\tabularnewline
+\toprule\noalign{}
+Metrica allineata & Media & Decimo percentile & Minimo \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Metrica allineata & Media & Decimo percentile & Minimo \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+NLI & 0,929 & 0,728 & 0,958 \\
+Coseno & 0,598 & 0,568 & 0,607 \\
+BERTScore & 0,544 & 0,532 & 0,534 \\
+\end{longtable}
+\endgroup
+
+L'AUC del minimo NLI è 0,958, con IC {[}0,935; 0,980{]}, contro 0,607 del coseno e 0,534 di BERTScore. Sui soli sottili appaiati i valori del minimo sono rispettivamente circa 0,900, 0,519 e 0,510. BERTScore limitato agli stessi tre candidati NLI mantiene AUC circa 0,534: il divario non sembra quindi spiegato dal solo numero di evidenze considerate.
+
+Questo controllo rende più forte la conclusione rispetto alla semplice osservazione delle medie documentali: sulle perturbazioni considerate, le similarità allineate rimangono meno discriminative anche quando ricevono lo stesso aggregatore sensibile al caso peggiore. La conclusione resta legata a questi controlli e alle loro etichette operative, senza diventare una superiorità universale dell'NLI su qualunque riscrittura.
+
+Gli intervalli delle fasi successive sono ricalcolati sul protocollo di riferimento e possono differire leggermente da quelli dell'estensione precedente, a parità di stima puntuale. Inoltre, gli intervalli bootstrap percentile possono avere bias finito, soprattutto per AUC vicine a 0,5. Non si attribuisce quindi un significato forte a piccole differenze fra similarità prossime al caso.
+
+\subsection{Robustezza degli aggregatori: errori distribuiti e lunghezza}\label{robustezza-degli-aggregatori-errori-distribuiti-e-lunghezza}
+
+\subsubsection{Modifiche su più frasi dello stesso documento}\label{modifiche-su-piuxf9-frasi-dello-stesso-documento}
+
+Il vantaggio iniziale del minimo deve essere letto rispetto alla costruzione dei negativi: molte corruzioni modificano una sola frase. In questo scenario il caso peggiore è favorito per definizione, mentre la media e un percentile possono diluire il segnale. Per verificare questo punto sono costruite corruzioni su una, due, tre e cinque frasi distinte dello stesso documento.
+
+Il primo pannello comprende 392 negativi, ma presenta poche fonti indipendenti applicabili al caso di cinque frasi. Viene quindi mantenuto come esplorativo e affiancato da un pannello ampliato, ricavato da altre fonti OpAI, escludendo le 99 dei controlli precedenti. Sono esaminate 800 fonti; l'editor viene scelto prima di osservare gli score e l'applicabilità non usa l'NLI.
+
+Il pannello ampliato comprende 50 fonti per famiglia, ripartite in 25 di calibrazione e 25 di test. Le famiglie sono negazioni e perturbazioni sottili; condividono alcune fonti, per un totale di 87 positivi distinti e 400 negativi. Le trasformazioni interessano transizioni Style \(v_2\rightarrow v_3\) e sono annidate: il caso con due errori conserva il primo, quello con tre conserva i primi due e quello con cinque i primi tre. Rimangono fissi fonte, output positivo e numero di frasi.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1304}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 10\tabcolsep) * \real{0.1739}}@{}}
+\caption{AUC sul pannello distribuito ampliato. Ogni riga usa gli stessi 25 positivi e 25 negativi per famiglia e numero di frasi, con 25 fonti nel test. Per la quota è mantenuto l'orientamento di rischio appropriato.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Famiglia
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Frasi alterate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Media NLI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Decimo percentile
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo NLI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Quota non supportata
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Famiglia
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Frasi alterate
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Media NLI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Decimo percentile
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo NLI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Quota non supportata
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Negazioni & 1 & 0,906 & 0,688 & 0,922 & 0,889 \\
+Negazioni & 2 & 0,989 & 0,824 & 0,965 & 0,994 \\
+Negazioni & 3 & 1,000 & 0,920 & 0,978 & 1,000 \\
+Negazioni & 5 & 1,000 & 0,998 & 0,997 & 1,000 \\
+Sottili & 1 & 0,938 & 0,662 & 0,935 & 0,930 \\
+Sottili & 2 & 0,992 & 0,907 & 0,986 & 0,990 \\
+Sottili & 3 & 1,000 & 0,987 & 1,000 & 1,000 \\
+Sottili & 5 & 1,000 & 1,000 & 1,000 & 1,000 \\
+\end{longtable}
+\endgroup
+
+Da due frasi alterate la media raggiunge o supera il minimo in diversi confronti; il decimo percentile recupera quando l'errore non è più isolato. Non emerge quindi un aggregatore universalmente preferibile. Un'AUC empirica di 1 su 25 fonti indica separazione completa di quel campione, non perfezione sulla popolazione.
+
+Anche questa costruzione rimane uno stress test. Nel caso sottile a cinque frasi, 227 dei 250 interventi sono numeri, 13 quantificatori, sei cautele e quattro dettagli. Inoltre, la richiesta di cinque frasi applicabili seleziona testi adatti alle regole. Non è stata misurata la frequenza reale di questi errori negli humanizer. La prova mostra come cambia il ranking al crescere della diffusione della corruzione, non riproduce automaticamente un processo di riscrittura reale.
+
+\subsubsection{Il minimo e il numero di opportunità}\label{il-minimo-e-il-numero-di-opportunituxe0}
+
+Il minimo può diminuire anche in un testo semanticamente conservato, perché un documento lungo offre più occasioni di incontrare una frase difficile. Sui 300 positivi presunti, dopo aver aggregato editor e operazioni per le 99 fonti, la correlazione di Spearman fra minimo NLI e numero massimo di frasi nei due testi è \ensuremath{-}0,316, con IC {[}\ensuremath{-}0,502; \ensuremath{-}0,102{]}. Per il coseno allineato è circa \ensuremath{-}0,481; per BERTScore circa \ensuremath{-}0,206, con intervallo che comprende zero.
+
+La correlazione fra documenti non dimostra un effetto causale della lunghezza, perché cambiano anche contenuto e difficoltà. Viene pertanto aggiunto un controllo a coppia fissa, su 137 positivi di 45 fonti che dispongono di almeno 40 unità ipotesi complessive nelle due direzioni. Si lasciano invariati evidenze e score, variando soltanto quante unità già calcolate contribuiscano al minimo.
+
+Se \(v_{(1)},\ldots,v_{(n)}\) sono gli score ordinati e si selezionano uniformemente \(m\) unità senza rimpiazzo, il minimo atteso si calcola esattamente:
+
+\begin{equation}
+\mathbb E[\min_m]=
+\sum_{i=1}^{n-m+1}v_{(i)}
+\frac{\binom{n-i}{m-1}}{\binom{n}{m}}.
+\end{equation}
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2000}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2667}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2667}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2667}}@{}}
+\caption{Effetto del numero di unità sul minimo, mantenendo fissa la coppia. Le unità possono provenire da entrambe le direzioni e non corrispondono a frasi uniche di un documento troncato.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Metrica
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo atteso, 5 unità
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo atteso, 40 unità
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Differenza
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Metrica
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo atteso, 5 unità
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Minimo atteso, 40 unità
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Differenza
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+NLI & 0,952 & 0,809 & \ensuremath{-}0,143 \\
+Coseno allineato & 0,911 & 0,802 & \ensuremath{-}0,109 \\
+BERTScore riscalato & 0,863 & 0,740 & \ensuremath{-}0,123 \\
+\end{longtable}
+\endgroup
+
+La monotonia è una proprietà matematica; il controllo ne quantifica la dimensione sugli score osservati. Per l'NLI, il delta ha IC {[}\ensuremath{-}0,182; \ensuremath{-}0,105{]}. La media delle unità avrebbe invece aspettativa costante sotto lo stesso campionamento uniforme. Non si deve estendere quest'ultima proprietà a ogni confronto fra documenti di lunghezza differente.
+
+Per controllare empiricamente la lunghezza si costruiscono tre fasce, apprese soltanto sui positivi di calibrazione: fino a 14 frasi, da 15 a 23 e oltre 23. Lo score viene espresso come percentile rispetto alla distribuzione positiva della propria fascia, con uguale peso complessivo alle fonti. Sul test appaiato l'AUC del minimo NLI trasformato è 0,951, con IC {[}0,925; 0,975{]}, contro circa 0,607 del coseno e 0,538 di BERTScore.
+
+Il vantaggio osservato dell'NLI non scompare con questo controllo, ma il valore grezzo del minimo e una soglia fissa non sono direttamente confrontabili fra popolazioni diverse. Il percentile rimane un riferimento condizionato ai positivi OpAI, non una probabilità di correttezza e non una normalizzazione già validata su DIPPER.
+
+\subsection{Guardie lessicali e limite delle cautele}\label{guardie-lessicali-e-limite-delle-cautele}
+
+Per affiancare l'NLI vengono implementate quattro guardie lessicali: cambiamenti di cautele, negazioni, numeri e quantificatori. Il codice conserva i conteggi prima e dopo, i delta con segno e le perdite o aggiunte. Per i numeri si confrontano multiset di valori normalizzati, non il solo numero di occorrenze: il passaggio da 20 a 30 deve essere visibile anche quando il conteggio resta uno. La normalizzazione gestisce alcuni formati e unità comuni, ma non realizza un sistema generale di ragionamento aritmetico.
+
+Si valuta una regressione logistica L2 sulle guardie e una combinazione con il rischio derivato dal minimo NLI. Scale e coefficienti vengono appresi solo sulle 436 righe della calibrazione principale, provenienti da 46 fonti; le righe distribuite aggiunte successivamente non entrano automaticamente nell'addestramento. Gli iperparametri sono fissati e non ottimizzati sul test.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Confronto delle guardie lessicali con NLI. La combinazione non migliora il ranking del modello NLI sul test considerato.}\tabularnewline
+\toprule\noalign{}
+Rappresentazione & AUC principale & AUC sui sottili appaiati \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Rappresentazione & AUC principale & AUC sui sottili appaiati \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+NLI minimo & 0,958 & 0,900 \\
+Quattro guardie & 0,719 & 0,732 \\
+NLI e guardie & 0,938 & 0,869 \\
+\end{longtable}
+\endgroup
+
+La complementarità era un'ipotesi ragionevole, ma non risulta dimostrata da questa combinazione. Il caso delle cautele è particolarmente importante: sulle nove corruzioni appaiate test, il conteggio globale ha AUC circa 0,444 e la combinazione circa 0,511, contro 0,571 dell'NLI. Il lessico della prima versione non include marker come \texttt{maybe} e \texttt{can}; inoltre, perdite e aggiunte in frasi diverse possono compensarsi nei totali. Due negativi eliminano soltanto \texttt{possibly} da \texttt{could\ possibly}, lasciando \texttt{could}: non sono esempi gold di completa eliminazione della possibilità.
+
+La perdita lessicale segnala tutti i 39 interventi diretti MGTBench, ma anche 14 dei 153 positivi presunti OpAI. Il primo numero misura la copertura della regola applicata, non una validazione indipendente; il secondo non identifica automaticamente falsi allarmi, perché i positivi non hanno annotazioni gold complete. Le guardie vengono quindi conservate come avvisi interpretabili. Per renderle una verifica più forte servono allineamento della stessa proposizione, gestione dello scope e annotazioni semantiche indipendenti.
+
+\subsection{Correzione delle entità e controllo numerico}\label{correzione-delle-entituxe0-e-controllo-numerico}
+
+\subsubsection{Politica entity clean v2}\label{politica-entity-clean-v2}
+
+Il riesame delle sostituzioni motivate dal NER porta all'introduzione della condizione \texttt{entity\_substitution\_clean}. La v1 rimane il default, in modo da conservare la riproducibilità del primo esperimento. La nuova politica limita le categorie, esclude diverse forme ambigue e gestisce le menzioni ripetute. È collegata alla pipeline tramite \texttt{-\/-entity-policy\ clean}.
+
+La revisione del codice individua difetti non coperti dai 15 test inizialmente forniti. Fra questi, il mese \texttt{May} poteva modificare anche il modale \texttt{may}; una sostituzione di cognome poteva intervenire dentro il nome di un'altra persona; uno span NER poteva inglobare il possessivo o lasciare fuori un simbolo monetario, producendo rispettivamente una perdita di \texttt{\textquotesingle{}s} o un doppio simbolo. Vengono aggiunte guardie per nomi parziali, collisioni, possessivi e valuta, oltre alla gestione di iteratori e condizioni sconosciute nell'interfaccia. I test iniziali e 19 regressioni dedicate passano; questi controlli verificano i difetti del codice, non la correttezza semantica di tutte le coppie.
+
+La coorte rimane quella delle 200 fonti v1. La clean è applicabile in 145 casi e ne salta 55, senza sostituire le fonti. Il nuovo insieme contiene 2.297 coppie: 2.007 rimangono invariate, mentre cambiano le 145 sostituzioni e i rispettivi controlli identità locali. Il confronto con la v1 è effettuato sulle stesse 145 fonti applicabili a entrambe.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Confronto delle politiche sulle fonti comuni. BERTScore è non riscalato; target, tipo di entità e numero di menzioni possono cambiare anche a fonte fissa.}\tabularnewline
+\toprule\noalign{}
+Misura media & V1, stesse 145 fonti & Clean \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Misura media & V1, stesse 145 fonti & Clean \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Entailment locale forward & 0,017020 & 0,003059 \\
+Minimo documentale bidirezionale & 0,016414 & 0,007270 \\
+Coseno documento & 0,977648 & 0,983924 \\
+Coseno frase & 0,864937 & 0,882543 \\
+BERTScore documento & 0,997241 & 0,998089 \\
+BERTScore frase & 0,984824 & 0,989241 \\
+\end{longtable}
+\endgroup
+
+Le 2.007 coppie estranee alla modifica sono identiche per testo, target e metadati; le 61 colonne di metriche confrontate rimangono entro la tolleranza numerica, con massimo scarto assoluto circa \(3{,}37\times10^{-7}\). Questo permette di attribuire la variazione del campione alla nuova condizione, senza modificare le conclusioni su negazione, shuffle, troncamento e cancellazione.
+
+Embedding e BERTScore sono ricalcolati. Per le coppie immutate si mantengono le evidenze NLI storiche, prima di effettuare nuove inferenze, evitando che piccoli pareggi numerici nel retrieval cambino un fattore estraneo alla politica. Sulle entità nuove si usa il nuovo allineamento. Si conservano 87.825 confronti NLI unici, dei quali 86.413 già in cache e 1.412 inferiti con il medesimo DeBERTa-v3 base float32. Nessuno score NLI viene usato per selezionare le evidenze da mantenere.
+
+La diminuzione del minimo bidirezionale non presenta un intervallo del delta interamente sotto zero; la diminuzione dell'entailment locale è più netta, ma non costituisce una misura di accuratezza. Cambiano infatti entità e contesti scelti. Rimangono inoltre errori NER, come aziende classificate PERSON e città sostituite con paesi. Il termine clean descrive una politica più conservativa, non un corpus di contraddizioni certificate.
+
+\subsubsection{Date, importi e percentuali}\label{date-importi-e-percentuali}
+
+Un ulteriore controllo, senza nuove inferenze, limita l'analisi alla famiglia più omogenea di date, importi e percentuali. Sono selezionate tutte le 34 coppie corrispondenti ai metadati clean: 18 DATE, sei MONEY e dieci PERCENT. Non vengono esclusi casi dopo aver osservato gli score.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Controllo sulle 34 sostituzioni numeriche. La selezione per famiglia riguarda la clean: nella v1 soltanto 12 casi hanno lo stesso tipo di entità.}\tabularnewline
+\toprule\noalign{}
+Misura media & V1, stesse 34 fonti & Clean \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Misura media & V1, stesse 34 fonti & Clean \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Entailment locale forward & 0,013181 & 0,002572 \\
+Minimo documentale bidirezionale & 0,004026 & 0,003436 \\
+Coseno documento & 0,986625 & 0,998363 \\
+Coseno frase & 0,908060 & 0,954655 \\
+BERTScore documento & 0,997558 & 0,999082 \\
+BERTScore frase & 0,987657 & 0,992778 \\
+\end{longtable}
+\endgroup
+
+L'entailment locale delle frasi identiche è 0,991547, mentre nelle alterazioni ha media 0,002572 e massimo 0,015787. Il minimo documentale passa da 0,984071 sulle identità a 0,003436 sulle alterazioni. Il basso supporto NLI persiste quindi senza dipendere soltanto dai casi PERSON e GPE più problematici.
+
+Questo confronto non dimostra però una superiorità discriminativa sulle parafrasi corrette: contro identità perfette anche coseno e BERTScore ottengono AUC 1. Inoltre, gli intervalli delle differenze NLI fra v1 e clean sulle 34 fonti comprendono zero. Il risultato è un controllo di robustezza della risposta alle alterazioni, non la dimostrazione che la clean migliori l'accuratezza del modello.
+
+Un esempio mostra l'importanza della direzione: \texttt{more\ than\ 10\ percent} viene sostituito con \texttt{37\%}. L'entailment locale forward è circa 0,0148 e il reverse circa 0,9949. Il modificato è più specifico e può implicare l'originale; il reverse elevato non è un errore automatico. Restano anche un caso di decennio, \texttt{1940\textquotesingle{}s} trasformato in \texttt{1998\textquotesingle{}s}, e interventi che modificano qualificatori o valuta. Molte variazioni sono ampie: il controllo non certifica la sensibilità a piccoli errori aritmetici degli humanizer reali.
+
+\subsection{Stile nelle riscritture OpAI}\label{stile-nelle-riscritture-opai}
+
+\subsubsection{Analisi del documento completo}\label{analisi-del-documento-completo}
+
+Le operazioni di editing permettono di passare dalla separabilità fra classi alla misura di \(\Delta\phi\) su coppie di riscrittura. Sulle 200 traiettorie comuni si calcolano le 105 feature prima e dopo ciascuna delle cinque operazioni, ottenendo 1.000 coppie. Si mediano prima le varianti riconducibili alla stessa fonte; i test appaiati e gli intervalli bootstrap trattano poi la fonte come unità di inferenza. La standardizzazione degli effetti appaiati utilizza la variabilità dei delta, non la stessa SD pooled dello studio umano/macchina.
+
+Si osservano movimenti coerenti con alcune caratteristiche delle operazioni: Paraphrase aumenta MATTR di circa 0,00795; Style Rewrite aumenta la lunghezza media delle parole di circa 0,109 caratteri; Expand aumenta la lunghezza media delle frasi di circa 3,77 parole. Questi cambiamenti descrivono la riscrittura e non ne certificano maggiore naturalezza o vicinanza allo stile umano.
+
+Un controllo a prefissi di uguale lunghezza è applicabile a 336 delle 1.000 coppie. Fra le quattro feature della shortlist, soltanto \texttt{pos\_cconj} con Compress mantiene il criterio di significatività corretto. Questo non dimostra che le altre feature siano inutili: il controllo modifica insieme lunghezza, fonti ammissibili, posizione del passaggio e numerosità. Inoltre, l'editing riguarda soltanto parte delle frasi e può diluirsi nel documento completo.
+
+\subsubsection{Identificazione delle frasi interessate}\label{identificazione-delle-frasi-interessate}
+
+Per verificare la diluizione vengono utilizzate le array native \texttt{sentences} e \texttt{sentence\_labels} dei Parquet. Il dataset usato non contiene una colonna \texttt{sentence\_ids}. Le identità ordinali delle frasi sono ricostruite seguendo il costruttore ufficiale e verificate su tutte le 200 traiettorie: cardinalità fra versioni, ricostruzione del testo e ancore non modificate devono essere coerenti. Non si tratta di un allineamento approssimato per similarità.
+
+Le etichette sono cumulative e le operazioni successive riscrivono anche frasi già selezionate. Per Polish, Paraphrase e Style il budget nominale cumulativo cresce circa dal 15\% al 25\% e al 40\%; gli arrotondamenti producono coperture effettive diverse, soprattutto nei testi brevi. Si distinguono quindi lo scope delle frasi selezionate e quello delle frasi effettivamente cambiate.
+
+Sui passaggi concatenati sono disponibili tutte le 105 feature. Per MATTR si conserva la finestra di 50 parole e si escludono i passaggi troppo brevi dal confronto relativo a quella misura. La diluizione viene valutata sulle stesse coppie, non confrontando una media locale su un sottoinsieme con una media documentale sull'intero campione.
+
+Per Paraphrase, sulle stesse 92 coppie test di 88 fonti, il delta MATTR dei passaggi effettivamente cambiati è +0,02198, contro +0,00747 sul documento. Il contrasto appaiato è +0,01451, con IC {[}+0,00881; +0,02067{]}. Per \texttt{pos\_cconj}, sulle stesse 99 coppie ammissibili, il delta locale è circa \ensuremath{-}0,00308 contro \ensuremath{-}0,000835 sul documento. Il segnale sulle frasi interessate risulta quindi più evidente, senza dover concludere che la shortlist sia priva di utilità. Il contrasto rimane descrittivo: cambia il passaggio osservato, non soltanto una quantità astratta di diluizione.
+
+\subsubsection{Distanza stilometrica scalare}\label{distanza-stilometrica-scalare}
+
+Per ottenere un indicatore complessivo si costruisce una distanza RMS sui delta standardizzati delle frasi allineate. Indicando con \(T\) le coppie di frasi selezionate e ammissibili e con \(k\) le dimensioni mantenute, la misura è:
+
+\begin{equation}
+D_{\mathrm{RMS}}(X,X')=
+\sqrt{\frac{1}{|T|k}\sum_{i\in T}\sum_{r=1}^{k}
+\left(\frac{f_r(s'_i)-f_r(s_i)}{\sigma_r}\right)^2}.
+\end{equation}
+
+Le scale \(\sigma_r\) sono apprese soltanto dalle frasi \(v_0\) delle fonti di calibrazione, con uguale peso complessivo per fonte. Il riferimento comprende 1.774 frasi di 89 fonti. Sono mantenute 91 dimensioni fisse: si escludono conteggi globali, TTR e hapax, MATTR50, deviazione e coefficiente di variazione della lunghezza di frase e i sei proxy dedicati al gruppo Wikipedia. L'em dash rimane nella famiglia della punteggiatura; non intervengono ulteriori esclusioni per dimensioni costanti nel riferimento usato. In particolare, la distanza primaria non contiene MATTR, che spesso non è definibile sulla singola frase.
+
+Delle 8.011 coppie di frasi selezionate, 7.848 hanno almeno cinque parole lessicali in entrambi i lati e sono valide per la distanza; 163 sono troppo brevi. Il test comprende 103 traiettorie e 99 fonti, separate da quelle usate per le scale. Si riportano anche la RMS sul passaggio concatenato e la distanza fra distribuzioni POS.
+
+Rispetto alla divergenza definita nella parte teorica, l'implementazione di Jensen--Shannon {[}48{]} restituisce la radice quadrata, con logaritmo in base 2:
+
+\begin{equation}
+d_{\mathrm{JS}}(P,Q)=
+\sqrt{\tfrac12D_{\mathrm{KL},2}(P\|M)+
+\tfrac12D_{\mathrm{KL},2}(Q\|M)},\qquad M=\tfrac12(P+Q).
+\end{equation}
+
+La distanza varia fra 0 e 1 quando le distribuzioni condividono categorie e normalizzazione. È quindi importante distinguere la quantità implementata dalla sola divergenza JSD.
+
+Un'ulteriore diagnostica introduce la copertura dell'intervento:
+
+\begin{equation}
+D_{\mathrm{copertura}}=
+\sqrt{\frac{n_{\mathrm{frasi\ interessate\ valide}}}{n_{\mathrm{frasi\ del\ documento}}}}
+\,D_{\mathrm{RMS}}.
+\end{equation}
+
+Il denominatore conta le posizioni dell'array nativo OpAI, non le frasi ricalcolate con spaCy. Questa quantità distribuisce l'energia dell'editing sul documento, assegnando delta zero alle frasi intatte. Separa pertanto l'intensità locale dall'estensione dell'intervento; non sostituisce la misura primaria.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrrr@{}}
+\caption{Distanze stilometriche su 103 traiettorie test di 99 fonti, con medie per fonte. Le prime tre misure descrivono l'intensità sui target; l'ultima include anche la copertura crescente.}\tabularnewline
+\toprule\noalign{}
+Distanza media nel test & Polish & Paraphrase & Style Rewrite \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Distanza media nel test & Polish & Paraphrase & Style Rewrite \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+RMS per frase selezionata & 0,366 & 0,717 & 0,656 \\
+RMS sul passaggio & 0,210 & 0,320 & 0,250 \\
+Jensen--Shannon POS & 0,056 & 0,100 & 0,072 \\
+RMS pesata per copertura & 0,152 & 0,369 & 0,425 \\
+\end{longtable}
+\endgroup
+
+L'ordine Polish \textless{} Paraphrase \textless{} Style non emerge dalla metrica primaria. Il contrasto Style\ensuremath{-}Paraphrase è \ensuremath{-}0,0615, con IC {[}\ensuremath{-}0,1257; +0,0157{]}; la frequenza dell'ordine completo nelle traiettorie, con uguale peso alle fonti, è circa il 33,8\%. La diagnostica pesata per copertura recupera l'ordine delle medie e raggiunge una frequenza pesata del 61,1\%, ma include un budget crescente per costruzione. Non sarebbe corretto sceglierla soltanto perché restituisce la sequenza desiderata.
+
+La lettura dei casi aiuta a interpretare il risultato: alcune parafrasi cambiano la struttura sintattica più di quanto faccia il successivo Style Rewrite, che può limitarsi a pochi sinonimi o lasciare il testo invariato. Le unità native includono inoltre frammenti di elenchi. I nomi delle operazioni non definiscono una scala gold di intensità; la conclusione utile è mantenere distinti cambiamento locale e copertura.
+
+\subsection{Organizzazione e funzionamento del codice}\label{organizzazione-e-funzionamento-del-codice}
+
+\subsubsection{Separazione fra estrazione, inferenza e analisi}\label{separazione-fra-estrazione-inferenza-e-analisi}
+
+La repository \texttt{Humanization} raccoglie codice, dati esportabili e risultati mantenendo separate le fasi di calcolo. Questa scelta permette di correggere l'analisi statistica o aggiungere un sottoinsieme senza rieseguire i modelli: il controllo sulle 34 coppie numeriche, per esempio, legge soltanto i punteggi già disponibili.\footnote{Codice ed evidenze: \url{https://github.com/FrancescoM00/Humanization}. La descrizione sperimentale fa riferimento allo stato del codice successivo al riordino \texttt{7ea1b04}; le cartelle dei risultati mantengono i metadati dei rispettivi run.}
+
+La struttura principale è articolata in due package. \texttt{stylometry} contiene cinque moduli operativi per preparazione dei dati, feature, abbinamento della lunghezza, analisi e report. \texttt{semantics} comprende dodici moduli operativi per perturbazioni, metriche, dati OpAI, controlli positivi, allineamento, aggregazione, guardie e stile localizzato. La cartella \texttt{scripts} espone 30 comandi operativi, 28 Python e due shell, che collegano queste funzioni ai file e ai parametri degli esperimenti. I moduli di test sono separati dal codice sperimentale.
+
+\begingroup\footnotesize
+\begin{verbatim}
+Humanization/
+  stylometry/             dati, feature e analisi stilometrica
+  semantics/              trasformazioni e metriche semantiche
+  scripts/                preparazione, inferenza, analisi ed export
+  tests/                  controlli automatici del software
+  results*/               risultati distinti per esperimento
+  data/                   corpora, campioni, modelli e cache locali
+  exports/semantic_clean/ copie dei dati pronte da consultare
+  backups/                manifest e istruzioni di ripristino
+  requirements*.txt       dipendenze e versioni dell'ambiente
+\end{verbatim}
+\endgroup
+
+L'indicazione \nolinkurl{results*/} raggruppa cartelle realmente separate, fra cui \nolinkurl{results_length_matched}, \nolinkurl{results_semantic_full}, \nolinkurl{results_semantic_extension}, \nolinkurl{results_semantic_fairness}, \nolinkurl{results_semantic_clean} e i due studi stilometrici OpAI. La separazione impedisce che una nuova variante sovrascriva le evidenze di una fase precedente. I file temporanei di avanzamento e i vecchi bundle di trasferimento sono stati esclusi dalla versione corrente; la cronologia Git conserva gli stati precedenti.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\caption{Componenti principali del codice. I moduli forniscono funzioni riutilizzabili; gli script organizzano l'esecuzione e la scrittura degli artefatti.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Componente
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+File principali
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Funzione
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Componente
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+File principali
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Funzione
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Preparazione stilometrica & \nolinkurl{stylometry/data.py}, \nolinkurl{length_matching.py} & Pulizia, quote, gruppi e prefissi abbinati \\
+Rappresentazione & \nolinkurl{stylometry/features.py} & Estrazione delle 105 feature e schema \\
+Inferenza statistica & \nolinkurl{stylometry/analysis.py}, \nolinkurl{report.py} & Effetti, trasferimento, classificatori e tabelle \\
+Corruzioni & \nolinkurl{semantics/perturbations.py}, \nolinkurl{subtle_perturbations.py}, \nolinkurl{distributed_perturbations.py} & Trasformazioni con regole, offset e metadati \\
+Metriche & \nolinkurl{semantics/metrics.py}, \nolinkurl{aligned_similarity.py} & Score documentali/locali e confronti allineati \\
+Controlli e robustezza & \nolinkurl{positive_controls.py}, \nolinkurl{aggregator_analysis.py}, \nolinkurl{fairness_analysis.py} & Coppie appaiate, split, AUC e lunghezza \\
+Complementi & \nolinkurl{lexical_guards.py}, \nolinkurl{touched_style.py} & Guardie interpretabili e distanza sui target \\
+\end{longtable}
+\endgroup
+
+In particolare, \nolinkurl{run_style_experiment.py} collega preparazione, estrazione, effetti e classificazione, mentre \nolinkurl{run_length_matched_style.py} ricostruisce il controllo di lunghezza. Le due analisi OpAI usano \nolinkurl{run_opai_style.py} e \nolinkurl{run_opai_touched_style.py}. Nel ramo semantico, \nolinkurl{run_semantic_experiment.py} gestisce gli stadi prepare, lexical, embedding, bertscore, nli e report, avviando i modelli in processi distinti. Le estensioni sono organizzate da script dedicati alla preparazione e alla successiva analisi, anziché da copie modificate dello stesso programma.
+
+\subsubsection{Formati dei dati e tracciabilità}\label{formati-dei-dati-e-tracciabilituxe0}
+
+I campioni e le coppie sono salvati in JSONL, con un oggetto per riga. Una coppia conserva identificatore, fonte, gruppo, dominio, generatore, condizione, originale e modificato. Quando disponibili, sono aggiunti target locale, stato di applicabilità, regola e offset. I metadati permettono di ricostruire l'intervento senza dedurlo dal solo score.
+
+I vettori di feature e i punteggi sono salvati in CSV, mentre schemi, configurazioni e riepiloghi di esecuzione usano JSON. Gli stadi delle metriche semantiche hanno una tabella di risultati e un file \nolinkurl{*_run.json} che specifica campione, modello, versioni e condizioni di esecuzione; la stilometria usa \nolinkurl{run_metadata.json} e la preparazione conserva manifest dedicati. I report leggono queste tabelle e producono statistiche, grafici e interpretazioni. La tabella complessiva \nolinkurl{scores.csv} non rende inutili i CSV dei singoli stadi: le diverse analisi utilizzano entrambi i livelli.
+
+Gli identificatori di coppia consentono il collegamento fra i risultati; quelli di gruppo stabiliscono l'unità di separazione e ricampionamento. La distinzione è necessaria perché lo stesso originale può generare più condizioni, più editor o più livelli di corruzione. La deduplicazione di una stringa ai fini computazionali, invece, non trasforma tutte le sue occorrenze sperimentali in una sola osservazione statistica.
+
+La preparazione iniziale e il matching della lunghezza conservano manifest delle fonti e delle esclusioni. I modelli e i Parquet ufficiali sono associati a revisioni specifiche; i report mantengono la provenienza del run. Questi metadati descrivono lo stato effettivamente eseguito e non devono essere riscritti per farli coincidere artificialmente con una versione successiva del codice.
+
+\subsubsection{Cache, retrieval e ripresa}\label{cache-retrieval-e-ripresa}
+
+Le inferenze sono deduplicate sulle stringhe delle unità o delle coppie premessa--ipotesi. Le cache NLI sono associate a percorso, configurazione e metadati dei pesi del checkpoint: riusare una probabilità è ammesso per la stessa coppia e lo stesso modello, non per una sostituzione simile o per un checkpoint differente. Durante la fase destinata alla sola aggregazione, l'opzione \texttt{-\/-require-nli-cache} rifiuta i confronti assenti dalla cache anziché avviare nuove inferenze.
+
+Il congelamento del retrieval sui controlli della clean richiede un'ulteriore distinzione. Gli embedding sono ricalcolati, ma piccoli pareggi numerici possono cambiare l'ordine o un elemento dei candidati top-3. Prima di inferire le nuove coppie si mantengono per le sole coppie immutate fra i due run le evidenze storiche, dopo verifica di testi, chunk, budget, modello ed equivalenza numerica dei coseni. Le nuove entità conservano il nuovo retrieval e la selezione non dipende dagli score NLI. L'allineamento appena ricalcolato viene comunque conservato separatamente.
+
+Il modulo delle metriche era stato esteso fra l'embedding storico e l'NLI storico: non è disponibile una prova di identità del sorgente storico dell'embedding. La compatibilità del riuso è documentata mediante codice NLI, unità ed embedding osservati, senza sostituire o correggere i vecchi hash per affermare un'identità non verificata. È un controllo dell'interferenza numerica, non una tecnica per imporre un risultato semantico.
+
+Per l'NLI su CPU, \nolinkurl{plan_nli_jobs.py} enumera i confronti e \nolinkurl{precompute_nli_onnx.py} li ordina globalmente per lunghezza. Si riduce così il padding e si riutilizzano le probabilità disponibili. I tre candidati del retrieval non corrispondono necessariamente a tre sole inferenze per frase, poiché il budget può introdurre ulteriori suddivisioni. La ripresa riguarda le stesse evidenze e lo stesso classificatore.
+
+\subsubsection{Ambiente e controlli software}\label{ambiente-e-controlli-software}
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.3095}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.2381}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 4\tabcolsep) * \real{0.4524}}@{}}
+\caption{Principali versioni dell'ambiente eseguito. I lockfile conservano anche le dipendenze transitive.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Strumento
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Versione utilizzata
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Impiego
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Strumento
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Versione utilizzata
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Impiego
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Python & 3.12.14 & Esecuzione delle pipeline \\
+spaCy / modello inglese & 3.8.7 / 3.8.0 & Feature, parsing e NER \\
+textstat & 0.7.10 & Indicatori di leggibilità \\
+PyTorch & 2.7.1 CPU & Modelli neurali \\
+Transformers & 4.57.3 & Tokenizer e classificatore NLI \\
+Sentence Transformers & 5.1.2 & Embedding MiniLM \\
+bert-score & 0.3.13 & Rappresentazioni e matching BERTScore \\
+ONNX Runtime & 1.23.2 & Inferenza NLI float32 su CPU \\
+\end{longtable}
+\endgroup
+
+L'ambiente dispone di quattro CPU e 32 GiB di RAM; non è una macchina sperimentalmente limitata a 4 GiB. Gli stadi sono però isolati e i picchi osservati per processo sono circa 700 MiB per embedding, 1.632 MiB per BERTScore e 2.637 MiB, pari a 2,58 GiB, per NLI. Questi valori documentano il consumo dei singoli stadi nell'ambiente usato, non garantiscono la portabilità delle prestazioni a ogni macchina con poca memoria.
+
+La baseline richiede 88.900 confronti NLI unici. Il percorso ONNX mantiene il checkpoint base float32, senza quantizzazione; su 128 confronti reali lo scarto massimo rispetto al riferimento PyTorch indipendente è circa \(5{,}60\times10^{-6}\), con concordanza delle classi. Su 32 confronti locali, BERTScore differisce dalla libreria di riferimento al massimo di circa \(2{,}98\times10^{-7}\). Si tratta di equivalenza numerica entro tolleranza, non di identità bit per bit. Il tempo registrato del percorso NLI è circa 94 minuti nell'ambiente usato, esclusi download, export e profiling.
+
+La suite corrente contiene 91 test automatici che coprono, fra gli altri aspetti, pulizia, feature, gruppi, abbinamento, perturbazioni, allineamento e regressioni delle entità. Non sono 91 annotazioni umane: un test che verifica il replay degli offset non può dimostrare che una sostituzione sia semanticamente appropriata. I controlli software e quelli scientifici rimangono complementari.
+
+Il codice e i risultati tabellari sono sul branch principale; dataset, pesi, ambiente virtuale e cache sono conservati in un backup Git LFS suddiviso in 22 parti, per circa 1,85 GB compressi. La cartella \texttt{exports} rende disponibili direttamente le coppie clean. La venv archiviata è uno snapshot Linux con percorsi assoluti e non è direttamente portabile su Windows o macOS: per un'altra piattaforma si ricrea l'ambiente dai lockfile, riutilizzando i dati compatibili. I backup non includono credenziali o configurazioni private dell'esecutore.
+
+\subsubsection{Consultazione e riproduzione}\label{consultazione-e-riproduzione}
+
+I file \nolinkurl{SEMANTIC_EXPERIMENT.md}, \nolinkurl{SEMANTIC_CONTROLS.md}, \nolinkurl{FAIRNESS_EXPERIMENT.md} ed \nolinkurl{ENTITY_CLEAN_EXPERIMENT.md} descrivono i protocolli operativi. Per consultare i risultati è sufficiente leggere CSV e report. Per ricostruire un esperimento si usano invece dati e modelli ripristinati, separando preparazione e stadi neurali dalle analisi statistiche.
+
+Il controllo numerico, per esempio, si riproduce con un solo comando sui file esistenti:
+
+\begingroup\footnotesize
+\begin{verbatim}
+.venv/bin/python scripts/analyze_clean_numeric_subset.py
+\end{verbatim}
+\endgroup
+
+Per preparare una nuova esecuzione clean si specificano cartelle distinte, mantenendo l'input OpAI se si vuole conservare il confronto completo:
+
+\begingroup\footnotesize
+\begin{verbatim}
+.venv/bin/python scripts/run_semantic_experiment.py \
+  --stage prepare --entity-policy clean \
+  --data-dir data/semantic_clean_rerun \
+  --output results_semantic_clean_rerun \
+  --opai-file data/opai/records.jsonl
+\end{verbatim}
+\endgroup
+
+La preparazione non sostituisce il calcolo delle metriche: gli stadi successivi leggono le coppie prodotte, costruiscono gli allineamenti e calcolano gli score prima dell'analisi. Questa separazione permette di controllare la composizione del campione prima di sostenere il costo delle inferenze.
+
+L'output attuale della suite è un profilo continuo con similarità, supporto nelle due direzioni, aggregatori, lunghezze e guardie descrittive. \nolinkurl{export_semantic_suite.py} produce punteggi per coppia e distribuzioni per sistema e condizione, con uguale peso alle fonti. Non applica la soglia storica OpAI a un nuovo humanizer, né trasforma automaticamente il profilo in un verdetto di correttezza.
+
+\subsection{Discussione e limiti complessivi}\label{discussione-e-limiti-complessivi}
+
+La prima conclusione riguarda la distinzione fra segnale stilometrico e generalizzazione. Le feature contengono informazione sufficiente per separare molte generazioni dagli umani nello stesso dominio, ma il trasferimento è più debole. Il controllo della lunghezza modifica le conclusioni su diverse feature e riduce il rischio di interpretare come stile una proprietà del campione. I generatori disponibili sono storici e il protocollo intergeneratore non verifica simultaneamente anche un dominio completamente nuovo: non è quindi una validazione universale dei quattro indicatori selezionati.
+
+La seconda conclusione riguarda la separazione fra similarità e supporto informativo. Una negazione o un valore modificato possono lasciare il documento quasi identico negli embedding e nel matching dei token, mentre l'NLI locale assegna poco supporto. Il confronto allineato con aggregatori uguali conserva un vantaggio dell'NLI sulle corruzioni studiate. Questo vantaggio non elimina però i limiti del classificatore: perdita di cautela, scope, quantità, recupero dell'evidenza e combinazione di più premesse rimangono difficili.
+
+La terza conclusione riguarda l'aggregazione. Il minimo è efficace per un errore isolato, ma beneficia della forma dei negativi e risente del numero di unità. Le corruzioni distribuite mostrano che media e quota non supportata possono essere più informative in altri scenari. Per questo la suite conserva più aggregatori e un riferimento di lunghezza, anziché assumere un unico score come probabilità documentale di correttezza.
+
+La quarta conclusione riguarda la validità dei controlli. Le regole rendono l'intervento ispezionabile, ma non eliminano i problemi di etichettatura. I positivi OpAI sono presunti, le perturbazioni possono introdurre artefatti e le revisioni disponibili non costituiscono un ampio gold umano indipendente. La clean corregge difetti meccanici e il sottoinsieme numerico mantiene l'andamento principale, ma non permettono di attribuire alle metriche un'accuratezza su errori realistici non misurata.
+
+Infine, la distanza stilometrica permette di descrivere le riscritture, ma non definisce da sola una scala di qualità o umanità. Una feature utile per distinguere classi non è necessariamente quella che cambia maggiormente durante l'editing. La normalizzazione per colonne attribuisce inoltre lo stesso peso alle singole dimensioni, non alle famiglie: un gruppo numeroso come quello delle parole funzionali può contribuire più di un gruppo piccolo. La scelta di pesi alternativi e la loro validazione restano questioni aperte, senza adattare la misura soltanto per ottenere un ordine atteso delle operazioni.
+
+La fase realizzata fornisce pertanto una base riproducibile per valutare gli humanizer: una rappresentazione stilometrica esplorativa, metriche semantiche locali e documentali, controlli di aggregazione e file che consentono di risalire alle coppie. Il passo successivo consiste nell'applicare questo profilo a sistemi di riscrittura effettivamente eseguiti, raccogliendo annotazioni indipendenti di fatti conservati, persi, aggiunti o modificati. Evasione, qualità e naturalezza dovranno essere misurate come dimensioni ulteriori, mantenendo distinta la variazione dello stile dalla conservazione del contenuto.

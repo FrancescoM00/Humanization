@@ -1,0 +1,37 @@
+\documentclass[10pt,letterpaper]{article}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}
+\usepackage{polyglossia}
+\setdefaultlanguage{italian}
+\usepackage{amsmath,amssymb}
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{fancyvrb}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+% Spazio per numeri come 13.10 e 13.15.2 nell'indice dell'anteprima.
+\makeatletter
+\renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{3.0em}}
+\renewcommand*\l@subsubsection{\@dottedtocline{3}{4.5em}{3.8em}}
+\makeatother
+% Il PDF di partenza termina la teoria alla sezione 12,
+% con equazione 41 e tabella 6. Questi contatori riguardano solo l'anteprima.
+\setcounter{section}{12}
+\setcounter{equation}{41}
+\setcounter{table}{6}
+\title{Text humanization\\Parte sperimentale}
+\author{Francesco Maria Cariello}
+\date{Bozza di integrazione alla parte teorica}
+\begin{document}
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+\input{sezione_sperimentale.tex}
+\end{document}

@@ -13,3 +13,11 @@ backups/.build/
 *_progress.json
 progress.json
 results_semantic_smoke/
+
+# Temporary thesis typesetting files; source, fragment and PDF are versioned.
+thesis/*.aux
+thesis/*.out
+thesis/*.toc
+thesis/*.fls
+thesis/*.fdb_latexmk
+thesis/*.synctex.gz
