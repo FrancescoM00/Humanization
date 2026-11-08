@@ -7,7 +7,7 @@
   "excluded_roots": [],
   "source_inventory": {
     "regular_files": 9,
-    "regular_file_bytes": 182110,
+    "regular_file_bytes": 185845,
     "symlinks": 0,
     "directories": 6
   },
@@ -16,15 +16,15 @@
     "zstd_level": 3,
     "threads": 3
   },
-  "compressed_archive_bytes": 14228,
-  "compressed_archive_sha256": "ae96d048eab4b6fb8e18266f83b96c64641f471ca1c3260397270b8d84c08877",
+  "compressed_archive_bytes": 15194,
+  "compressed_archive_sha256": "35be7f4251bfea77da7dbcf686fb901e5fb472eeb84ae2dad1468d17d9bc1c8b",
   "part_size_limit_bytes": 94371840,
   "parts": [
     {
       "path": "runtime_cache/runtime_cache.tar.zst.part0001",
-      "bytes": 14228,
-      "sha256": "ae96d048eab4b6fb8e18266f83b96c64641f471ca1c3260397270b8d84c08877"
+      "bytes": 15194,
+      "sha256": "35be7f4251bfea77da7dbcf686fb901e5fb472eeb84ae2dad1468d17d9bc1c8b"
     }
   ],
-  "created_utc": "2026-11-04T23:52:38.760562+00:00"
+  "created_utc": "2026-11-08T14:09:07.373230+00:00"
 }

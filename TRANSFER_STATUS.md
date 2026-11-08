@@ -15,13 +15,13 @@ Aggiornamento del 5 novembre 2026: aggiunti codice e risultati del confronto sem
 
 | Componente | Contenuto originale | Parti | Byte compressi |
 | --- | --- | ---: | ---: |
-| Dataset | `data/`, escluso `data/models/`: corpora, campioni, coppie, cache e probabilità | 2 | 153.492.058 |
+| Dataset | `data/`, escluso `data/models/`: corpora, campioni, coppie, cache e probabilità | 2 | 171.434.235 |
 | Modelli | Tutto `data/models/`, inclusi MiniLM, RoBERTa, DeBERTa-v3 base e ONNX | 13 | 1.160.384.762 |
 | Venv | Tutto `.venv/`, inclusi pacchetti, spaCy e CMUdict | 6 | 518.027.092 |
-| Cache | `.cache/`, `.pytest_cache/` e `semantic_run.log` del progetto | 1 | 14.228 |
-| **Totale** | **4.268.262.344 byte complessivi nei quattro componenti** | **22** | **1.831.918.140** |
+| Cache | `.cache/`, `.pytest_cache/` e `semantic_run.log` del progetto | 1 | 15.194 |
+| **Totale** | **4.365.132.616 byte complessivi nei quattro componenti** | **22** | **1.849.861.283** |
 
-Ogni parte è al massimo 90 MiB. Le dimensioni e gli SHA-256 sono in [backups/manifest.json](backups/manifest.json). Il trasferimento iniziale era stato verificato con ripristino integrale in una directory temporanea, inclusi i symlink. L'aggiornamento sostituisce soltanto l'archivio dei dati; i dati originali non sono stati sostituiti.
+Ogni parte è al massimo 90 MiB. Le dimensioni e gli SHA-256 sono in [backups/manifest.json](backups/manifest.json). Il trasferimento iniziale era stato verificato con ripristino integrale in una directory temporanea, inclusi i symlink. L'aggiornamento sostituisce gli archivi dei dati e delle cache di esecuzione; i dati originali non sono stati sostituiti.
 
 Non sono inclusi credenziali, `.git`, configurazioni private dell'esecutore o l'intero sistema operativo. La venv è conservata integralmente come **snapshot Linux x86_64, Python 3.12.14**; il suo interprete base è esterno alla venv e gli shebang contengono percorsi assoluti. Su macOS, Windows o percorsi diversi va ricreata dai lockfile. Non viene presentata come ambiente portabile.
 
