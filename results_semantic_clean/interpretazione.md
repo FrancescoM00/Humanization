@@ -34,6 +34,10 @@ La diminuzione media dell'entailment locale è −0,01396, IC bootstrap appaiato
 
 Un entailment più basso non dimostra che le nuove perturbazioni siano più valide. Anche sulla stessa fonte possono cambiare entità, frase bersaglio, tipo e numero di menzioni sostituite; il confronto valuta l'intera politica, non isola causalmente una sola guardia.
 
+## Controllo sulla famiglia numerica più omogenea
+
+Il [controllo delle sole date, somme e percentuali](numeric34/report.md) comprende 34 coppie (18/6/10), senza nuove inferenze. L'entailment locale medio resta 0,002572 contro 0,991547 sulle stesse frasi identiche; il supporto minimo documentale bidirezionale è 0,003436. Coseno documento/frase 0,998363/0,954655 e BERTScore 0,999082/0,992778 rimangono alti. Il risultato persiste nel sottoinsieme, con limiti sulle perturbazioni e sulla generalizzazione esplicitati nel report. Le identità sono controlli facili e non bastano per confrontare la discriminazione di parafrasi valide.
+
 ## Valutazione della patch
 
 La separazione dalla v1 è corretta e utile. La patch originale superava i suoi 15 test, ma lasciava errori meccanici non coperti:
