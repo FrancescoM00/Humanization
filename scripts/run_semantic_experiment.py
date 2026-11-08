@@ -39,6 +39,15 @@ def prepare(args):
     if not eligibility['target_count_met']:
         raise RuntimeError(f"Only {len(selected)} documents support all controlled changes; requested {args.n}. Inspect eligibility_manifest.json.")
     generated = generate_perturbation_pairs(selected, seed=args.seed)
+    if args.entity_policy == 'clean':
+        clean = generate_perturbation_pairs(selected, seed=args.seed, conditions=('entity_substitution_clean',))
+        for pair in clean:
+            pair['perturbation'] = 'entity_substitution'
+        clean_by_source = {pair['source_id']: pair for pair in clean}
+        # Keep the v1 cohort and ordering; replace only the entity condition.
+        # Clean rows that have no safe candidate remain explicit skipped rows.
+        generated = [clean_by_source[pair['source_id']] if pair['perturbation'] == 'entity_substitution'
+                     else pair for pair in generated]
     skipped = [p for p in generated if p['status'] != 'applied']
     pairs = [dict(p, dataset='controlled', id=p['pair_id']) for p in generated if p['status'] == 'applied']
     # Local identity calibration uses the exact unmodified target sentence.
@@ -80,6 +89,7 @@ def prepare(args):
                 'n_local_controls': len(controls), 'n_manual_sanity_fixtures': len(sanity_fixtures()),
                 'eligibility_selected_cohort': True, 'eligible_source_count': eligibility['eligible_count'],
                 'opai': opai_status, 'semantic_labels_are_automatic_hypotheses': True,
+                'entity_policy': args.entity_policy, 'source_cohort_policy': 'fixed_v1_eligibility',
                 'code_sha256': {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
                                for p in sorted((ROOT / 'semantics').glob('*.py'))}}
     write_json(args.output / 'preparation_manifest.json', manifest)
@@ -158,6 +168,7 @@ def main():
     parser.add_argument('--models', type=Path, default=ROOT / 'data/models')
     parser.add_argument('--n', type=int, default=200)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--entity-policy', choices=['v1', 'clean'], default='v1')
     parser.add_argument('--threads', type=int, default=2)
     parser.add_argument('--nli-batch-size', type=int, default=8)
     parser.add_argument('--require-nli-cache', action='store_true', help='Refuse missing evidence instead of falling back to native inference')
@@ -169,6 +180,7 @@ def main():
         common = ['--input', str(args.input), '--data-dir', str(args.data_dir), '--output', str(args.output),
                   '--models', str(args.models), '--n', str(args.n), '--seed', str(args.seed), '--threads', str(args.threads),
                   '--nli-batch-size', str(args.nli_batch_size)]
+        common += ['--entity-policy', args.entity_policy]
         if args.opai_file:
             common += ['--opai-file', str(args.opai_file)]
         if args.require_nli_cache:

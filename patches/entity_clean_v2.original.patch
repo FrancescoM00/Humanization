@@ -1,0 +1,230 @@
+diff --git a/semantics/perturbations.py b/semantics/perturbations.py
+index 1e09b50..afb83f5 100644
+--- a/semantics/perturbations.py
++++ b/semantics/perturbations.py
+@@ -49,6 +49,21 @@ ENTITY_REPLACEMENTS = {
+     "ORDINAL": ("third", "seventh", "eleventh"),
+ }
+ 
++# Clean entity policy (v2), derived from the manual review of 40 perturbations
++# (results_semantic_extension/review40.md and the student's own review). Kept as a
++# separate condition so that the published v1 results stay reproducible.
++# Dropped on purpose: ORG (company/product/disease/acronym/outlet are mixed up by
++# NER and the three replacements are not sub-type compatible), LOC (granularity
++# mismatch, e.g. Earth -> a lake), TIME (collides with morning/evening wording) and
++# DATE:relative (collides with verb tense: "we are seeing tomorrow").
++CLEAN_ENTITY_KEYS = frozenset({
++    "PERSON", "GPE", "GPE:article", "MONEY", "PERCENT", "CARDINAL:digit",
++    "CARDINAL:word", "ORDINAL", "DATE:year", "DATE:calendar", "DATE:weekday",
++    "DATE:month",
++})
++_PERSON_NAME = re.compile(r"[A-Z][A-Za-z'\u2019.-]+(?: [A-Z][A-Za-z'\u2019.-]+)*")
++_NON_PERSON_ENT_TYPES = frozenset({"ORG", "GPE", "LOC", "FAC", "PRODUCT", "WORK_OF_ART", "NORP", "EVENT"})
++
+ _NEGATIVE_WORDS = frozenset({
+     "not", "n't", "never", "no", "neither", "nor", "nothing", "nobody",
+     "none", "without", "hardly", "rarely", "scarcely",
+@@ -397,6 +412,98 @@ def _entity_substitution(doc: Any, rng: random.Random) -> dict[str, Any] | None:
+     }
+ 
+ 
++def _clean_candidate_key(entity: Any) -> str | None:
++    """Replacement key for the clean policy, or None when the span is unsafe."""
++    text = entity.text.strip()
++    if "\n" in entity.text or not text:
++        return None  # NER span crossing a title/sentence boundary
++    if entity.label_ == "ORDINAL" and not re.fullmatch(
++            r"\d+(?:th|st|nd|rd)|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
++            r"thirteenth|fourteenth|fifteenth|twentieth", text, re.I):
++        return None  # "Firstly", "first of all", "second" as a unit of time
++    if entity.label_ == "PERSON" and (text.isupper() or not _PERSON_NAME.fullmatch(text)):
++        return None  # e.g. COVID-19 mislabelled as a person
++    if entity.label_ == "PERSON" and len(entity) == 1 and entity.start == entity.sent.start:
++        return None  # sentence-initial capital: "Lockdowns" is not a person
++    if entity.label_ == "MONEY" and not re.search(r"\d", text):
++        return None  # "millions of dollars" cannot be swapped for "$83 million"
++    if entity.label_ == "GPE" and (text.isupper() or "." in text) and len(text) <= 6:
++        return None  # abbreviation such as US/UK: replacement could be the same entity
++    if entity.label_ == "CARDINAL" and any(t.text == "," for t in entity.doc[entity.end:entity.end + 5]):
++        return None  # "two main characters, A and B": the count belongs to an enumerated list
++    key = _replacement_key(entity)
++    return key if key in CLEAN_ENTITY_KEYS else None
++
++
++def _entity_substitution_clean(doc: Any, rng: random.Random) -> dict[str, Any] | None:
++    """Entity swap restricted to unambiguous, type-compatible entities.
++
++    Differences from ``_entity_substitution``: no ORG/LOC/TIME/relative dates, no
++    spans containing a newline, and a multi-word PERSON also replaces standalone
++    surname mentions with the replacement's surname, so the document does not keep
++    "Looney said" after "Bernard Looney" became "Alex Morgan". Coreference beyond
++    exact surname matching is still not resolved.
++    """
++    candidates, seen = [], set()
++    # Every surface occurrence gets replaced, so a surface string is eligible only
++    # if no NER instance of it fails the guards (e.g. "two" before a comma list).
++    unsafe = {entity.text.casefold() for entity in doc.ents if _clean_candidate_key(entity) is None}
++    for entity in doc.ents:
++        key = _clean_candidate_key(entity)
++        canonical = entity.text.casefold()
++        if key is None or canonical in seen or canonical in unsafe:
++            continue
++        seen.add(canonical)
++        replacements = [value for value in ENTITY_REPLACEMENTS[key]
++                        if value.casefold() != canonical and value.casefold() not in doc.text.casefold()]
++        if replacements:
++            candidates.append((entity, key, replacements))
++    if not candidates:
++        return None
++    entity, key, replacements = rng.choice(candidates)
++    replacement = rng.choice(replacements)
++    spans = [(m.start(), m.end(), replacement) for m in re.finditer(
++        r"(?<!\w)" + re.escape(entity.text) + r"(?!\w)", doc.text, re.I)]
++    surname_edits = 0
++    parts, new_parts = entity.text.split(), replacement.split()
++    if key == "PERSON" and len(parts) >= 2 and len(new_parts) >= 2 and len(parts[-1]) > 2:
++        for m in re.finditer(r"(?<!\w)" + re.escape(parts[-1]) + r"(?!\w)", doc.text):
++            if any(a <= m.start() < b for a, b, _ in spans):
++                continue
++            mention = doc.char_span(m.start(), m.end(), alignment_mode="expand")
++            if mention is not None and any(t.ent_type_ in _NON_PERSON_ENT_TYPES for t in mention):
++                continue  # e.g. the company "McDonald's" must not become "Chen's"
++            spans.append((m.start(), m.end(), new_parts[-1]))
++            surname_edits += 1
++    spans.sort()
++    edits = [_edit(a, b, doc.text[a:b], new) for a, b, new in spans]
++    sentence = entity.sent
++    local_edits = [
++        dict(edit, start_char=edit["start_char"] - sentence.start_char, end_char=edit["end_char"] - sentence.start_char)
++        for edit in edits if sentence.start_char <= edit["start_char"] and edit["end_char"] <= sentence.end_char
++    ]
++    if not edits or not local_edits:
++        return None
++    sentence_index = next(index for index, span in enumerate(doc.sents) if span.start == sentence.start)
++    return {
++        "modified": _replace_edits(doc.text, edits),
++        "target_original": sentence.text,
++        "target_modified": _replace_edits(sentence.text, local_edits),
++        "metadata": {
++            "entity_type": entity.label_, "replacement_dictionary_key": key,
++            "source_entity": entity.text, "replacement_entity": replacement,
++            "edits": edits, "surface_occurrences_replaced": len(edits),
++            "surname_occurrences_replaced": surname_edits,
++            "sentence_index": sentence_index, "target_start_char": sentence.start_char,
++            "target_end_char": sentence.end_char,
++            "entity_policy": "clean_v2",
++            "consistent_rename": key == "PERSON",
++            "semantic_interpretation": "surface_referent_change_not_verified_contradiction",
++            "coreference_resolved": False,
++        },
++    }
++
++
+ def _sentence_shuffle(doc: Any, rng: random.Random) -> dict[str, Any] | None:
+     sentences = [sentence.text.strip() for sentence in doc.sents if sentence.text.strip()]
+     if len(sentences) < 2 or len(set(sentences)) < 2:
+@@ -460,7 +567,7 @@ def _random_deletion(doc: Any, rng: random.Random, deletion_fraction: float = 0.
+ 
+ def generate_perturbation_pairs(
+     records: Iterable[dict[str, Any]], seed: int = 42, nlp: Any = None,
+-    batch_size: int = 16,
++    batch_size: int = 16, conditions: Iterable[str] = PERTURBATIONS,
+ ) -> list[dict[str, Any]]:
+     """Generate all six conditions per source, including explicit skipped rows.
+ 
+@@ -476,7 +583,7 @@ def generate_perturbation_pairs(
+         text = record["text"]
+         source_id = _source_identifier(record)
+         original_words = sum(token.is_alpha for token in doc)
+-        for condition in PERTURBATIONS:
++        for condition in conditions:
+             base = {
+                 "source_id": source_id, "domain": str(record.get("domain", "unknown")),
+                 "generator": str(record.get("generator", "unknown")),
+@@ -492,6 +599,8 @@ def generate_perturbation_pairs(
+                 change = _negation(doc, random_state)
+             elif condition == "entity_substitution":
+                 change = _entity_substitution(doc, random_state)
++            elif condition == "entity_substitution_clean":
++                change = _entity_substitution_clean(doc, random_state)
+             elif condition == "sentence_shuffle":
+                 change = _sentence_shuffle(doc, random_state)
+             elif condition == "truncate":
+diff --git a/tests/test_perturbations.py b/tests/test_perturbations.py
+index f68ccea..372fe3d 100644
+--- a/tests/test_perturbations.py
++++ b/tests/test_perturbations.py
+@@ -161,3 +161,73 @@ def test_eligibility_screening_is_explicit_and_keeps_only_actual_changes(nlp):
+     selected, manifest = select_applicable_records(sources, n=20, seed=42, nlp=nlp)
+     assert len(selected) == 18
+     assert not manifest["target_count_met"]
++
++
++def test_clean_entity_policy_drops_unsafe_categories_and_fixes_surnames(nlp):
++    from random import Random
++    from spacy.tokens import Span
++    from semantics.perturbations import _entity_substitution_clean
++
++    # ORG and TIME are not part of the clean policy.
++    for text, label, tokens in [("The firm hired a Toyota engineer.", "ORG", ("Toyota",)),
++                                ("The sun rose at 9:00 a.m. today.", "TIME", ("9:00", "a.m."))]:
++        doc = nlp(text)
++        start = next(t.i for t in doc if t.text == tokens[0])
++        doc.ents = (Span(doc, start, start + len(tokens), label=label),)
++        assert _entity_substitution_clean(doc, Random(42)) is None
++
++    # A span crossing a line break is rejected.
++    doc = nlp("Strike by Workers\n\nContract talks have stalled.")
++    end = next(t.i for t in doc if t.text == "Contract") + 1
++    doc.ents = (Span(doc, 0, end, label="PERSON"),)
++    assert "\n" in doc.ents[0].text
++    assert _entity_substitution_clean(doc, Random(42)) is None
++
++    # Full name and standalone surname are renamed together.
++    doc = nlp('CEO Bernard Looney spoke. "We did well," Looney said.')
++    start = next(t.i for t in doc if t.text == "Bernard")
++    doc.ents = (Span(doc, start, start + 2, label="PERSON"),)
++    change = _entity_substitution_clean(doc, Random(42))
++    assert change is not None
++    assert "Looney" not in change["modified"]
++    assert change["metadata"]["surname_occurrences_replaced"] == 1
++    assert change["metadata"]["entity_policy"] == "clean_v2"
++
++
++def test_clean_entity_policy_guards(nlp):
++    from random import Random
++    from spacy.tokens import Span
++    from semantics.perturbations import _entity_substitution_clean
++
++    def apply(text, label, first, length=1):
++        doc = nlp(text)
++        start = next(t.i for t in doc if t.text.startswith(first))
++        doc.ents = (Span(doc, start, start + length, label=label),)
++        return _entity_substitution_clean(doc, Random(42))
++
++    covid = nlp("The COVID-19 pandemic spread quickly.")
++    covid.ents = (Span(covid, 1, 1 + len(nlp.make_doc("COVID-19")), label="PERSON"),)
++    assert _entity_substitution_clean(covid, Random(42)) is None                          # mislabelled
++    assert apply("Firstly, we should act now.", "ORDINAL", "Firstly") is None            # adverb
++    assert apply("Exports to the US grew in 2020.", "GPE", "US") is None                 # abbreviation
++    assert apply("The two main characters, Ann and Bo, differ.", "CARDINAL", "two") is None  # enumerated list
++    change = apply("The office is on the 4th floor.", "ORDINAL", "4th")
++    assert change is not None and "4th" not in change["modified"]
++
++
++def test_clean_entity_policy_more_guards(nlp):
++    from random import Random
++    from spacy.tokens import Span
++    from semantics.perturbations import _entity_substitution_clean
++
++    doc = nlp("Lockdowns reduced travel.")
++    doc.ents = (Span(doc, 0, 1, label="PERSON"),)
++    assert _entity_substitution_clean(doc, Random(42)) is None            # sentence-initial common noun
++    doc = nlp("The bank paid millions of dollars in fines.")
++    start = next(t.i for t in doc if t.text == "millions")
++    doc.ents = (Span(doc, start, start + 3, label="MONEY"),)
++    assert _entity_substitution_clean(doc, Random(42)) is None            # no digit
++    doc = nlp("The two men met. The two main characters, Ann and Bo, argued.")
++    firsts = [t.i for t in doc if t.text == "two"]
++    doc.ents = tuple(Span(doc, i, i + 1, label="CARDINAL") for i in firsts)
++    assert _entity_substitution_clean(doc, Random(42)) is None            # one occurrence is a list

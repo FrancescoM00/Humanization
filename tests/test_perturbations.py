@@ -161,3 +161,73 @@ def test_eligibility_screening_is_explicit_and_keeps_only_actual_changes(nlp):
     selected, manifest = select_applicable_records(sources, n=20, seed=42, nlp=nlp)
     assert len(selected) == 18
     assert not manifest["target_count_met"]
+
+
+def test_clean_entity_policy_drops_unsafe_categories_and_fixes_surnames(nlp):
+    from random import Random
+    from spacy.tokens import Span
+    from semantics.perturbations import _entity_substitution_clean
+
+    # ORG and TIME are not part of the clean policy.
+    for text, label, tokens in [("The firm hired a Toyota engineer.", "ORG", ("Toyota",)),
+                                ("The sun rose at 9:00 a.m. today.", "TIME", ("9:00", "a.m."))]:
+        doc = nlp(text)
+        start = next(t.i for t in doc if t.text == tokens[0])
+        doc.ents = (Span(doc, start, start + len(tokens), label=label),)
+        assert _entity_substitution_clean(doc, Random(42)) is None
+
+    # A span crossing a line break is rejected.
+    doc = nlp("Strike by Workers\n\nContract talks have stalled.")
+    end = next(t.i for t in doc if t.text == "Contract") + 1
+    doc.ents = (Span(doc, 0, end, label="PERSON"),)
+    assert "\n" in doc.ents[0].text
+    assert _entity_substitution_clean(doc, Random(42)) is None
+
+    # Full name and standalone surname are renamed together.
+    doc = nlp('CEO Bernard Looney spoke. "We did well," Looney said.')
+    start = next(t.i for t in doc if t.text == "Bernard")
+    doc.ents = (Span(doc, start, start + 2, label="PERSON"),)
+    change = _entity_substitution_clean(doc, Random(42))
+    assert change is not None
+    assert "Looney" not in change["modified"]
+    assert change["metadata"]["surname_occurrences_replaced"] == 1
+    assert change["metadata"]["entity_policy"] == "clean_v2"
+
+
+def test_clean_entity_policy_guards(nlp):
+    from random import Random
+    from spacy.tokens import Span
+    from semantics.perturbations import _entity_substitution_clean
+
+    def apply(text, label, first, length=1):
+        doc = nlp(text)
+        start = next(t.i for t in doc if t.text.startswith(first))
+        doc.ents = (Span(doc, start, start + length, label=label),)
+        return _entity_substitution_clean(doc, Random(42))
+
+    covid = nlp("The COVID-19 pandemic spread quickly.")
+    covid.ents = (Span(covid, 1, 1 + len(nlp.make_doc("COVID-19")), label="PERSON"),)
+    assert _entity_substitution_clean(covid, Random(42)) is None                          # mislabelled
+    assert apply("Firstly, we should act now.", "ORDINAL", "Firstly") is None            # adverb
+    assert apply("Exports to the US grew in 2020.", "GPE", "US") is None                 # abbreviation
+    assert apply("The two main characters, Ann and Bo, differ.", "CARDINAL", "two") is None  # enumerated list
+    change = apply("The office is on the 4th floor.", "ORDINAL", "4th")
+    assert change is not None and "4th" not in change["modified"]
+
+
+def test_clean_entity_policy_more_guards(nlp):
+    from random import Random
+    from spacy.tokens import Span
+    from semantics.perturbations import _entity_substitution_clean
+
+    doc = nlp("Lockdowns reduced travel.")
+    doc.ents = (Span(doc, 0, 1, label="PERSON"),)
+    assert _entity_substitution_clean(doc, Random(42)) is None            # sentence-initial common noun
+    doc = nlp("The bank paid millions of dollars in fines.")
+    start = next(t.i for t in doc if t.text == "millions")
+    doc.ents = (Span(doc, start, start + 3, label="MONEY"),)
+    assert _entity_substitution_clean(doc, Random(42)) is None            # no digit
+    doc = nlp("The two men met. The two main characters, Ann and Bo, argued.")
+    firsts = [t.i for t in doc if t.text == "two"]
+    doc.ents = tuple(Span(doc, i, i + 1, label="CARDINAL") for i in firsts)
+    assert _entity_substitution_clean(doc, Random(42)) is None            # one occurrence is a list

@@ -9,12 +9,23 @@ La conversazione precedente era in ChatGPT, collegata a un ambiente cloud con ch
 Prime letture:
 
 - `README.md`: mappa generale.
+- `ENTITY_CLEAN_EXPERIMENT.md` e `results_semantic_clean/entity_policy_comparison.md`: controllo più recente sulle sostituzioni di entità.
 - `TRANSFER_STATUS.md`: contenuti caricati, branch dei backup e recupero con Git LFS.
 - `results_semantic_fairness/interpretazione.md`: conclusioni aggiornate, confronto equo e limiti.
 - `FAIRNESS_EXPERIMENT.md`: riproduzione della fase più recente senza inferenze inutili.
 - `results_opai_touched_style/report.md`: stile sulle frasi native toccate da OpAI.
 - `results_semantic_extension/interpretazione.md`: fase precedente, controlli positivi e revisioni qualitative.
 - `SEMANTIC_CONTROLS.md` e `SEMANTIC_EXPERIMENT.md`: protocolli e riproduzione.
+
+## Ultimo controllo richiesto: entity clean v2
+
+L'utente ha caricato una patch basata sulla propria revisione manuale, chiedendo applicazione, correzione, CLI `--entity-policy clean` e confronto con `results_semantic_full`. Le nuove etichette manuali non sono contenute nella patch: l'audit dell'assistente resta distinto. Il codice aggiunge la condizione `entity_substitution_clean`, rinominata `entity_substitution` dal runner per conservare lo schema, con ID e metadati distinguibili. V1 resta default; tutte le funzioni preesistenti mantengono lo stesso AST salvo l'estensione dell'interfaccia di `generate_perturbation_pairs`.
+
+Corrette guardie per omografi May/may, cognomi di persone distinte, collisioni, possessivi inglobati, simboli monetari esterni e nomi parziali dentro altre entità. Test: 15 originali più 19 regressioni; cinque test sul comparatore. Versione congelata `clean_v2`, `guard_revision=review_fixes_3`.
+
+Coorte v1 fissa: **145 entity applicate, 55 saltate**, **2.297 coppie totali** con le stesse 800 OpAI. Le altre 2.007 coppie sono integralmente identiche. Embedding e BERTScore ricalcolati; evidenze NLI storiche riusate soltanto sui controlli invariati, con quelle nuove sulle entity clean. DeBERTa-v3 base float32: 87.825 evidenze uniche, 86.413 già in cache e 1.412 nuove. Il confronto numerico finale è in `results_semantic_clean/entity_policy_comparison.md`; usare le 145 fonti comuni e distinguere misure locali/documentali.
+
+Consegna su GitHub autorizzata dall'utente dopo il fallimento dei download della chat: `main` include codice, test, patch originale/corretta, report e copie scaricabili in `exports/semantic_clean/` (`pairs.jsonl`, `skipped.jsonl`, `semantic_clean_pairs.zip`). Il backup dati di `cloud-backup` include l'intera `data/semantic_clean/`, con allineamento ricalcolato, evidenze congelate, piano NLI e probabilità. I dati originali restano in `data/semantic_clean/`; le esportazioni sono copie identiche, così il ripristino completo dei backup conserva il normale comportamento. Prima di riprendere, leggere i risultati e riusare le cache: evitare di rilanciare modelli per consultare il confronto.
 
 ## Aggiornamento più recente: confronto equo e robustezza
 

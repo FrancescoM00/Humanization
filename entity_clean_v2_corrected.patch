@@ -1,0 +1,1050 @@
+diff --git a/scripts/run_semantic_experiment.py b/scripts/run_semantic_experiment.py
+index c0801eb..23ee81d 100644
+--- a/scripts/run_semantic_experiment.py
++++ b/scripts/run_semantic_experiment.py
+@@ -39,6 +39,15 @@ def prepare(args):
+     if not eligibility['target_count_met']:
+         raise RuntimeError(f"Only {len(selected)} documents support all controlled changes; requested {args.n}. Inspect eligibility_manifest.json.")
+     generated = generate_perturbation_pairs(selected, seed=args.seed)
++    if args.entity_policy == 'clean':
++        clean = generate_perturbation_pairs(selected, seed=args.seed, conditions=('entity_substitution_clean',))
++        for pair in clean:
++            pair['perturbation'] = 'entity_substitution'
++        clean_by_source = {pair['source_id']: pair for pair in clean}
++        # Keep the v1 cohort and ordering; replace only the entity condition.
++        # Clean rows that have no safe candidate remain explicit skipped rows.
++        generated = [clean_by_source[pair['source_id']] if pair['perturbation'] == 'entity_substitution'
++                     else pair for pair in generated]
+     skipped = [p for p in generated if p['status'] != 'applied']
+     pairs = [dict(p, dataset='controlled', id=p['pair_id']) for p in generated if p['status'] == 'applied']
+     # Local identity calibration uses the exact unmodified target sentence.
+@@ -80,6 +89,7 @@ def prepare(args):
+                 'n_local_controls': len(controls), 'n_manual_sanity_fixtures': len(sanity_fixtures()),
+                 'eligibility_selected_cohort': True, 'eligible_source_count': eligibility['eligible_count'],
+                 'opai': opai_status, 'semantic_labels_are_automatic_hypotheses': True,
++                'entity_policy': args.entity_policy, 'source_cohort_policy': 'fixed_v1_eligibility',
+                 'code_sha256': {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+                                for p in sorted((ROOT / 'semantics').glob('*.py'))}}
+     write_json(args.output / 'preparation_manifest.json', manifest)
+@@ -158,6 +168,7 @@ def main():
+     parser.add_argument('--models', type=Path, default=ROOT / 'data/models')
+     parser.add_argument('--n', type=int, default=200)
+     parser.add_argument('--seed', type=int, default=42)
++    parser.add_argument('--entity-policy', choices=['v1', 'clean'], default='v1')
+     parser.add_argument('--threads', type=int, default=2)
+     parser.add_argument('--nli-batch-size', type=int, default=8)
+     parser.add_argument('--require-nli-cache', action='store_true', help='Refuse missing evidence instead of falling back to native inference')
+@@ -169,6 +180,7 @@ def main():
+         common = ['--input', str(args.input), '--data-dir', str(args.data_dir), '--output', str(args.output),
+                   '--models', str(args.models), '--n', str(args.n), '--seed', str(args.seed), '--threads', str(args.threads),
+                   '--nli-batch-size', str(args.nli_batch_size)]
++        common += ['--entity-policy', args.entity_policy]
+         if args.opai_file:
+             common += ['--opai-file', str(args.opai_file)]
+         if args.require_nli_cache:
+diff --git a/semantics/perturbations.py b/semantics/perturbations.py
+index 1e09b50..687f91f 100644
+--- a/semantics/perturbations.py
++++ b/semantics/perturbations.py
+@@ -49,6 +49,21 @@ ENTITY_REPLACEMENTS = {
+     "ORDINAL": ("third", "seventh", "eleventh"),
+ }
+ 
++# Clean entity policy (v2), derived from the manual review of 40 perturbations
++# (results_semantic_extension/review40.md and the student's own review). Kept as a
++# separate condition so that the published v1 results stay reproducible.
++# Dropped on purpose: ORG (company/product/disease/acronym/outlet are mixed up by
++# NER and the three replacements are not sub-type compatible), LOC (granularity
++# mismatch, e.g. Earth -> a lake), TIME (collides with morning/evening wording) and
++# DATE:relative (collides with verb tense: "we are seeing tomorrow").
++CLEAN_ENTITY_KEYS = frozenset({
++    "PERSON", "GPE", "GPE:article", "MONEY", "PERCENT", "CARDINAL:digit",
++    "CARDINAL:word", "ORDINAL", "DATE:year", "DATE:calendar", "DATE:weekday",
++    "DATE:month",
++})
++_PERSON_NAME = re.compile(r"[A-Z][A-Za-z'\u2019.-]+(?: [A-Z][A-Za-z'\u2019.-]+)*")
++_NON_PERSON_ENT_TYPES = frozenset({"ORG", "GPE", "LOC", "FAC", "PRODUCT", "WORK_OF_ART", "NORP", "EVENT"})
++
+ _NEGATIVE_WORDS = frozenset({
+     "not", "n't", "never", "no", "neither", "nor", "nothing", "nobody",
+     "none", "without", "hardly", "rarely", "scarcely",
+@@ -397,6 +412,141 @@ def _entity_substitution(doc: Any, rng: random.Random) -> dict[str, Any] | None:
+     }
+ 
+ 
++def _clean_candidate_key(entity: Any) -> str | None:
++    """Replacement key for the clean policy, or None when the span is unsafe."""
++    text = entity.text.strip()
++    if "\n" in entity.text or not text:
++        return None  # NER span crossing a title/sentence boundary
++    if re.search(r"(?:['’]s|['’])$", text, re.I):
++        return None  # The replacement must not swallow an attached possessive marker.
++    if entity.label_ == "ORDINAL" and not re.fullmatch(
++            r"\d+(?:th|st|nd|rd)|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
++            r"thirteenth|fourteenth|fifteenth|twentieth", text, re.I):
++        return None  # "Firstly", "first of all", "second" as a unit of time
++    if entity.label_ == "PERSON" and (text.isupper() or not _PERSON_NAME.fullmatch(text)):
++        return None  # e.g. COVID-19 mislabelled as a person
++    if entity.label_ == "PERSON" and len(entity) == 1 and entity.start == entity.sent.start:
++        return None  # sentence-initial capital: "Lockdowns" is not a person
++    if entity.label_ == "MONEY" and not re.search(r"\d", text):
++        return None  # "millions of dollars" cannot be swapped for "$83 million"
++    if entity.label_ == "MONEY" and entity.start and entity.doc[entity.start - 1].text in {"$", "€", "£", "¥"}:
++        return None  # NER omitted an external currency symbol: avoid producing $$83 million.
++    if entity.label_ == "GPE" and (text.isupper() or "." in text) and len(text) <= 6:
++        return None  # abbreviation such as US/UK: replacement could be the same entity
++    if entity.label_ == "CARDINAL" and any(t.text == "," for t in entity.doc[entity.end:entity.end + 5]):
++        return None  # "two main characters, A and B": the count belongs to an enumerated list
++    key = _replacement_key(entity)
++    return key if key in CLEAN_ENTITY_KEYS else None
++
++
++def _entity_substitution_clean(doc: Any, rng: random.Random) -> dict[str, Any] | None:
++    """Entity swap restricted to unambiguous, type-compatible entities.
++
++    Differences from ``_entity_substitution``: no ORG/LOC/TIME/relative dates, no
++    spans containing a newline, and a multi-word PERSON also replaces standalone
++    surname mentions with the replacement's surname, so the document does not keep
++    "Looney said" after "Bernard Looney" became "Alex Morgan". Coreference beyond
++    exact surname matching is still not resolved.
++    """
++    candidates, seen = [], set()
++    # A surface string is eligible only if no NER instance fails the guards
++    # (e.g. "two" before a comma list). Homographic auxiliaries, verbs and
++    # lower-case common nouns are not aliases of a capitalized proper name.
++    unsafe = {entity.text.casefold() for entity in doc.ents if _clean_candidate_key(entity) is None}
++    for entity in doc.ents:
++        key = _clean_candidate_key(entity)
++        canonical = entity.text.casefold()
++        if key is None or canonical in seen or canonical in unsafe:
++            continue
++        seen.add(canonical)
++        matches = []
++        partial_name = False
++        for match in re.finditer(r"(?<!\w)" + re.escape(entity.text) + r"(?!\w)", doc.text, re.I):
++            mention = doc.char_span(match.start(), match.end(), alignment_mode="expand")
++            if mention is None:
++                continue
++            if key == "PERSON":
++                for owner in doc.ents:
++                    if not (owner.start_char <= match.start() and match.end() <= owner.end_char):
++                        continue
++                    bare_owner = re.sub(r"(?:['’]s|['’])$", "", owner.text, flags=re.I)
++                    if (owner.label_ in _NON_PERSON_ENT_TYPES or
++                            (owner.label_ == "PERSON" and bare_owner.casefold() != canonical)):
++                        partial_name = True
++                        break
++                if partial_name:
++                    break  # Do not turn Alison Cooper into Alison Alex Morgan.
++            if key in {"DATE:month", "DATE:weekday"} and not any(
++                    other.label_ == "DATE" and other.start_char <= match.start()
++                    and match.end() <= other.end_char for other in doc.ents):
++                continue  # Ambiguous month/day words need affirmative DATE evidence.
++            if entity.label_ in {"PERSON", "GPE", "DATE"}:
++                if any(t.pos_ in {"AUX", "VERB"} for t in mention):
++                    continue  # May/may, Will/will, March/march are not equivalent mentions.
++                if (any(c.isupper() for c in entity.text) and match.group().islower()
++                        and any(t.pos_ != "PROPN" for t in mention)):
++                    continue
++            matches.append(match)
++        if partial_name or not any(m.start() == entity.start_char and m.end() == entity.end_char for m in matches):
++            continue
++        replacements = [value for value in ENTITY_REPLACEMENTS[key]
++                        if value.casefold() != canonical and value.casefold() not in doc.text.casefold()]
++        if key == "PERSON" and len(entity.text.split()) >= 2:
++            replacements = [value for value in replacements if not re.search(
++                r"(?<!\w)" + re.escape(value.split()[-1]) + r"(?!\w)", doc.text, re.I)]
++        if replacements:
++            candidates.append((entity, key, replacements, matches))
++    if not candidates:
++        return None
++    entity, key, replacements, matches = rng.choice(candidates)
++    replacement = rng.choice(replacements)
++    spans = [(m.start(), m.end(), replacement) for m in matches]
++    surname_edits = 0
++    parts, new_parts = entity.text.split(), replacement.split()
++    if key == "PERSON" and len(parts) >= 2 and len(new_parts) >= 2 and len(parts[-1]) > 2:
++        for m in re.finditer(r"(?<!\w)" + re.escape(parts[-1]) + r"(?!\w)", doc.text):
++            if any(a <= m.start() < b for a, b, _ in spans):
++                continue
++            mention = doc.char_span(m.start(), m.end(), alignment_mode="expand")
++            if mention is not None and any(t.ent_type_ in _NON_PERSON_ENT_TYPES for t in mention):
++                continue  # e.g. the company "McDonald's" must not become "Chen's"
++            if any(other.label_ == "PERSON" and other.start_char <= m.start() < other.end_char
++                   and other.text.casefold() != parts[-1].casefold() for other in doc.ents):
++                continue  # Jane Looney is not a surname-only mention of Bernard Looney.
++            if mention is not None and any(t.pos_ in {"AUX", "VERB"} for t in mention):
++                continue
++            spans.append((m.start(), m.end(), new_parts[-1]))
++            surname_edits += 1
++    spans.sort()
++    edits = [_edit(a, b, doc.text[a:b], new) for a, b, new in spans]
++    sentence = entity.sent
++    local_edits = [
++        dict(edit, start_char=edit["start_char"] - sentence.start_char, end_char=edit["end_char"] - sentence.start_char)
++        for edit in edits if sentence.start_char <= edit["start_char"] and edit["end_char"] <= sentence.end_char
++    ]
++    if not edits or not local_edits:
++        return None
++    sentence_index = next(index for index, span in enumerate(doc.sents) if span.start == sentence.start)
++    return {
++        "modified": _replace_edits(doc.text, edits),
++        "target_original": sentence.text,
++        "target_modified": _replace_edits(sentence.text, local_edits),
++        "metadata": {
++            "entity_type": entity.label_, "replacement_dictionary_key": key,
++            "source_entity": entity.text, "replacement_entity": replacement,
++            "edits": edits, "surface_occurrences_replaced": len(edits),
++            "surname_occurrences_replaced": surname_edits,
++            "sentence_index": sentence_index, "target_start_char": sentence.start_char,
++            "target_end_char": sentence.end_char,
++            "entity_policy": "clean_v2",
++            "guard_revision": "review_fixes_3",
++            "consistent_rename": key == "PERSON",
++            "semantic_interpretation": "surface_referent_change_not_verified_contradiction",
++            "coreference_resolved": False,
++        },
++    }
++
++
+ def _sentence_shuffle(doc: Any, rng: random.Random) -> dict[str, Any] | None:
+     sentences = [sentence.text.strip() for sentence in doc.sents if sentence.text.strip()]
+     if len(sentences) < 2 or len(set(sentences)) < 2:
+@@ -460,7 +610,7 @@ def _random_deletion(doc: Any, rng: random.Random, deletion_fraction: float = 0.
+ 
+ def generate_perturbation_pairs(
+     records: Iterable[dict[str, Any]], seed: int = 42, nlp: Any = None,
+-    batch_size: int = 16,
++    batch_size: int = 16, conditions: Iterable[str] = PERTURBATIONS,
+ ) -> list[dict[str, Any]]:
+     """Generate all six conditions per source, including explicit skipped rows.
+ 
+@@ -470,13 +620,18 @@ def generate_perturbation_pairs(
+     as whole-document pairs. Each transformation uses its own SHA-seeded RNG.
+     """
+     records = list(records)
++    conditions = tuple(conditions)
++    allowed = set(PERTURBATIONS) | {"entity_substitution_clean"}
++    unknown = set(conditions) - allowed
++    if unknown:
++        raise ValueError(f"Unknown perturbation conditions: {sorted(unknown)}")
+     nlp = load_perturbation_nlp() if nlp is None else nlp
+     pairs = []
+     for record, doc in zip(records, nlp.pipe((record["text"] for record in records), batch_size=batch_size)):
+         text = record["text"]
+         source_id = _source_identifier(record)
+         original_words = sum(token.is_alpha for token in doc)
+-        for condition in PERTURBATIONS:
++        for condition in conditions:
+             base = {
+                 "source_id": source_id, "domain": str(record.get("domain", "unknown")),
+                 "generator": str(record.get("generator", "unknown")),
+@@ -492,6 +647,8 @@ def generate_perturbation_pairs(
+                 change = _negation(doc, random_state)
+             elif condition == "entity_substitution":
+                 change = _entity_substitution(doc, random_state)
++            elif condition == "entity_substitution_clean":
++                change = _entity_substitution_clean(doc, random_state)
+             elif condition == "sentence_shuffle":
+                 change = _sentence_shuffle(doc, random_state)
+             elif condition == "truncate":
+@@ -501,12 +658,14 @@ def generate_perturbation_pairs(
+ 
+             seed_hex = _stable_hex(seed, source_id, text, condition)
+             if change is None or (condition != "identity" and change["modified"] == text):
++                clean_metadata = ({"entity_policy": "clean_v2", "guard_revision": "review_fixes_3"}
++                                  if condition == "entity_substitution_clean" else {})
+                 pairs.append({**base, "status": "skipped", "modified": None,
+                               "target_original": None, "target_modified": None,
+                               "metadata": {"reason": "no_applicable_change", "rng_sha256": seed_hex,
+                                            "seed": seed, "original_lexical_token_count": original_words,
+                                            "automatic_semantic_uncertainty": True,
+-                                           "semantic_label_verified": False}})
++                                           "semantic_label_verified": False, **clean_metadata}})
+                 continue
+             metadata = change["metadata"]
+             modified_words = sum(token.is_alpha for token in nlp.make_doc(change["modified"]))
+diff --git a/tests/test_perturbations.py b/tests/test_perturbations.py
+index f68ccea..372fe3d 100644
+--- a/tests/test_perturbations.py
++++ b/tests/test_perturbations.py
+@@ -161,3 +161,73 @@ def test_eligibility_screening_is_explicit_and_keeps_only_actual_changes(nlp):
+     selected, manifest = select_applicable_records(sources, n=20, seed=42, nlp=nlp)
+     assert len(selected) == 18
+     assert not manifest["target_count_met"]
++
++
++def test_clean_entity_policy_drops_unsafe_categories_and_fixes_surnames(nlp):
++    from random import Random
++    from spacy.tokens import Span
++    from semantics.perturbations import _entity_substitution_clean
++
++    # ORG and TIME are not part of the clean policy.
++    for text, label, tokens in [("The firm hired a Toyota engineer.", "ORG", ("Toyota",)),
++                                ("The sun rose at 9:00 a.m. today.", "TIME", ("9:00", "a.m."))]:
++        doc = nlp(text)
++        start = next(t.i for t in doc if t.text == tokens[0])
++        doc.ents = (Span(doc, start, start + len(tokens), label=label),)
++        assert _entity_substitution_clean(doc, Random(42)) is None
++
++    # A span crossing a line break is rejected.
++    doc = nlp("Strike by Workers\n\nContract talks have stalled.")
++    end = next(t.i for t in doc if t.text == "Contract") + 1
++    doc.ents = (Span(doc, 0, end, label="PERSON"),)
++    assert "\n" in doc.ents[0].text
++    assert _entity_substitution_clean(doc, Random(42)) is None
++
++    # Full name and standalone surname are renamed together.
++    doc = nlp('CEO Bernard Looney spoke. "We did well," Looney said.')
++    start = next(t.i for t in doc if t.text == "Bernard")
++    doc.ents = (Span(doc, start, start + 2, label="PERSON"),)
++    change = _entity_substitution_clean(doc, Random(42))
++    assert change is not None
++    assert "Looney" not in change["modified"]
++    assert change["metadata"]["surname_occurrences_replaced"] == 1
++    assert change["metadata"]["entity_policy"] == "clean_v2"
++
++
++def test_clean_entity_policy_guards(nlp):
++    from random import Random
++    from spacy.tokens import Span
++    from semantics.perturbations import _entity_substitution_clean
++
++    def apply(text, label, first, length=1):
++        doc = nlp(text)
++        start = next(t.i for t in doc if t.text.startswith(first))
++        doc.ents = (Span(doc, start, start + length, label=label),)
++        return _entity_substitution_clean(doc, Random(42))
++
++    covid = nlp("The COVID-19 pandemic spread quickly.")
++    covid.ents = (Span(covid, 1, 1 + len(nlp.make_doc("COVID-19")), label="PERSON"),)
++    assert _entity_substitution_clean(covid, Random(42)) is None                          # mislabelled
++    assert apply("Firstly, we should act now.", "ORDINAL", "Firstly") is None            # adverb
++    assert apply("Exports to the US grew in 2020.", "GPE", "US") is None                 # abbreviation
++    assert apply("The two main characters, Ann and Bo, differ.", "CARDINAL", "two") is None  # enumerated list
++    change = apply("The office is on the 4th floor.", "ORDINAL", "4th")
++    assert change is not None and "4th" not in change["modified"]
++
++
++def test_clean_entity_policy_more_guards(nlp):
++    from random import Random
++    from spacy.tokens import Span
++    from semantics.perturbations import _entity_substitution_clean
++
++    doc = nlp("Lockdowns reduced travel.")
++    doc.ents = (Span(doc, 0, 1, label="PERSON"),)
++    assert _entity_substitution_clean(doc, Random(42)) is None            # sentence-initial common noun
++    doc = nlp("The bank paid millions of dollars in fines.")
++    start = next(t.i for t in doc if t.text == "millions")
++    doc.ents = (Span(doc, start, start + 3, label="MONEY"),)
++    assert _entity_substitution_clean(doc, Random(42)) is None            # no digit
++    doc = nlp("The two men met. The two main characters, Ann and Bo, argued.")
++    firsts = [t.i for t in doc if t.text == "two"]
++    doc.ents = tuple(Span(doc, i, i + 1, label="CARDINAL") for i in firsts)
++    assert _entity_substitution_clean(doc, Random(42)) is None            # one occurrence is a list
+diff --git a/tests/test_entity_clean_regressions.py b/tests/test_entity_clean_regressions.py
+new file mode 100644
+index 0000000..f523537
+--- /dev/null
++++ b/tests/test_entity_clean_regressions.py
+@@ -0,0 +1,123 @@
++"""Regressions found while reviewing the supplied clean-v2 patch."""
++from random import Random
++
++import pytest
++
++from semantics.perturbations import (
++    _entity_substitution_clean,
++    generate_perturbation_pairs,
++    load_perturbation_nlp,
++)
++
++
++@pytest.fixture(scope="module")
++def nlp():
++    return load_perturbation_nlp()
++
++
++def set_entities(doc, items):
++    spans = []
++    for text, label in items:
++        start = doc.text.index(text)
++        spans.append(doc.char_span(start, start + len(text), label=label))
++    assert all(span is not None for span in spans)
++    doc.ents = spans
++
++
++@pytest.mark.parametrize("text,month,unchanged", [
++    ("The meeting is in May. They may attend.", "May", "They may attend."),
++    ("The meeting is in May. May I attend?", "May", "May I attend?"),
++    ("The meeting is in March. March toward the gate.", "March", "March toward the gate."),
++])
++def test_month_replacement_does_not_change_a_modal_or_verb(nlp, text, month, unchanged):
++    doc = nlp(text)
++    set_entities(doc, [(month, "DATE")])
++    change = _entity_substitution_clean(doc, Random(42))
++    assert change is not None
++    assert change["target_modified"] != change["target_original"]
++    assert change["modified"].endswith(unchanged)
++    assert change["metadata"]["surface_occurrences_replaced"] == 1
++
++
++def test_surname_inside_another_persons_full_name_is_preserved(nlp):
++    doc = nlp("CEO Bernard Looney spoke. Jane Looney disagreed.")
++    set_entities(doc, [("Bernard Looney", "PERSON"), ("Jane Looney", "PERSON")])
++    change = _entity_substitution_clean(doc, Random(42))
++    assert change is not None
++    assert change["metadata"]["source_entity"] == "Bernard Looney"
++    assert "Jane Looney disagreed." in change["modified"]
++    assert change["metadata"]["surname_occurrences_replaced"] == 0
++
++
++@pytest.mark.parametrize("full_name,short_name", [
++    ("Alison Cooper", "Cooper"),
++    ("Jack Ma", "Ma"),
++    ("Bernard Looney", "Looney"),
++    ("John Bernard Looney", "Bernard Looney"),
++])
++def test_short_name_cannot_expand_inside_another_full_name(nlp, full_name, short_name):
++    doc = nlp(f"CEO {full_name} spoke. {short_name} replied.")
++    first_start = doc.text.index(full_name)
++    short_start = doc.text.rindex(short_name)
++    doc.ents = [doc.char_span(first_start, first_start + len(full_name), label="PERSON"),
++                doc.char_span(short_start, short_start + len(short_name), label="PERSON")]
++    change = _entity_substitution_clean(doc, Random(0))
++    if change is not None:
++        for edit in change["metadata"]["edits"]:
++            for owner in doc.ents:
++                if owner.start_char <= edit["start_char"] and edit["end_char"] <= owner.end_char:
++                    assert (owner.start_char, owner.end_char) == (edit["start_char"], edit["end_char"])
++
++
++def test_person_name_cannot_expand_inside_an_organization_name(nlp):
++    doc = nlp("John Deere announced its results. John replied.")
++    first_start = doc.text.index("John Deere")
++    second_start = doc.text.rindex("John")
++    doc.ents = [doc.char_span(first_start, first_start + len("John Deere"), label="ORG"),
++                doc.char_span(second_start, second_start + len("John"), label="PERSON")]
++    assert _entity_substitution_clean(doc, Random(42)) is None
++
++
++def test_replacement_surname_does_not_collide_with_an_existing_mention(nlp):
++    doc = nlp("The CEO Bernard Looney spoke. Morgan disagreed.")
++    set_entities(doc, [("Bernard Looney", "PERSON")])
++    change = _entity_substitution_clean(doc, Random(42))
++    assert change is not None
++    assert change["metadata"]["replacement_entity"].split()[-1] != "Morgan"
++    assert "Morgan disagreed." in change["modified"]
++
++
++@pytest.mark.parametrize("text,entity,label", [
++    ("Phineas Taylor Barnum's marketing strategies worked.", "Phineas Taylor Barnum's", "PERSON"),
++    ("Lena’s head was tilted up.", "Lena’s", "PERSON"),
++    ("Hong Kong's air cargo handling increased.", "Hong Kong's", "GPE"),
++    ("The James’ house was empty.", "James’", "PERSON"),
++])
++def test_an_entity_span_cannot_swallow_the_possessive_marker(nlp, text, entity, label):
++    doc = nlp(text)
++    set_entities(doc, [(entity, label)])
++    assert _entity_substitution_clean(doc, Random(42)) is None
++
++
++@pytest.mark.parametrize("text,amount", [
++    ("Its previous price was $69.99.", "69.99"),
++    ("They bought $800 shoes.", "800"),
++    ("The price was € 800.", "800"),
++])
++def test_money_span_cannot_leave_an_external_currency_symbol(nlp, text, amount):
++    doc = nlp(text)
++    set_entities(doc, [(amount, "MONEY")])
++    assert _entity_substitution_clean(doc, Random(42)) is None
++
++
++def test_conditions_iterator_is_reused_for_every_source(nlp):
++    records = [{"id": name, "text": "The company opened its office.", "label": 1}
++               for name in ["first", "second"]]
++    pairs = generate_perturbation_pairs(records, nlp=nlp, conditions=iter(["identity"]))
++    assert len(pairs) == 2
++    assert [row["source_id"] for row in pairs] == ["first", "second"]
++
++
++def test_unknown_condition_cannot_silently_produce_random_deletion():
++    with pytest.raises(ValueError, match="Unknown perturbation conditions"):
++        generate_perturbation_pairs([], conditions=["entity_substitution_celan"])
+diff --git a/scripts/compare_entity_policy.py b/scripts/compare_entity_policy.py
+new file mode 100644
+index 0000000..8dd9fb0
+--- /dev/null
++++ b/scripts/compare_entity_policy.py
+@@ -0,0 +1,399 @@
++#!/usr/bin/env python3
++"""Compare entity policies on the same cohort and reject unrelated changes.
++
++Normally reads already computed pairs and scores without mutating inputs.
++The explicit --freeze-unchanged-alignment mode instead reuses historical
++retrieval on identical pairs before NLI planning, preserving fresh entity
++retrieval. No mode performs model inference or edits historical results.
++Runtime counters are not semantic metrics.
++"""
++from __future__ import annotations
++
++import argparse
++from collections import Counter
++import hashlib
++import json
++from pathlib import Path
++import shutil
++
++import numpy as np
++import pandas as pd
++
++ROOT = Path(__file__).resolve().parents[1]
++COUNTERS = {
++    "embedding_unique_chunks_encoded_cumulative",
++    "bert_unique_chunks_encoded_cumulative",
++    "bert_unique_chunk_pairs_scored_cumulative",
++    "nli_unique_pairs_scored_cumulative",
++    "nli_new_pairs_scored",
++}
++METRICS = {
++    "local_nli_forward_mean": "Entailment locale originale → alterato",
++    "local_nli_reverse_mean": "Entailment locale alterato → originale",
++    "local_nli_bidirectional_mean": "Minimo delle due medie NLI locali",
++    "nli_forward_min": "Supporto minimo documento, forward",
++    "nli_reverse_min": "Supporto minimo documento, reverse",
++    "nli_bidirectional_min": "Supporto minimo documento, bidirezionale",
++    "embedding_cosine": "Coseno documento",
++    "local_embedding_cosine": "Coseno frase modificata",
++    "bert_chunk_f1": "BERTScore F1 documento (protocollo chunk, non riscalato)",
++    "local_bert_f1": "BERTScore F1 frase modificata (non riscalato)",
++}
++
++
++def read_pairs(path):
++    records = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
++    mapping = {p["id"]: p for p in records}
++    if len(mapping) != len(records):
++        raise ValueError(f"Duplicate pair IDs: {path}")
++    return mapping
++
++
++def unchanged_pairs(old, new):
++    def may_change(pair):
++        return ((pair.get("dataset") == "controlled" and pair["perturbation"] == "entity_substitution")
++                or (pair.get("dataset") == "local_control" and pair["perturbation"] == "identity_for_entity_substitution"))
++    a = {k: p for k, p in old.items() if not may_change(p)}
++    b = {k: p for k, p in new.items() if not may_change(p)}
++    if set(a) != set(b):
++        raise ValueError(
++            "Non-entity IDs differ: "
++            f"missing={len(set(a)-set(b))}, added={len(set(b)-set(a))}. "
++            "Use the same cohort, seed and --opai-file as the original run."
++        )
++    differences = [key for key in a if a[key] != b[key]]
++    if differences:
++        first = differences[0]
++        fields = [k for k in set(a[first]) | set(b[first]) if a[first].get(k) != b[first].get(k)]
++        raise ValueError(f"Non-entity inputs changed in {len(differences)} rows; first={first}, fields={fields}")
++    return sorted(a)
++
++
++def freeze_unchanged_alignment(args, old, new, ids):
++    """Freeze a controlled factor before NLI, without selecting model scores."""
++    if sorted(ids) != unchanged_pairs(old, new):
++        raise ValueError("Freeze IDs must be exactly the validated identical non-entity pairs")
++    blockers = [args.clean_data/"nli_jobs.jsonl"]
++    blockers += [args.clean_output/name for name in ["nli.csv", "nli_run.json", "nli_plan.json",
++                 "nli_progress.json", "nli_precompute_run.json", "nli_precompute_progress.json"]]
++    existing = [str(path) for path in blockers if path.exists()]
++    if existing:
++        raise ValueError(f"Freeze must precede NLI planning and inference; existing artifacts: {existing}")
++    manifest_path = args.clean_output/"unchanged_alignment_reuse.json"
++    backup_path = args.clean_data/"alignment_recomputed.json"
++    if manifest_path.exists() or backup_path.exists():
++        raise FileExistsError("An alignment freeze or its fresh snapshot already exists; refusing an implicit replacement")
++    a_run = json.loads((args.baseline_output/"embedding_run.json").read_text())
++    b_run = json.loads((args.clean_output/"embedding_run.json").read_text())
++    if not a_run.get("model_directory") or not b_run.get("model_directory"):
++        raise ValueError("Embedding model directories are missing from run provenance")
++    model = Path(a_run["model_directory"]).resolve()
++    if model != Path(b_run["model_directory"]).resolve():
++        raise ValueError("Embedding checkpoint directories differ; cannot reuse retrieval")
++    old_code_hash, code_hash = a_run.get("metrics_code_sha256"), b_run.get("metrics_code_sha256")
++    current_code_hash = hashlib.sha256((ROOT/"semantics/metrics.py").read_bytes()).hexdigest()
++    if not old_code_hash or not code_hash or code_hash != current_code_hash:
++        raise ValueError("Embedding metrics_code_sha256 is missing or does not match the current metrics file")
++    nli_run_path = args.baseline_output/"nli_run.json"
++    historical_nli_hash = json.loads(nli_run_path.read_text()).get("metrics_code_sha256") if nli_run_path.exists() else None
++    same_embedding_code = old_code_hash == code_hash
++    if not same_embedding_code and historical_nli_hash != code_hash:
++        raise ValueError("Embedding metrics_code_sha256 differs and historical NLI code does not match current code")
++    # The historical embedding file hash can predate subsequent additions to the
++    # metrics module. Do not overwrite that provenance or claim an archived AST
++    # comparison: under the fallback, the old NLI plan uses the current NLI code,
++    # and equivalent fresh cosine scores + exact chunks validate cache reuse.
++    embedding_checks = validate_scores(pd.read_csv(args.baseline_output/"embedding.csv"),
++                                      pd.read_csv(args.clean_output/"embedding.csv"), ids, args.atol, args.rtol)
++    baseline = json.loads((args.baseline_data/"alignment.json").read_text())
++    path = args.clean_data/"alignment.json"
++    alignment = json.loads(path.read_text())
++    if set(baseline) != set(old) or set(alignment) != set(new):
++        raise ValueError("Alignment does not exactly cover the corresponding input pairs")
++    checks = ["original_sha256", "modified_sha256", "original_chunks", "modified_chunks",
++              "chunk_token_budget", "retrieval_top_k"]
++    differences = []
++    unchanged_settings = set()
++    for key in ids:
++        a, b = baseline[key], alignment[key]
++        for field in checks:
++            if field not in a or field not in b or a[field] != b[field]:
++                raise ValueError(f"Cannot reuse {key}: {field} differs or is absent")
++        if a["chunk_token_budget"] < 1 or a["retrieval_top_k"] < 1:
++            raise ValueError(f"Invalid chunk/retrieval settings in {key}")
++        unchanged_settings.add((a["chunk_token_budget"], a["retrieval_top_k"]))
++        for side in ["original", "modified"]:
++            expected = hashlib.sha256(new[key][side].encode("utf-8")).hexdigest()
++            if a[side+"_sha256"] != expected:
++                raise ValueError(f"Input hash and cached {side} hash disagree: {key}")
++        for direction, evidence in [("forward", "original_chunks"), ("reverse", "modified_chunks")]:
++            ac, bc = a[direction+"_candidates"], b[direction+"_candidates"]
++            if len(ac) != len(bc):
++                raise ValueError(f"Query counts differ in {key}, {direction}")
++            for query, (av, bv) in enumerate(zip(ac, bc)):
++                if av != bv:
++                    old_texts = {a[evidence][i] for i in av}
++                    new_texts = {b[evidence][i] for i in bv}
++                    differences.append({"id": key, "direction": direction, "query_index": query,
++                                        "historical_candidate_indices": av, "recomputed_candidate_indices": bv,
++                                        "candidate_text_set_differs": old_texts != new_texts})
++    # All checks precede the first mutation. Fresh entity rows are never replaced.
++    for key in ids:
++        alignment[key] = baseline[key]
++    manifest = {"n_unchanged_pairs_reused": len(ids), "n_fresh_entity_and_local_control_pairs": len(new)-len(ids),
++                "input_pairs_exactly_identical": True, "cached_hashes_and_chunk_texts_identical": True,
++                "embedding_model_directory": str(model),
++                "historical_embedding_metrics_code_sha256": old_code_hash,
++                "recomputed_embedding_metrics_code_sha256": code_hash,
++                "current_metrics_code_sha256": current_code_hash,
++                "historical_nli_metrics_code_sha256": historical_nli_hash,
++                "historical_embedding_code_hash_matches": same_embedding_code,
++                "code_provenance_basis": ("Matching historical and recomputed embedding module hashes."
++                    if same_embedding_code else
++                    "Historical embedding module hash differs and its source snapshot is unavailable; "
++                    "historical NLI module hash matches the current/recomputed module. Reuse the valid historical "
++                    "NLI evidence plan on identical pairs, exact chunks/settings and empirically equivalent embeddings; "
++                    "no historical embedding AST equivalence is claimed."),
++                "embedding_score_comparison_atol": args.atol, "embedding_score_comparison_rtol": args.rtol,
++                "embedding_metric_max_abs_differences": dict(zip(embedding_checks.metric, embedding_checks.max_abs_difference)),
++                "embedding_metrics_equivalent_within_tolerance": True,
++                "embedding_checkpoint_directory_matches": True,
++                "chunk_budget_and_retrieval_top_k_match": True,
++                "observed_budget_top_k": [list(v) for v in sorted(unchanged_settings)],
++                "candidate_index_arrays_differ_before_freeze": len(differences),
++                "pairs_with_different_candidate_arrays": len({x["id"] for x in differences}),
++                "candidate_text_sets_differ_before_freeze": sum(x["candidate_text_set_differs"] for x in differences),
++                "candidate_differences": differences,
++                "fresh_alignment_snapshot": str(backup_path),
++                "embedding_cosine_scores_recomputed_and_not_replaced": True,
++                "nli_not_planned_or_executed_at_freeze": True,
++                "nli_scores_used_for_evidence_selection": False,
++                "reason": "Hold the retrieval factor fixed on identical controls; near ties can reorder after floating-point recomputation."}
++    serialized = json.dumps(alignment, ensure_ascii=False, indent=2)+"\n"
++    shutil.copyfile(path, backup_path)
++    temporary = path.with_name(path.name+".freeze.tmp")
++    temporary.write_text(serialized)
++    temporary.replace(path)
++    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+"\n")
++    print(json.dumps(manifest, ensure_ascii=False, indent=2))
++    return manifest
++
++
++def validate_scores(old, new, ids, atol, rtol):
++    if old.id.duplicated().any() or new.id.duplicated().any():
++        raise ValueError("Score table contains duplicate IDs")
++    a, b = old.set_index("id"), new.set_index("id")
++    if not set(ids).issubset(a.index) or not set(ids).issubset(b.index):
++        raise ValueError("Scores do not cover all unchanged input pairs")
++    prefixes = ("lexical_", "local_lexical_", "embedding_", "local_embedding_", "bert_", "local_bert_", "nli_", "local_nli_")
++    old_columns = {c for c in a if c.startswith(prefixes)} - COUNTERS
++    new_columns = {c for c in b if c.startswith(prefixes)} - COUNTERS
++    if old_columns != new_columns:
++        raise ValueError(f"Semantic score schemas differ: old-only={old_columns-new_columns}, new-only={new_columns-old_columns}")
++    rows = []
++    for column in sorted(old_columns):
++        av, bv = a.loc[ids, column], b.loc[ids, column]
++        if pd.api.types.is_numeric_dtype(av) and pd.api.types.is_numeric_dtype(bv):
++            equal = np.isclose(av.to_numpy(float), bv.to_numpy(float), atol=atol, rtol=rtol, equal_nan=True)
++            valid = av.notna() & bv.notna()
++            maximum = float((av[valid].astype(float)-bv[valid].astype(float)).abs().max()) if valid.any() else None
++        else:
++            equal = ((av == bv) | (av.isna() & bv.isna())).to_numpy()
++            maximum = None
++        if not equal.all():
++            wrong = list(np.asarray(ids)[~equal])
++            raise ValueError(f"Unrelated metric changed: {column}, {len(wrong)} rows, first={wrong[0]}, max_abs_difference={maximum}")
++        rows.append({"metric": column, "n_unchanged_pairs": len(ids), "max_abs_difference": maximum,
++                     "within_tolerance": True})
++    return pd.DataFrame(rows)
++
++
++def entities(pairs, scores):
++    metadata = []
++    for pair in pairs.values():
++        if pair["dataset"] == "controlled" and pair["perturbation"] == "entity_substitution":
++            p = pair.get("metadata", {})
++            metadata.append({"id": pair["id"], "source_id": pair["source_id"],
++                             "source_group_id": pair.get("source_group_id", pair["source_id"]),
++                             "entity_type": p.get("entity_type", "unknown"),
++                             "replacement_key": p.get("replacement_dictionary_key", "unknown"),
++                             "source_entity": p.get("source_entity", ""),
++                             "replacement_entity": p.get("replacement_entity", ""),
++                             "surface_occurrences_replaced": p.get("surface_occurrences_replaced"),
++                             "surname_occurrences_replaced": p.get("surname_occurrences_replaced", 0)})
++    if not metadata:
++        raise ValueError("No applied entity substitutions are available")
++    frame = pd.DataFrame(metadata)
++    if frame.source_id.duplicated().any():
++        raise ValueError("Expected at most one entity substitution per source and policy")
++    metric_columns = [c for c in METRICS if c in scores]
++    required = set(METRICS) - {"local_nli_bidirectional_mean", "nli_bidirectional_min"}
++    if not required.issubset(metric_columns):
++        raise ValueError(f"Missing requested entity metrics: {sorted(required-set(metric_columns))}")
++    frame = frame.merge(scores[["id", *metric_columns]], on="id", how="left", validate="one_to_one")
++    frame["nli_bidirectional_min"] = np.minimum(frame.nli_forward_min, frame.nli_reverse_min)
++    frame["local_nli_bidirectional_mean"] = np.minimum(frame.local_nli_forward_mean, frame.local_nli_reverse_mean)
++    return frame
++
++
++def summaries(frame, policy, scope):
++    rows = []
++    for metric in METRICS:
++        values = frame.dropna(subset=[metric]).groupby("source_group_id")[metric].mean()
++        if len(values):
++            rows.append({"scope": scope, "policy": policy, "metric": metric,
++                         "n_pairs": int(frame[metric].notna().sum()), "n_sources": len(values),
++                         "mean": values.mean(), "median": values.median(),
++                         "q10": values.quantile(.1), "q90": values.quantile(.9)})
++    return rows
++
++
++def paired_changes(a, b, bootstrap, seed):
++    paired = a.merge(b, on="source_id", suffixes=("_v1", "_clean"), validate="one_to_one")
++    if not (paired.source_group_id_v1 == paired.source_group_id_clean).all():
++        raise ValueError("Source group changed in entity cohort")
++    rng = np.random.default_rng(seed)
++    rows = []
++    for metric in METRICS:
++        delta = paired[metric+"_clean"] - paired[metric+"_v1"]
++        values = delta.groupby(paired.source_group_id_v1).mean().dropna().to_numpy()
++        if len(values):
++            ci = np.quantile(rng.choice(values, size=(bootstrap, len(values)), replace=True).mean(axis=1), [.025, .975])
++            rows.append({"metric": metric, "n_pairs": int(delta.notna().sum()), "n_sources": len(values),
++                         "mean_clean_minus_v1": values.mean(), "ci_low": ci[0], "ci_high": ci[1]})
++    return paired, pd.DataFrame(rows)
++
++
++def table(frame, columns=None):
++    if columns:
++        frame = frame[columns]
++    def cell(value):
++        return f"{value:.6f}" if isinstance(value, (float, np.floating)) else str(value)
++    return "\n".join(["| " + " | ".join(frame.columns) + " |",
++                      "| " + " | ".join(["---"]*len(frame.columns)) + " |",
++                      *["| " + " | ".join(cell(x) for x in row) + " |" for row in frame.itertuples(index=False, name=None)]])
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--baseline-data", type=Path, default=ROOT/"data/semantic_full")
++    parser.add_argument("--baseline-output", type=Path, default=ROOT/"results_semantic_full")
++    parser.add_argument("--clean-data", type=Path, default=ROOT/"data/semantic_clean")
++    parser.add_argument("--clean-output", type=Path, default=ROOT/"results_semantic_clean")
++    parser.add_argument("--atol", type=float, default=1e-6)
++    parser.add_argument("--rtol", type=float, default=1e-6)
++    parser.add_argument("--bootstrap", type=int, default=1000)
++    parser.add_argument("--seed", type=int, default=42)
++    parser.add_argument("--freeze-unchanged-alignment", action="store_true",
++                        help="Before NLI planning, replace retrieval only for identical non-entity pairs with its historical cache; do not compare scores")
++    args = parser.parse_args()
++    if args.bootstrap < 1 or min(args.atol, args.rtol) < 0:
++        parser.error("bootstrap must be positive and tolerances nonnegative")
++    old = read_pairs(args.baseline_data/"pairs.jsonl")
++    new = read_pairs(args.clean_data/"pairs.jsonl")
++    ids = unchanged_pairs(old, new)
++    if args.freeze_unchanged_alignment:
++        freeze_unchanged_alignment(args, old, new, ids)
++        return
++    old_scores = pd.read_csv(args.baseline_output/"scores.csv")
++    new_scores = pd.read_csv(args.clean_output/"scores.csv")
++    if set(old_scores.id) != set(old) or set(new_scores.id) != set(new):
++        raise ValueError("Score rows must exactly cover each run's pair file")
++    invariant = validate_scores(old_scores, new_scores, ids, args.atol, args.rtol)
++    a, b = entities(old, old_scores), entities(new, new_scores)
++    common = sorted(set(a.source_id) & set(b.source_id))
++    if not common:
++        raise ValueError("No source supports both entity policies")
++    aa, bb = a[a.source_id.isin(common)], b[b.source_id.isin(common)]
++    rows = summaries(a, "v1", "all_applied") + summaries(b, "clean", "all_applied")
++    rows += summaries(aa, "v1", "common_sources") + summaries(bb, "clean", "common_sources")
++    summary = pd.DataFrame(rows)
++    paired, deltas = paired_changes(aa, bb, args.bootstrap, args.seed)
++    distribution = []
++    for policy, frame in [("v1", a), ("clean", b)]:
++        for (kind, key), part in frame.groupby(["entity_type", "replacement_key"]):
++            distribution.append({"policy": policy, "entity_type": kind, "replacement_key": key, "n_pairs": len(part)})
++    coverage = []
++    skip_details = []
++    for policy, directory, pairs, frame in [("v1", args.baseline_data, old, a), ("clean", args.clean_data, new, b)]:
++        path = directory/"skipped.jsonl"
++        skipped = [json.loads(line) for line in path.read_text().splitlines() if line.strip()] if path.is_file() else []
++        source_ids = {p["source_id"] for p in pairs.values() if p["dataset"] == "controlled" and p["perturbation"] == "identity"}
++        eligible = set(frame.source_id)
++        if not eligible.issubset(source_ids):
++            raise ValueError("Entity policy selected sources outside its identity cohort")
++        entity_skips = [p for p in skipped if p["perturbation"] == "entity_substitution"]
++        skip_sources = {p["source_id"] for p in entity_skips}
++        if skip_sources != source_ids-eligible:
++            raise ValueError("Entity skipped rows do not account for all inapplicable sources")
++        coverage.append({"policy": policy, "n_cohort_sources": len(source_ids), "n_applied": len(frame),
++                         "n_skipped": len(entity_skips), "coverage": len(frame)/len(source_ids),
++                         "n_sources_common_to_both": len(common)})
++        for reason, count in Counter(p.get("metadata", {}).get("reason", "unspecified") for p in entity_skips).items():
++            skip_details.append({"policy": policy, "reason": reason, "count": count})
++    if {p["source_id"] for p in old.values() if p["dataset"] == "controlled"} != {p["source_id"] for p in new.values() if p["dataset"] == "controlled"}:
++        raise ValueError("The source cohort changed; only entity eligibility may change")
++    output = args.clean_output
++    invariant.to_csv(output/"nonentity_metric_invariance.csv", index=False)
++    summary.to_csv(output/"entity_policy_summary.csv", index=False)
++    deltas.to_csv(output/"entity_policy_paired_deltas.csv", index=False)
++    paired.to_csv(output/"entity_policy_paired_scores.csv", index=False)
++    pd.DataFrame(distribution).to_csv(output/"entity_policy_type_distribution.csv", index=False)
++    pd.DataFrame(coverage).to_csv(output/"entity_policy_coverage.csv", index=False)
++    pd.DataFrame(skip_details, columns=["policy", "reason", "count"]).to_csv(output/"entity_policy_skip_reasons.csv", index=False)
++    report = ["# Confronto fra sostituzioni di entità v1 e clean", "",
++              "Le sole condizioni autorizzate a cambiare sono entity_substitution e il relativo controllo identità locale. "
++              "La coorte e tutte le altre coppie, incluse fixture e OpAI, sono confrontate per ID e contenuto integrale.", "",
++              f"**Invarianza verificata:** {len(ids)} coppie non-entity esattamente identiche; {len(invariant)} colonne di metriche "
++              f"entro atol={args.atol:g}, rtol={args.rtol:g}. I contatori cumulativi di lavoro non sono metriche semantiche e sono esclusi.", "",
++              "## Copertura sulla stessa coorte", "", table(pd.DataFrame(coverage)), "",
++              "I casi non applicabili della politica clean sono saltati esplicitamente, senza rimpiazzare le fonti. "
++              "Il confronto principale seguente usa solo le fonti applicabili a entrambe le politiche; "
++              "le medie all_applied nel CSV sono descrittive e possono riflettere selezione diversa.", "",
++              "## Metriche sulle stesse fonti", ""]
++    reuse_path = output/"unchanged_alignment_reuse.json"
++    if reuse_path.exists():
++        reuse = json.loads(reuse_path.read_text())
++        report[-2:-2] = ["## Retrieval mantenuto fisso sui controlli", "",
++                        f"Prima di pianificare l'NLI, {reuse['n_unchanged_pairs_reused']} coppie integralmente identiche "
++                        "hanno riusato il retrieval storico, dopo verifica di checkpoint, provenienza del codice, "
++                        "equivalenza numerica degli embedding, hash degli input, chunk, budget e top-k. "
++                        "Coseno e BERTScore sono stati ricalcolati; nessun punteggio NLI è stato usato per scegliere le evidenze. "
++                        "Le nuove sostituzioni clean e i loro controlli locali mantengono retrieval appena calcolato.", "",
++                        f"Prima del congelamento differivano {reuse['candidate_index_arrays_differ_before_freeze']} array candidati "
++                        f"in {reuse['pairs_with_different_candidate_arrays']} coppie; "
++                        f"I testi delle evidenze differivano in {reuse['candidate_text_sets_differ_before_freeze']} casi. "
++                        "Questo evita di cambiare un fattore estraneo alla policy a causa di pareggi numerici. "
++                        "Dettagli in unchanged_alignment_reuse.json; allineamento ricalcolato conservato separatamente.", "",
++                        ("Gli hash storici e attuali del modulo embedding coincidono."
++                         if reuse['historical_embedding_code_hash_matches'] else
++                         "Il vecchio hash del modulo embedding è diverso e quel sorgente non è archiviato: "
++                         "non si sostiene un'equivalenza AST del codice storico. Il modulo usato dall'NLI storico "
++                         "coincide con quello attuale; si riusa il suo piano di evidenze su input e chunk identici, "
++                         "con coseni ricalcolati equivalenti entro la tolleranza dichiarata."), ""]
++    display = summary[summary.scope == "common_sources"].pivot(index="metric", columns="policy", values="mean").reset_index()
++    display = display.merge(deltas, on="metric", validate="one_to_one")
++    report += [table(display, ["metric", "v1", "clean", "mean_clean_minus_v1", "ci_low", "ci_high", "n_sources"]), "",
++               "Gli IC sono bootstrap appaiati per gruppo sorgente. Un calo del supporto non dimostra da solo "
++               "che la perturbazione sia semanticamente valida: nessun punteggio NLI viene usato come gold label. "
++               "Le categorie di entità e la frase bersaglio possono cambiare fra politiche anche sulla stessa fonte.", "",
++               "Il minimo bidirezionale è min(nli_forward_min, nli_reverse_min). La probabilità locale principale "
++               "è local_nli_forward_mean; sono riportati anche reverse e minimo delle due direzioni. "
++               "Coseno e BERTScore sono distinti fra documento e frase alterata. BERTScore qui usa lo stesso protocollo "
++               "non riscalato del run storico, per un confronto omogeneo.", "",
++               "## Distribuzione delle categorie", "", table(pd.DataFrame(distribution)), "",
++               "La politica clean limita le categorie e può modificare più menzioni coreferenti. "
++               "Non certifica la coreferenza o la verità dei fatti; le corruzioni restano condizioni sperimentali.", "",
++               "## Riproduzione", "", "```bash", ".venv/bin/python scripts/compare_entity_policy.py", "```", ""]
++    (output/"entity_policy_comparison.md").write_text("\n".join(report).rstrip()+"\n")
++    manifest = {"unchanged_nonentity_input_pairs": len(ids), "unchanged_metric_columns": len(invariant),
++                "semantic_metrics_unchanged_within_tolerance": True, "atol": args.atol, "rtol": args.rtol,
++                "runtime_counters_excluded": sorted(COUNTERS), "coverage": coverage,
++                "comparison_uses_common_sources": True, "bootstrap": args.bootstrap,
++                "labels_are_not_gold_semantic_annotations": True}
++    (output/"entity_policy_comparison_manifest.json").write_text(json.dumps(manifest, indent=2)+"\n")
++    print(json.dumps(manifest, indent=2))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tests/test_entity_policy_comparison.py b/tests/test_entity_policy_comparison.py
+new file mode 100644
+index 0000000..2ab6e83
+--- /dev/null
++++ b/tests/test_entity_policy_comparison.py
+@@ -0,0 +1,103 @@
++"""Checks that unrelated changes cannot pass the policy comparison."""
++import pandas as pd
++import pytest
++import hashlib
++import json
++from types import SimpleNamespace
++
++from scripts.compare_entity_policy import ROOT, freeze_unchanged_alignment, unchanged_pairs, validate_scores
++
++
++def test_only_entity_rows_and_their_local_controls_may_change():
++    baseline = {
++        "fixed": {"perturbation": "negation", "modified": "It is not true."},
++        "entity": {"dataset": "controlled", "perturbation": "entity_substitution", "modified": "In Japan."},
++        "control": {"dataset": "local_control", "perturbation": "identity_for_entity_substitution", "modified": "In Canada."},
++        "fixture": {"dataset": "manual_sanity", "perturbation": "entity_substitution", "modified": "Paris."},
++    }
++    clean = {
++        "fixed": baseline["fixed"].copy(),
++        "new-entity": {"dataset": "controlled", "perturbation": "entity_substitution", "modified": "Alex spoke."},
++        "new-control": {"dataset": "local_control", "perturbation": "identity_for_entity_substitution", "modified": "Sam spoke."},
++        "fixture": baseline["fixture"].copy(),
++    }
++    assert unchanged_pairs(baseline, clean) == ["fixed", "fixture"]
++    clean["fixed"]["modified"] = "It is true."
++    with pytest.raises(ValueError, match="Non-entity inputs changed"):
++        unchanged_pairs(baseline, clean)
++
++
++def test_missing_opai_rows_are_not_silently_ignored():
++    row = {"perturbation": "compress", "dataset": "opai"}
++    with pytest.raises(ValueError, match="Non-entity IDs differ"):
++        unchanged_pairs({"opai": row}, {})
++
++
++def test_runtime_counters_may_change_but_semantic_scores_may_not():
++    a = pd.DataFrame({"id": ["a", "b"], "nli_forward_min": [.1, .9], "bert_idf": [False, False],
++                      "local_bert_f1": [float("nan"), .95], "nli_new_pairs_scored": [50, 25]})
++    b = a.copy()
++    b["nli_new_pairs_scored"] = 0
++    b.loc[0, "nli_forward_min"] += 1e-8
++    checks = validate_scores(a, b, ["a", "b"], 1e-6, 1e-6)
++    assert set(checks.metric) == {"nli_forward_min", "local_bert_f1", "bert_idf"}
++    b.loc[1, "nli_forward_min"] = .6
++    with pytest.raises(ValueError, match="Unrelated metric changed"):
++        validate_scores(a, b, ["a", "b"], 1e-6, 1e-6)
++
++
++def freeze_fixture(tmp_path):
++    paths = {name: tmp_path/name for name in ["baseline_data", "baseline_output", "clean_data", "clean_output"]}
++    for path in paths.values():
++        path.mkdir()
++    args = SimpleNamespace(**paths, atol=1e-6, rtol=1e-6)
++    code = hashlib.sha256((ROOT/"semantics/metrics.py").read_bytes()).hexdigest()
++    old_run = {"model_directory": str(tmp_path/"model"), "metrics_code_sha256": "unarchived-embedding-module"}
++    new_run = dict(old_run, metrics_code_sha256=code)
++    (args.baseline_output/"embedding_run.json").write_text(json.dumps(old_run))
++    (args.clean_output/"embedding_run.json").write_text(json.dumps(new_run))
++    (args.baseline_output/"nli_run.json").write_text(json.dumps({"metrics_code_sha256": code}))
++    for path in [args.baseline_output, args.clean_output]:
++        pd.DataFrame({"id": ["fixed"], "embedding_cosine": [1.0]}).to_csv(path/"embedding.csv", index=False)
++    fixed = {"id": "fixed", "dataset": "controlled", "perturbation": "identity",
++             "original": "A. B.", "modified": "A. B."}
++    old = {"fixed": fixed, "old_entity": {"dataset": "controlled", "perturbation": "entity_substitution"}}
++    new = {"fixed": fixed.copy(), "new_entity": {"dataset": "controlled", "perturbation": "entity_substitution"}}
++    sha = hashlib.sha256(fixed["original"].encode()).hexdigest()
++    historical = {"original_sha256": sha, "modified_sha256": sha,
++                  "original_chunks": ["A.", "B."], "modified_chunks": ["A.", "B."],
++                  "chunk_token_budget": 160, "retrieval_top_k": 1,
++                  "forward_candidates": [[0], [1]], "reverse_candidates": [[0], [1]]}
++    recomputed = dict(historical, forward_candidates=[[1], [1]])
++    (args.baseline_data/"alignment.json").write_text(json.dumps({"fixed": historical, "old_entity": {"historical": True}}))
++    (args.clean_data/"alignment.json").write_text(json.dumps({"fixed": recomputed, "new_entity": {"fresh": True}}))
++    return args, old, new, historical, code
++
++
++def test_freeze_rejects_unknown_code_and_existing_nli_plan_without_mutation(tmp_path):
++    args, old, new, _, code = freeze_fixture(tmp_path)
++    before = (args.clean_data/"alignment.json").read_text()
++    (args.baseline_output/"nli_run.json").write_text(json.dumps({"metrics_code_sha256": "different"}))
++    with pytest.raises(ValueError, match="historical NLI code does not match"):
++        freeze_unchanged_alignment(args, old, new, ["fixed"])
++    assert (args.clean_data/"alignment.json").read_text() == before
++    assert not (args.clean_data/"alignment_recomputed.json").exists()
++    (args.baseline_output/"nli_run.json").write_text(json.dumps({"metrics_code_sha256": code}))
++    (args.clean_data/"nli_jobs.jsonl").write_text("")
++    with pytest.raises(ValueError, match="precede NLI planning"):
++        freeze_unchanged_alignment(args, old, new, ["fixed"])
++    assert (args.clean_data/"alignment.json").read_text() == before
++
++
++def test_freeze_preserves_fresh_entity_retrieval_and_discloses_hash_fallback(tmp_path):
++    args, old, new, historical, _ = freeze_fixture(tmp_path)
++    before = (args.clean_data/"alignment.json").read_text()
++    manifest = freeze_unchanged_alignment(args, old, new, ["fixed"])
++    after = json.loads((args.clean_data/"alignment.json").read_text())
++    assert after["fixed"] == historical
++    assert after["new_entity"] == {"fresh": True}
++    assert (args.clean_data/"alignment_recomputed.json").read_text() == before
++    assert not manifest["historical_embedding_code_hash_matches"]
++    assert manifest["candidate_index_arrays_differ_before_freeze"] == 1
++    assert manifest["candidate_text_sets_differ_before_freeze"] == 1
++    assert not manifest["nli_scores_used_for_evidence_selection"]
+diff --git a/ENTITY_CLEAN_EXPERIMENT.md b/ENTITY_CLEAN_EXPERIMENT.md
+new file mode 100644
+index 0000000..595bbdf
+--- /dev/null
++++ b/ENTITY_CLEAN_EXPERIMENT.md
+@@ -0,0 +1,57 @@
++# Sostituzioni di entità: politica clean v2
++
++La patch fornita dall'utente aggiunge una condizione distinta, `entity_substitution_clean`, mantenendo la politica v1 come default. È stata applicata, rivista e collegata a `scripts/run_semantic_experiment.py` tramite `--entity-policy {v1,clean}`. I risultati storici rimangono in `results_semantic_full/`; il nuovo campione e i risultati usano `data/semantic_clean/` e `results_semantic_clean/`.
++
++Copie scaricabili dei dati sono in [exports/semantic_clean/](exports/semantic_clean/README.md) sul branch `main`; il backup dati di `cloud-backup` conserva l'intero stato scientifico del run. Sono disponibili sia la [patch originale](patches/entity_clean_v2.original.patch) sia la [patch corretta](entity_clean_v2_corrected.patch).
++
++## Revisione della patch
++
++I 15 test forniti passavano già con la patch originale. La revisione ha trovato casi non coperti dai test: omografi come il mese May e il modale may; cognomi contenuti nel nome completo di un'altra persona; collisione con un cognome di destinazione già presente; possessivi inglobati dal NER; simboli monetari esterni allo span. Sono state aggiunte guardie conservative solo alla nuova politica e regressioni dedicate.
++
++Verifica finale: **15 test originali + 19 regressioni = 34 passati**; altri cinque test riguardano il comparatore e il riuso degli allineamenti. Tutte le funzioni preesistenti hanno lo stesso AST della baseline, salvo l'estensione di `generate_perturbation_pairs` per selezionare le condizioni. Il campione definitivo usa `guard_revision=review_fixes_3`: **145 entity applicate, 55 saltate, 2.297 coppie totali**, con **2.007 coppie non interessate identiche**. L'[audit testuale indipendente dagli score](results_semantic_clean/clean_entity_text_audit.md) descrive le verifiche meccaniche e i limiti NER residui.
++
++Il nuovo parametro `conditions` viene materializzato per funzionare anche con un iteratore su più documenti. Una condizione sconosciuta produce un errore, anziché ricadere silenziosamente nella cancellazione casuale. Con la chiamata preesistente, le sei condizioni v1 restano le stesse. Le righe clean registrano la politica e la revisione delle guardie nei metadati.
++
++La coorte viene selezionata con l'idoneità v1, come nell'esperimento storico. Nella modalità clean viene sostituita solo la condizione entity: stessa posizione nella lista, nomi compatibili con la pipeline e ID distinti che conservano `entity_substitution_clean`. Le fonti senza un candidato applicabile sono registrate in `skipped.jsonl`; non vengono rimpiazzate con altre fonti. Il controllo identità locale delle entità segue la nuova frase bersaglio e può cambiare; gli altri controlli rimangono identici.
++
++## Esecuzione
++
++Dalla radice del progetto, il comando completo è:
++
++```bash
++.venv/bin/python scripts/run_semantic_experiment.py --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean --opai-file data/opai/records.jsonl --threads 4
++```
++
++Il parametro OpAI conserva anche le stesse 800 coppie dello studio storico; senza questo parametro la preparazione non le include. Le directory del nuovo esperimento devono essere distinte da quelle dei risultati storici.
++
++L'esecuzione effettuata usa gli stessi stadi e modelli del comando completo, ma li avvia separatamente per usare il percorso CPU ONNX float32 già validato:
++
++```bash
++.venv/bin/python scripts/run_semantic_experiment.py --stage prepare --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean --opai-file data/opai/records.jsonl --threads 4
++.venv/bin/python scripts/run_semantic_experiment.py --stage lexical --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean --threads 4
++.venv/bin/python scripts/run_semantic_experiment.py --stage embedding --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean --threads 4
++.venv/bin/python scripts/run_semantic_experiment.py --stage bertscore --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean --threads 4
++```
++
++Embedding e BERTScore vengono ricalcolati sull'intero nuovo campione. Prima dello stadio NLI sono copiate nella nuova directory le cache `nli_probability_cache.jsonl` e `nli_pytorch_reference.jsonl` del run storico, senza modificarne gli originali. Le probabilità vengono riusate soltanto per la stessa coppia di stringhe e il medesimo checkpoint; i nuovi confronti sono inferiti con DeBERTa-v3 **base float32**, senza quantizzazione:
++
++```bash
++.venv/bin/python scripts/compare_entity_policy.py --freeze-unchanged-alignment
++.venv/bin/python scripts/plan_nli_jobs.py --data-dir data/semantic_clean --output results_semantic_clean
++.venv/bin/python scripts/precompute_nli_onnx.py --data-dir data/semantic_clean --output results_semantic_clean --threads 4 --batch-size 8
++.venv/bin/python scripts/run_semantic_experiment.py --stage nli --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean --threads 4 --require-nli-cache
++.venv/bin/python scripts/run_semantic_experiment.py --stage report --entity-policy clean --data-dir data/semantic_clean --output results_semantic_clean
++.venv/bin/python scripts/compare_entity_policy.py
++```
++
++I risultati numerici e la copertura finale sono in [entity_policy_comparison.md](results_semantic_clean/entity_policy_comparison.md). Il comparatore richiede identità integrale delle coppie non interessate, incluse fixture e OpAI, e confronta le metriche con tolleranza numerica `atol=rtol=1e-6`. I contatori di lavoro cumulativo vengono esclusi. Non copia i vecchi risultati per imporre l'invarianza.
++
++Il flag di congelamento è un passaggio preparatorio esplicito, da eseguire una sola volta dopo l'embedding e prima di pianificare/inferire l'NLI. Sulle 2.007 coppie identiche riusa il retrieval storico, dopo verifica di modello, hash dei testi, chunk e budget; le entità clean e i loro controlli mantengono il retrieval nuovo. Il coseno resta quello ricalcolato. Il ranking di tre coppie aveva piccole differenze numeriche, di cui una con un'evidenza diversa: mantenere fisso il piano delle evidenze evita di confondere questo effetto con la politica delle entità. L'allineamento appena ricalcolato e il manifest `unchanged_alignment_reuse.json` sono conservati per il confronto.
++
++Il file delle metriche era stato esteso fra l'embedding storico e l'NLI storico: i suoi hash globali dei due embedding non coincidono. Non si dichiara un'identità del sorgente storico non disponibile. Il controllo usa la coincidenza fra codice NLI storico e codice corrente, la medesima directory dei modelli, l'identità delle unità e il confronto numerico degli embedding sulle coppie invariate. I manifest storici rimangono intatti.
++
++## Interpretazione
++
++Il confronto principale riguarda esclusivamente `controlled/entity_substitution` sulle fonti applicabili a entrambe le politiche. Sono riportate separatamente le medie complessive e la composizione per tipo, perché la maggiore selettività della clean cambia il campione. Anche a fonte fissa possono cambiare entità selezionata, frase bersaglio e quantità di menzioni modificate: il delta non isola causalmente una singola correzione.
++
++Il nome clean descrive guardie più conservative, non annotazioni gold. Rimangono errori NER, granularità geografica non risolta e coreferenza incompleta. Non si usa l'NLI per certificare che una perturbazione sia valida. L'eventuale lettura testuale dell'assistente è distinta dalle annotazioni manuali dell'utente; queste ultime non sono incluse nella patch caricata.
