@@ -49,6 +49,21 @@ ENTITY_REPLACEMENTS = {
     "ORDINAL": ("third", "seventh", "eleventh"),
 }
 
+# Clean entity policy (v2), derived from the manual review of 40 perturbations
+# (results_semantic_extension/review40.md and the student's own review). Kept as a
+# separate condition so that the published v1 results stay reproducible.
+# Dropped on purpose: ORG (company/product/disease/acronym/outlet are mixed up by
+# NER and the three replacements are not sub-type compatible), LOC (granularity
+# mismatch, e.g. Earth -> a lake), TIME (collides with morning/evening wording) and
+# DATE:relative (collides with verb tense: "we are seeing tomorrow").
+CLEAN_ENTITY_KEYS = frozenset({
+    "PERSON", "GPE", "GPE:article", "MONEY", "PERCENT", "CARDINAL:digit",
+    "CARDINAL:word", "ORDINAL", "DATE:year", "DATE:calendar", "DATE:weekday",
+    "DATE:month",
+})
+_PERSON_NAME = re.compile(r"[A-Z][A-Za-z'\u2019.-]+(?: [A-Z][A-Za-z'\u2019.-]+)*")
+_NON_PERSON_ENT_TYPES = frozenset({"ORG", "GPE", "LOC", "FAC", "PRODUCT", "WORK_OF_ART", "NORP", "EVENT"})
+
 _NEGATIVE_WORDS = frozenset({
     "not", "n't", "never", "no", "neither", "nor", "nothing", "nobody",
     "none", "without", "hardly", "rarely", "scarcely",
@@ -397,6 +412,141 @@ def _entity_substitution(doc: Any, rng: random.Random) -> dict[str, Any] | None:
     }
 
 
+def _clean_candidate_key(entity: Any) -> str | None:
+    """Replacement key for the clean policy, or None when the span is unsafe."""
+    text = entity.text.strip()
+    if "\n" in entity.text or not text:
+        return None  # NER span crossing a title/sentence boundary
+    if re.search(r"(?:['’]s|['’])$", text, re.I):
+        return None  # The replacement must not swallow an attached possessive marker.
+    if entity.label_ == "ORDINAL" and not re.fullmatch(
+            r"\d+(?:th|st|nd|rd)|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|"
+            r"thirteenth|fourteenth|fifteenth|twentieth", text, re.I):
+        return None  # "Firstly", "first of all", "second" as a unit of time
+    if entity.label_ == "PERSON" and (text.isupper() or not _PERSON_NAME.fullmatch(text)):
+        return None  # e.g. COVID-19 mislabelled as a person
+    if entity.label_ == "PERSON" and len(entity) == 1 and entity.start == entity.sent.start:
+        return None  # sentence-initial capital: "Lockdowns" is not a person
+    if entity.label_ == "MONEY" and not re.search(r"\d", text):
+        return None  # "millions of dollars" cannot be swapped for "$83 million"
+    if entity.label_ == "MONEY" and entity.start and entity.doc[entity.start - 1].text in {"$", "€", "£", "¥"}:
+        return None  # NER omitted an external currency symbol: avoid producing $$83 million.
+    if entity.label_ == "GPE" and (text.isupper() or "." in text) and len(text) <= 6:
+        return None  # abbreviation such as US/UK: replacement could be the same entity
+    if entity.label_ == "CARDINAL" and any(t.text == "," for t in entity.doc[entity.end:entity.end + 5]):
+        return None  # "two main characters, A and B": the count belongs to an enumerated list
+    key = _replacement_key(entity)
+    return key if key in CLEAN_ENTITY_KEYS else None
+
+
+def _entity_substitution_clean(doc: Any, rng: random.Random) -> dict[str, Any] | None:
+    """Entity swap restricted to unambiguous, type-compatible entities.
+
+    Differences from ``_entity_substitution``: no ORG/LOC/TIME/relative dates, no
+    spans containing a newline, and a multi-word PERSON also replaces standalone
+    surname mentions with the replacement's surname, so the document does not keep
+    "Looney said" after "Bernard Looney" became "Alex Morgan". Coreference beyond
+    exact surname matching is still not resolved.
+    """
+    candidates, seen = [], set()
+    # A surface string is eligible only if no NER instance fails the guards
+    # (e.g. "two" before a comma list). Homographic auxiliaries, verbs and
+    # lower-case common nouns are not aliases of a capitalized proper name.
+    unsafe = {entity.text.casefold() for entity in doc.ents if _clean_candidate_key(entity) is None}
+    for entity in doc.ents:
+        key = _clean_candidate_key(entity)
+        canonical = entity.text.casefold()
+        if key is None or canonical in seen or canonical in unsafe:
+            continue
+        seen.add(canonical)
+        matches = []
+        partial_name = False
+        for match in re.finditer(r"(?<!\w)" + re.escape(entity.text) + r"(?!\w)", doc.text, re.I):
+            mention = doc.char_span(match.start(), match.end(), alignment_mode="expand")
+            if mention is None:
+                continue
+            if key == "PERSON":
+                for owner in doc.ents:
+                    if not (owner.start_char <= match.start() and match.end() <= owner.end_char):
+                        continue
+                    bare_owner = re.sub(r"(?:['’]s|['’])$", "", owner.text, flags=re.I)
+                    if (owner.label_ in _NON_PERSON_ENT_TYPES or
+                            (owner.label_ == "PERSON" and bare_owner.casefold() != canonical)):
+                        partial_name = True
+                        break
+                if partial_name:
+                    break  # Do not turn Alison Cooper into Alison Alex Morgan.
+            if key in {"DATE:month", "DATE:weekday"} and not any(
+                    other.label_ == "DATE" and other.start_char <= match.start()
+                    and match.end() <= other.end_char for other in doc.ents):
+                continue  # Ambiguous month/day words need affirmative DATE evidence.
+            if entity.label_ in {"PERSON", "GPE", "DATE"}:
+                if any(t.pos_ in {"AUX", "VERB"} for t in mention):
+                    continue  # May/may, Will/will, March/march are not equivalent mentions.
+                if (any(c.isupper() for c in entity.text) and match.group().islower()
+                        and any(t.pos_ != "PROPN" for t in mention)):
+                    continue
+            matches.append(match)
+        if partial_name or not any(m.start() == entity.start_char and m.end() == entity.end_char for m in matches):
+            continue
+        replacements = [value for value in ENTITY_REPLACEMENTS[key]
+                        if value.casefold() != canonical and value.casefold() not in doc.text.casefold()]
+        if key == "PERSON" and len(entity.text.split()) >= 2:
+            replacements = [value for value in replacements if not re.search(
+                r"(?<!\w)" + re.escape(value.split()[-1]) + r"(?!\w)", doc.text, re.I)]
+        if replacements:
+            candidates.append((entity, key, replacements, matches))
+    if not candidates:
+        return None
+    entity, key, replacements, matches = rng.choice(candidates)
+    replacement = rng.choice(replacements)
+    spans = [(m.start(), m.end(), replacement) for m in matches]
+    surname_edits = 0
+    parts, new_parts = entity.text.split(), replacement.split()
+    if key == "PERSON" and len(parts) >= 2 and len(new_parts) >= 2 and len(parts[-1]) > 2:
+        for m in re.finditer(r"(?<!\w)" + re.escape(parts[-1]) + r"(?!\w)", doc.text):
+            if any(a <= m.start() < b for a, b, _ in spans):
+                continue
+            mention = doc.char_span(m.start(), m.end(), alignment_mode="expand")
+            if mention is not None and any(t.ent_type_ in _NON_PERSON_ENT_TYPES for t in mention):
+                continue  # e.g. the company "McDonald's" must not become "Chen's"
+            if any(other.label_ == "PERSON" and other.start_char <= m.start() < other.end_char
+                   and other.text.casefold() != parts[-1].casefold() for other in doc.ents):
+                continue  # Jane Looney is not a surname-only mention of Bernard Looney.
+            if mention is not None and any(t.pos_ in {"AUX", "VERB"} for t in mention):
+                continue
+            spans.append((m.start(), m.end(), new_parts[-1]))
+            surname_edits += 1
+    spans.sort()
+    edits = [_edit(a, b, doc.text[a:b], new) for a, b, new in spans]
+    sentence = entity.sent
+    local_edits = [
+        dict(edit, start_char=edit["start_char"] - sentence.start_char, end_char=edit["end_char"] - sentence.start_char)
+        for edit in edits if sentence.start_char <= edit["start_char"] and edit["end_char"] <= sentence.end_char
+    ]
+    if not edits or not local_edits:
+        return None
+    sentence_index = next(index for index, span in enumerate(doc.sents) if span.start == sentence.start)
+    return {
+        "modified": _replace_edits(doc.text, edits),
+        "target_original": sentence.text,
+        "target_modified": _replace_edits(sentence.text, local_edits),
+        "metadata": {
+            "entity_type": entity.label_, "replacement_dictionary_key": key,
+            "source_entity": entity.text, "replacement_entity": replacement,
+            "edits": edits, "surface_occurrences_replaced": len(edits),
+            "surname_occurrences_replaced": surname_edits,
+            "sentence_index": sentence_index, "target_start_char": sentence.start_char,
+            "target_end_char": sentence.end_char,
+            "entity_policy": "clean_v2",
+            "guard_revision": "review_fixes_3",
+            "consistent_rename": key == "PERSON",
+            "semantic_interpretation": "surface_referent_change_not_verified_contradiction",
+            "coreference_resolved": False,
+        },
+    }
+
+
 def _sentence_shuffle(doc: Any, rng: random.Random) -> dict[str, Any] | None:
     sentences = [sentence.text.strip() for sentence in doc.sents if sentence.text.strip()]
     if len(sentences) < 2 or len(set(sentences)) < 2:
@@ -460,7 +610,7 @@ def _random_deletion(doc: Any, rng: random.Random, deletion_fraction: float = 0.
 
 def generate_perturbation_pairs(
     records: Iterable[dict[str, Any]], seed: int = 42, nlp: Any = None,
-    batch_size: int = 16,
+    batch_size: int = 16, conditions: Iterable[str] = PERTURBATIONS,
 ) -> list[dict[str, Any]]:
     """Generate all six conditions per source, including explicit skipped rows.
 
@@ -470,13 +620,18 @@ def generate_perturbation_pairs(
     as whole-document pairs. Each transformation uses its own SHA-seeded RNG.
     """
     records = list(records)
+    conditions = tuple(conditions)
+    allowed = set(PERTURBATIONS) | {"entity_substitution_clean"}
+    unknown = set(conditions) - allowed
+    if unknown:
+        raise ValueError(f"Unknown perturbation conditions: {sorted(unknown)}")
     nlp = load_perturbation_nlp() if nlp is None else nlp
     pairs = []
     for record, doc in zip(records, nlp.pipe((record["text"] for record in records), batch_size=batch_size)):
         text = record["text"]
         source_id = _source_identifier(record)
         original_words = sum(token.is_alpha for token in doc)
-        for condition in PERTURBATIONS:
+        for condition in conditions:
             base = {
                 "source_id": source_id, "domain": str(record.get("domain", "unknown")),
                 "generator": str(record.get("generator", "unknown")),
@@ -492,6 +647,8 @@ def generate_perturbation_pairs(
                 change = _negation(doc, random_state)
             elif condition == "entity_substitution":
                 change = _entity_substitution(doc, random_state)
+            elif condition == "entity_substitution_clean":
+                change = _entity_substitution_clean(doc, random_state)
             elif condition == "sentence_shuffle":
                 change = _sentence_shuffle(doc, random_state)
             elif condition == "truncate":
@@ -501,12 +658,14 @@ def generate_perturbation_pairs(
 
             seed_hex = _stable_hex(seed, source_id, text, condition)
             if change is None or (condition != "identity" and change["modified"] == text):
+                clean_metadata = ({"entity_policy": "clean_v2", "guard_revision": "review_fixes_3"}
+                                  if condition == "entity_substitution_clean" else {})
                 pairs.append({**base, "status": "skipped", "modified": None,
                               "target_original": None, "target_modified": None,
                               "metadata": {"reason": "no_applicable_change", "rng_sha256": seed_hex,
                                            "seed": seed, "original_lexical_token_count": original_words,
                                            "automatic_semantic_uncertainty": True,
-                                           "semantic_label_verified": False}})
+                                           "semantic_label_verified": False, **clean_metadata}})
                 continue
             metadata = change["metadata"]
             modified_words = sum(token.is_alpha for token in nlp.make_doc(change["modified"]))

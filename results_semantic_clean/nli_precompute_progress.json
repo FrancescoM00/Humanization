@@ -1,0 +1,8 @@
+{
+  "phase": "unique_evidence_pairs",
+  "completed": 87825,
+  "total": 87825,
+  "elapsed_seconds": 126.9260113220007,
+  "peak_rss_mib": 1915.453125,
+  "max_pair_tokens_this_batch": 127
+}

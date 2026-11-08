@@ -9,6 +9,8 @@ Repository: [FrancescoM00/Humanization](https://github.com/FrancescoM00/Humaniza
 
 Le parti pesanti non sono presenti nel working tree di `main`: aprire il codice e leggere i risultati non richiede di scaricarle. Il normale ZIP del codice non include i backup pesanti; usare Git LFS come descritto sotto.
 
+Aggiornamento dell'8 novembre 2026: pubblicato il controllo **entity clean v2**, con codice, test, patch originale e corretta, report e CSV. I dati pronti da scaricare sono in [exports/semantic_clean/](exports/semantic_clean/README.md) sul branch `main`: 2.297 coppie, 145 sostituzioni applicate e 55 saltate. Il backup dataset include l'intera `data/semantic_clean/`, con allineamenti e probabilità NLI; sono aggiornate anche le piccole cache di esecuzione. Pesi e venv sono gli stessi già archiviati. [Protocollo e risultati](ENTITY_CLEAN_EXPERIMENT.md).
+
 Aggiornamento del 5 novembre 2026: aggiunti codice e risultati del confronto semantico equo e dello stile localizzato. Il componente dataset è stato aggiornato con tutte le 3.500 coppie, i nuovi allineamenti, le probabilità NLI e le cache stilometriche. Modelli e venv sono gli stessi già trasferiti. Leggere [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) per riprendere questa fase.
 
 | Componente | Contenuto originale | Parti | Byte compressi |
