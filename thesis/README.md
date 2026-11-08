@@ -8,6 +8,8 @@
 
 Il testo riprende tono, notazione e struttura del PDF teorico fornito, senza ripubblicarlo. Descrive gli esperimenti effettivamente svolti fino al controllo delle 34 coppie numeriche e lo stato del codice dopo il riordino della repository. I dati sono quelli dei report e dei CSV conservati nel progetto; per questa stesura non sono state eseguite nuove inferenze.
 
+La provenienza è stata aggiornata dopo il [confronto dei tre CSV forniti dall'autore come scaricati da Google Drive](https://github.com/FrancescoM00/Humanization/blob/main/provenance/mgtbench_drive_comparison.md): sono identici byte per byte a quelli già usati. Il PDF, il Markdown e i sorgenti LaTeX riportano ora questa verifica; i risultati numerici restano gli stessi.
+
 ## Inserimento nel documento originale
 
 Il PDF teorico termina la discussione con la sezione 12 e contiene poi la sezione 13 Bibliografia. Inserire il frammento **dopo la sezione 12 e prima della bibliografia**:

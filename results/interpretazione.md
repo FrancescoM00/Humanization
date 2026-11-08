@@ -4,7 +4,7 @@ L'esperimento è stato eseguito su **1.800 testi**: 300 umani e 300 macchina per
 
 ## Provenienza e pulizia
 
-La fonte accessibile è un mirror MGTBench pubblico, fissato a un commit e con hash delle tre CSV nel manifest. L'identità byte per byte con l'archivio originale Google Drive **non è verificata**. TH-Bench non fornisce direttamente un campione clean bilanciato di queste dimensioni: i suoi file per gli attacchi non corrispondono al disegno richiesto.
+La fonte iniziale è un mirror MGTBench pubblico, fissato a un commit e con hash dei tre CSV nel manifest. I tre CSV successivamente forniti dall'autore come scaricati da Google Drive sono risultati **identici byte per byte**, anche rispetto agli hash già registrati nei manifest: [verifica successiva](../provenance/mgtbench_drive_comparison.md). Nessun risultato cambia. TH-Bench non fornisce direttamente un campione clean bilanciato di queste dimensioni: i suoi file per gli attacchi non corrispondono al disegno richiesto.
 
 La baseline è quindi stata preparata localmente: spacing del loader TH-Bench, rimozione simmetrica delle code senza una terminazione di frase plausibile, minimo 50 parole dopo la pulizia, deduplicazione e campionamento bilanciato per generatore. La regola di terminazione è euristica e non certifica la completezza grammaticale; non vengono rimossi selettivamente vocabolario Wikipedia o formule conversazionali.
 
