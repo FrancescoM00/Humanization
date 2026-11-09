@@ -37,6 +37,8 @@ Le tre nuove comparazioni study hanno al massimo **256 tentativi POST ciascuna, 
 
 Nello smoke quattro dei nove nuovi confronti hanno cambiato preferenza invertendo l'ordine, scegliendo sempre la posizione B. Le preferenze discordanti restano mancanti nel riepilogo primario: non sono una classifica affidabile di naturalezza. Il manifest va letto anche quando viene creato lo ZIP; rate limit e budget possono lasciare giudizi parziali. Le annotazioni umane rimangono necessarie.
 
+La sezione 12 aggiornata usa `--failure-policy report`: coppie con generazioni fallite o vuote non vengono inviate al giudice, restano nel report e non sono rimpiazzate. Il denominatore selezionato resta distinto dalle coppie giudicabili. Se il notebook già avviato si ferma con `A failed generation cannot be silently omitted or judged as natural`, usare la [cella di ripresa della sola sezione 12](../docs/NATURALNESS_JUDGE.md#generazioni-fallite-nello-study-riprendere-la-sola-sezione-12), poi la sezione 13. Non rigenerare i testi né ricominciare il run.
+
 ## Condizioni e limiti
 
 - **Detector:** Binoculars aggiunge un metodo zero-shot; i tre RoBERTa e il loro voto correlato restano separati. Le soglie sono calibrate sugli stessi 300 umani.

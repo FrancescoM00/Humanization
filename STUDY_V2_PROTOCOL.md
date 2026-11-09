@@ -73,6 +73,8 @@ Le 24 schede sono state annotate dall'assistente senza aprire le chiavi per ques
 
 Il notebook esegue prima un piano di validazione da 12 risposte valide, con massimo 16 tentativi POST; per lo study sono fissate tre comparazioni fra sistemi, ciascuna con massimo 256 tentativi e 252 risposte attese se tutte le 126 coppie sono valide. Totale massimo 768 tentativi nello study, più la prova iniziale. Retry e riprese contano nel budget; quote e risposte mancanti rimangono visibili. La disponibilità del modello o una quota non sufficiente non viene trasformata in giudizi fittizi. Prezzi non verificati non vengono tradotti in costi monetari inventati.
 
+Precisazione operativa del 10 novembre, dopo il blocco della sezione 12: le generazioni fallite o vuote non ricevono un voto di naturalezza e non sono rimpiazzate da altre fonti. Con `--failure-policy report` si giudicano le coppie valide mantenendo il campione selezionato prima del controllo degli stati; fallimenti, coppie giudicabili e preferenze stabili hanno conteggi e coperture distinti sul denominatore originario. La naturalezza è quindi condizionata alla riuscita di entrambi gli output, mentre i fallimenti restano un risultato separato. Modello, rubrica, AB/BA e budget non cambiano.
+
 ## Ordine operativo
 
 1. Nuovo notebook `Humanization_Study_v2.ipynb`, `MODE="smoke"`, T4 ×2 e Internet; attach del Secret Groq.

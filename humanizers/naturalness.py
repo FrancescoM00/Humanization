@@ -46,10 +46,20 @@ def _read_csv(path):
 
 
 def load_pairs(rewrite_paths, humanizer_a, humanizer_b, *, source_key=None,
-               max_pairs=3, seed=42):
-    """Select source pairs by ID only; no metric or generated quality selection."""
+               max_pairs=3, seed=42, failure_policy="error", selection_report=None):
+    """Select sources before checking outputs; failures are never replaced.
+
+    The default preserves strict historical behavior. ``failure_policy='report'``
+    requires an explicit report dictionary and returns only judgeable pairs,
+    while preserving the full selected-source denominator in that report.
+    Missing conditions and inconsistent source metadata remain integrity errors.
+    """
     if humanizer_a == humanizer_b or max_pairs < 1:
         raise ValueError("Require two different systems and max_pairs >= 1")
+    if failure_policy not in {"error", "report"}:
+        raise ValueError("failure_policy must be 'error' or 'report'")
+    if failure_policy == "report" and selection_report is None:
+        raise ValueError("failure_policy='report' requires an explicit selection_report")
     selected = {humanizer_a, humanizer_b}
     lookup = {}
     for path in rewrite_paths:
@@ -70,19 +80,47 @@ def load_pairs(rewrite_paths, humanizer_a, humanizer_b, *, source_key=None,
         sources &= allowed
     if not sources:
         raise ValueError("No sources available for the selected systems")
-    pairs = []
-    for source in sorted(sources, key=lambda s: _digest([seed, s]))[:max_pairs]:
+    selected_sources = sorted(sources, key=lambda s: _digest([seed, s]))[:max_pairs]
+    pairs, failures = [], []
+    for source in selected_sources:
         if any((source, system) not in lookup for system in selected):
             raise ValueError(f"Missing one rewriting condition for source {source}")
         a, b = lookup[source, humanizer_a], lookup[source, humanizer_b]
         if a.get("original") != b.get("original") or a.get("source_group_id") != b.get("source_group_id"):
             raise ValueError("Pairwise judging requires the same original and source group")
-        if any(r.get("status") != "ok" or not str(r.get("modified", "")).strip() for r in (a, b)):
-            raise ValueError("A failed generation cannot be silently omitted or judged as natural")
+        invalid_outputs = []
+        for row in (a, b):
+            reasons = []
+            if row.get("status") != "ok":
+                reasons.append("status_not_ok")
+            if not isinstance(row.get("modified"), str) or not row["modified"].strip():
+                reasons.append("empty_output")
+            if reasons:
+                invalid_outputs.append(dict(humanizer=row["humanizer"],
+                    status=row.get("status"), reasons=reasons))
+        if invalid_outputs:
+            if failure_policy == "error":
+                raise ValueError("A failed generation cannot be silently omitted or judged as natural")
+            failures.append(dict(source_id=source, source_group_id=a["source_group_id"],
+                domain=a["domain"], generator=a.get("generator", ""),
+                system_a=humanizer_a, system_b=humanizer_b,
+                status_a=a.get("status"), status_b=b.get("status"),
+                invalid_outputs=invalid_outputs))
+            continue
         pairs.append(dict(source_id=source, source_group_id=a["source_group_id"],
                           domain=a["domain"], generator=a.get("generator", ""),
                           system_a=humanizer_a, system_b=humanizer_b,
                           text_a=a["modified"], text_b=b["modified"]))
+    if selection_report is not None:
+        selection_report.clear()
+        selection_report.update(failure_policy=failure_policy,
+            selection="source ID ranking before generation-status checks; no replacement",
+            system_a=humanizer_a, system_b=humanizer_b,
+            n_candidate_sources=len(sources), n_selected_sources=len(selected_sources),
+            n_eligible_pairs=len(pairs), n_generation_failure_pairs=len(failures),
+            n_missing_naturalness_pairs=len(failures),
+            n_failed_generations=sum(len(row["invalid_outputs"]) for row in failures),
+            selected_source_ids=selected_sources, failures=failures)
     return pairs
 
 

@@ -1,6 +1,6 @@
 # Report cumulativo della sperimentazione
 
-Aggiornamento: **9 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti sono stati ricevuti e analizzati; sono disponibili il confronto appaiato e le schede comuni da annotare.
+Aggiornamento: **10 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti e lo smoke v2 sono stati ricevuti e analizzati; lo study da 126 è in corso e non è ancora disponibile come archivio completo.
 
 ## 1. Obiettivo e stato dei quattro assi
 
@@ -8,10 +8,10 @@ La suite valuta le riscritture rispetto a quattro domande distinte: eludono i de
 
 | Asse | Lavoro completato | Stato e limite principale |
 | --- | --- | --- |
-| Evasione | Tre detector reali, calibrazione umana, ASR condizionata, transizioni prima/dopo e voto di maggioranza | baseline 3B e DIPPER sulle stesse 42 fonti. Pool interamente RoBERTa, campione ancora pilota |
+| Evasione | Tre classificatori, Binoculars zero-shot, calibrazione umana, ASR condizionata, transizioni prima/dopo e controlli nulli | Baseline 3B e DIPPER sulle stesse 42 fonti; nuovi sistemi e Binoculars nello smoke v2 su tre fonti. Campione esteso in corso |
 | Conservazione | Perturbazioni controllate, positivi OpAI, confronti allineati, aggregatori, lunghezza, guardie e applicazione ai nuovi output | Metriche operative; sui nuovi humanizer manca un riferimento semantico umano indipendente |
 | Stile | Umano/macchina a lunghezza abbinata, regressione logistica, trasferimento, frasi OpAI toccate e distanze sulle riscritture | Differenze misurate; non equivalgono a qualità o naturalezza |
-| Naturalezza | Preparazione delle schede a testo singolo, separate dalle chiavi dei sistemi | Giudizi ancora assenti; nessun risultato di naturalezza o giudice LLM grande già eseguito |
+| Naturalezza | Schede a testo singolo e giudice Groq AB/BA realmente eseguito nello smoke v2 | Quattro dei nove confronti nuovi instabili all'ordine; nessuna validazione umana. Copertura e fallimenti espliciti nello study |
 
 La validazione iniziale degli strumenti e la loro applicazione agli humanizer sono esperimenti differenti. Una metrica efficace sulle corruzioni artificiali può avere falsi allarmi o mancare errori nelle riscritture reali.
 
@@ -231,6 +231,8 @@ Il [sampler di annotazione v2](docs/ANNOTATION_V2.md) separa un reference scelto
 Il [notebook aggiornato](kaggle/README_Study_v2.md) prepara l'avvio sulle 126 senza ripetere lo smoke e senza cambiare i preset. Riusa venv e cache complete leggibili della sessione, colloca checkout e file temporanei sotto `/kaggle/working` e mantiene i pesi fuori dai risultati. Le modifiche di storage sono verificate localmente; al momento dell’analisi dello smoke il run sulle 126 non era ancora avviato. L'archivio ricevuto documenta anche le correzioni operative applicate durante il run, tramite hash di codice e sorgenti inclusi, oltre al commit iniziale.
 
 Aggiornamento operativo successivo: lo study è stato avviato. La sezione 7 completa il download e caricamento del primo Falcon, ma il secondo fallisce nella scrittura HTTP della cache temporanea con filesystem di sola lettura, nonostante il controllo iniziale riuscito. La ripresa forza una destinazione scrivibile sotto `/kaggle/working` per il solo modello mancante, senza ripetere gli stadi completati o modificare il protocollo. Non sono ancora disponibili risultati completi sulle 126 fonti.
+
+Il 10 novembre il run è arrivato alla sezione 12, bloccata prima delle chiamate del confronto 3B/14B perché almeno una generazione ha stato non valido o testo vuoto. La ripresa registra esplicitamente questi casi senza giudicarli, senza rimpiazzare fonti e senza rigenerare output. La naturalezza sarà riportata condizionatamente alla riuscita di entrambi i sistemi, insieme ai fallimenti e alla copertura sul campione selezionato; i mancanti non diventano pareggi o bassi punteggi. La correzione non cambia modello, rubrica, ordini AB/BA o budget. Il traceback non fornisce conteggi o cause dei fallimenti e non sostituisce lo ZIP completo dei risultati.
 
 ## 10. Attività successive e confini delle conclusioni
 

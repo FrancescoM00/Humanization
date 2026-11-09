@@ -82,6 +82,98 @@ def test_load_pairs_checks_same_original_and_does_not_filter_failed_outputs(tmp_
         load_pairs([path], "a", "b")
 
 
+def rewriting_rows(sources=("source-1", "source-2", "source-3")):
+    return [dict(id=f"{source}-{system}", source_id=source,
+                 source_group_id=source, humanizer=system, domain="Essay",
+                 generator="Claude", status="ok", original=f"Original {source}.",
+                 modified=f"Rewritten {source} by {system}.")
+            for source in sources for system in ("a", "b")]
+
+
+def write_rewrites(path, rows):
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+
+@pytest.mark.parametrize("changes,reasons", [
+    ({"status": "generation_error"}, ["status_not_ok"]),
+    ({"modified": " \n "}, ["empty_output"]),
+    ({"modified": None}, ["empty_output"]),
+    ({"status": "input_too_long", "modified": ""}, ["status_not_ok", "empty_output"]),
+])
+def test_reported_generation_failure_preserves_selected_denominator(tmp_path, changes, reasons):
+    rows = rewriting_rows()
+    rows[1].update(changes)
+    path = tmp_path / "rewrites.jsonl"
+    write_rewrites(path, rows)
+    report = {}
+    pairs = load_pairs([path], "a", "b", max_pairs=3,
+                       failure_policy="report", selection_report=report)
+    assert {p["source_id"] for p in pairs} == {"source-2", "source-3"}
+    assert report["n_selected_sources"] == report["n_candidate_sources"] == 3
+    assert report["n_eligible_pairs"] == 2
+    assert report["n_generation_failure_pairs"] == report["n_missing_naturalness_pairs"] == 1
+    assert report["n_failed_generations"] == 1
+    failed = report["failures"][0]
+    assert failed["source_id"] == "source-1"
+    assert failed["status_a"] == "ok" and failed["status_b"] == changes.get("status", "ok")
+    assert failed["invalid_outputs"] == [dict(humanizer="b", status=changes.get("status", "ok"), reasons=reasons)]
+
+
+def test_pair_limit_is_applied_before_failures_with_no_replacement(tmp_path):
+    path = tmp_path / "rewrites.jsonl"
+    rows = rewriting_rows()
+    write_rewrites(path, rows)
+    first = load_pairs([path], "a", "b", max_pairs=1)[0]["source_id"]
+    for row in rows:
+        if row["source_id"] == first:
+            row.update(status="generation_error", modified="")
+    write_rewrites(path, rows)
+    report = {}
+    assert load_pairs([path], "a", "b", max_pairs=1,
+                      failure_policy="report", selection_report=report) == []
+    assert report["selected_source_ids"] == [first]
+    assert report["n_candidate_sources"] == 3 and report["n_selected_sources"] == 1
+    assert report["n_eligible_pairs"] == 0 and report["n_generation_failure_pairs"] == 1
+    assert report["n_failed_generations"] == 2
+    assert make_plan([], MODEL)["expected_completion_requests"] == 0
+
+
+@pytest.mark.parametrize("failure_policy,report,match", [
+    ("silently_skip", {}, "failure_policy"),
+    ("report", None, "selection_report"),
+])
+def test_generation_failure_reporting_requires_explicit_valid_policy(tmp_path, failure_policy, report, match):
+    path = tmp_path / "rewrites.jsonl"
+    write_rewrites(path, rewriting_rows())
+    with pytest.raises(ValueError, match=match):
+        load_pairs([path], "a", "b", failure_policy=failure_policy, selection_report=report)
+
+
+def test_reporting_does_not_change_all_ok_pairs_or_frozen_plan(tmp_path):
+    path = tmp_path / "rewrites.jsonl"
+    write_rewrites(path, rewriting_rows())
+    strict = load_pairs([path], "a", "b")
+    report = {}
+    reported = load_pairs([path], "a", "b", failure_policy="report", selection_report=report)
+    assert strict == reported
+    assert make_plan(strict, MODEL) == make_plan(reported, MODEL)
+    assert report["n_selected_sources"] == report["n_eligible_pairs"] == 3
+    assert report["n_generation_failure_pairs"] == 0 and report["failures"] == []
+
+
+@pytest.mark.parametrize("missing_condition", [True, False])
+def test_reporting_keeps_missing_conditions_and_source_mismatches_as_errors(tmp_path, missing_condition):
+    path = tmp_path / "rewrites.jsonl"
+    rows = rewriting_rows(("source-1",))
+    if missing_condition:
+        rows.pop()
+    else:
+        rows[1]["original"] = "Different original."
+    write_rewrites(path, rows)
+    with pytest.raises(ValueError, match="Missing one rewriting condition|same original"):
+        load_pairs([path], "a", "b", failure_policy="report", selection_report={})
+
+
 def test_dry_plan_makes_no_api_call_and_needs_no_key(tmp_path, monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     client = FakeClient()

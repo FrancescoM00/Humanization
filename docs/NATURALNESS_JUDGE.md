@@ -4,7 +4,7 @@ Il giudice confronta due riscritture della **stessa fonte**, presentate prima A/
 
 ## Modello e assenza di ragionamento
 
-Il modello richiesto è esattamente `qwen/qwen3.8-27b`. L'accesso pubblico a `https://console.groq.com/docs/models` è stato tentato dal cloud ma negato dal proxy (403); il modello **non è stato confermato disponibile**. Non è stata eseguita alcuna generazione Groq. Lo script non sostituisce il modello con un altro.
+Il modello richiesto è esattamente `qwen/qwen3.8-27b`. Il successivo [smoke v2](../results_kaggle_v2_smoke/report.md) ha confermato modello e `reasoning_effort=none` su Kaggle: trenta risposte valide includendo la prova iniziale. Quattro dei nove confronti nuovi sono però instabili all'ordine. Non è validazione umana e non sostiene una graduatoria generale. Lo script non sostituisce il modello con un altro.
 
 Da Kaggle, con Internet attivo e `GROQ_API_KEY` configurata come secret, si può verificare il catalogo autenticato:
 
@@ -64,8 +64,55 @@ Output:
 - `judgments.jsonl`: esiti validi o risposte non valide, provenienza `LLM`, modello e uso token.
 - `pairwise_summary.json`: preferenza riferita ai sistemi originali, con disaccordo tra ordini esplicito.
 - `judge_run.json`: completamento, budget, opzioni e controlli del modello.
+- `judge_eligibility.json`: fonti selezionate, coppie giudicabili e generazioni fallite, con stati e hash degli input.
 
 Una directory esistente rifiuta un piano differente. Cambiare modello, prompt, input o rubrica richiede una nuova directory.
+
+## Generazioni fallite nello study: riprendere la sola sezione 12
+
+Il 10 novembre il run sulle 126 fonti si è fermato in `load_pairs`, prima delle chiamate di quel confronto, con `A failed generation cannot be silently omitted or judged as natural`. Il traceback segnala almeno un output non `ok` o vuoto, ma non identifica quanti, quali o la causa dei fallimenti. Non attribuirli automaticamente a memoria, budget o modello.
+
+Il comportamento predefinito del comando resta rigoroso. La nuova opzione esplicita **`--failure-policy report`** permette di giudicare soltanto le coppie con entrambi gli output validi, mantenendo le altre come non valutabili e senza rimpiazzarle. La selezione per ID e il limite del campione sono applicati **prima** del controllo degli stati. Non si rigenera il testo e non si trasforma il fallimento in pareggio, sconfitta o basso punteggio di naturalezza. Per detector/ASR resta in vigore la politica dei fallimenti già prevista.
+
+`judge_eligibility.json` conserva tutti gli ID selezionati, gli stati dei due sistemi e i motivi di ineleggibilità. `pairwise_summary.json` comprende anche fonti non giudicate e distingue fallimento della generazione, API incompleta, disaccordo all'ordine e preferenza stabile. Il manifest riporta coppie selezionate, giudicabili, fallite e copertura sul denominatore originario. `completed` riguarda le richieste pianificate sulle coppie valide, non significa copertura di tutte le 126 fonti. Senza coppie valide lo stato è `not_judged_no_eligible_pairs` e non viene contattata l'API.
+
+Il piano, il modello, la rubrica AB/BA e il budget restano gli stessi; gli esiti già salvati vengono riusati. I conteggi di fallimento e la naturalezza condizionata a entrambi gli output riusciti vanno presentati insieme, perché un sistema con più fallimenti non deve apparire migliore grazie alla sola selezione dei sopravvissuti.
+
+Per la sessione già avviata, **sostituire la cella della sezione 12** con questa ripresa. Il piccolo bundle contiene script e modulo aggiornati, estratti nel RUN per conservarne i sorgenti. Non richiede reimport del notebook o aggiornamento del checkout esistente:
+
+```python
+import io, json, subprocess, urllib.request, zipfile
+
+fix = RUN / "naturalness_resume"
+url = "https://raw.githubusercontent.com/FrancescoM00/Humanization/main/kaggle/Naturalness_Resume.zip"
+with urllib.request.urlopen(url, timeout=60) as response:
+    with zipfile.ZipFile(io.BytesIO(response.read())) as archive:
+        archive.extractall(fix)
+
+rows = read_jsonl(REWRITES / "rewrites.jsonl")
+print("Output non giudicabili:", [(r["humanizer"], r["source_id"], r.get("status"))
+    for r in rows if r.get("status") != "ok" or not str(r.get("modified") or "").strip()])
+
+comparisons = [("qwen_humanize", "qwen14b_humanize"),
+               ("qwen_humanize", "dipper_context3"), ("dipper", "dipper_context3")]
+for a, b in comparisons:
+    if not {a, b}.issubset(ACTIVE_SYSTEMS):
+        continue
+    destination = RUN / "naturalness" / (a + "__" + b)
+    subprocess.run([str(PYTHON), str(fix / "scripts/judge_naturalness.py"),
+        "--rewrites", str(REWRITES / "rewrites.jsonl"),
+        "--humanizer-a", a, "--humanizer-b", b, "--model", JUDGE_MODEL,
+        "--max-pairs", str(3 if MODE == "smoke" else 126),
+        "--max-requests", str(16 if MODE == "smoke" else 256),
+        "--failure-policy", "report", "--execute", "--output", str(destination)],
+        cwd=REPO, check=True)
+    manifest = json.loads((destination / "judge_run.json").read_text())
+    print(a, b, manifest["status"], "giudicabili:", manifest["n_eligible_pairs"],
+          "/", manifest["n_selected_sources"],
+          "coppie fallite:", manifest["n_generation_failure_pairs"])
+```
+
+La chiave rimane quella già caricata dalla sezione 3. Terminata la ripresa, eseguire la sezione 13 per creare lo ZIP completo, anche se qualche giudizio API è parziale: i mancanti rimangono espliciti. Il bundle non altera riscritture, detector o score semantici/stilometrici.
 
 ## Validazione con le schede di naturalezza
 
