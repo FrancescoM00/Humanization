@@ -1,0 +1,37 @@
+{
+  "received_filename": "humanization_smokedipper.zip",
+  "received_sha256": "29724b6cff64732468e186d962299483b32ecdc6a345f6b9dbe84c9481990172",
+  "received_bytes": 1298017,
+  "sediment_file_id": "file_0000000037388210b3beb52c1b5ec9a7",
+  "archive_in_repository": "exports/kaggle_dipper_smoke/humanization_smokedipper.zip",
+  "analysis": "Existing Kaggle outputs only; no new generation, inference, or human annotation.",
+  "runtime": {
+    "repository_commit": "1e1d340980c6f643e54bc0d328bbb035c10c5c56",
+    "mode": "smoke",
+    "active_systems": [
+      "identity",
+      "dipper"
+    ],
+    "torch": "2.11.0+cu130",
+    "gpus": [
+      "Tesla T4",
+      "Tesla T4"
+    ],
+    "requirements_sha256": "d47f409520ddc66f86a6eca8377551737ed0d146f056eb0db94bef2526b873d2",
+    "config_sha256": "86db7eb81f3d75fbfb306601395b70442659a3ea27d38b2e534991b571556d3b"
+  },
+  "pairs_sha256": "5317f6865ea74b9dd06e326400d8160a5ad4f4716ef162a42a4f36f862bb651f",
+  "cohort_smoke_sha256": "9c6553dce584ce1ba8686efc48ef29745e16d8ae92fd26d66b0b6dcbb06eb21c",
+  "qwen_comparator": {
+    "archive": "exports/kaggle_smoke/humanization_smoke.zip",
+    "sha256": "5034fb1ddc52797e4fa3954f8ef821136cb77a2ca542ee6e5f8cf4538344e525",
+    "identical_original_texts": true,
+    "summary": "results_kaggle_smoke/per_pair_summary.csv",
+    "n_shared_sources": 3
+  },
+  "n_sources": 3,
+  "n_pairs": 6,
+  "source_generator": "ChatGLM",
+  "human_annotation_present": false,
+  "semantic_threshold_applied": false
+}

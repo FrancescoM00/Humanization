@@ -4,7 +4,7 @@ Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I ri
 
 La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
 
-La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: lo [smoke](results_kaggle_smoke/report.md) e il **[pilot Qwen su 42 fonti](results_kaggle_pilot/report.md)** sono completi e analizzati. ASR: OpenAI 17/24, Fakespot 1/37, RADAR 2/28 e maggioranza 2/31, con denominatori condizionati agli originali riconosciuti. I casi commentati mostrano variazioni reali di contenuto e limiti dell'NLI. Il passo successivo è [l'annotazione manuale](exports/kaggle_pilot/README.md) e il confronto con un secondo humanizer; naturalezza e DIPPER restano da eseguire.
+La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: lo [smoke Qwen](results_kaggle_smoke/report.md), il **[pilot Qwen su 42 fonti](results_kaggle_pilot/report.md)** e lo **[smoke DIPPER su tre fonti](results_kaggle_dipper_smoke/report.md)** sono completi e analizzati. ASR Qwen nel pilot: OpenAI 17/24, Fakespot 1/37, RADAR 2/28 e maggioranza 2/31, con denominatori condizionati agli originali riconosciuti. Nello smoke DIPPER non elude i detector; omette alcuni contenuti, con un caso chiaro di asimmetria NLI in Reuters. Il passo successivo è [l'annotazione manuale](exports/kaggle_pilot/README.md) e il pilot DIPPER sulle stesse 42 fonti. La naturalezza resta da valutare.
 
 ## Risultati e protocolli
 
@@ -18,6 +18,7 @@ La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: lo [smoke](results
 | Stile nelle frasi OpAI toccate | [Report e casi](results_opai_touched_style/report.md) | `scripts/run_opai_touched_style.py` |
 | Entity clean v2 e controllo numerico | [Interpretazione](results_semantic_clean/interpretazione.md), [34 date/importi/percentuali](results_semantic_clean/numeric34/report.md) | [ENTITY_CLEAN_EXPERIMENT.md](ENTITY_CLEAN_EXPERIMENT.md) |
 | Pilot Kaggle: Qwen, detector, semantica e stile | [Report e casi](results_kaggle_pilot/report.md), [ZIP e annotazione](exports/kaggle_pilot/README.md) | [Notebook e guida](kaggle/README.md) |
+| Smoke DIPPER e confronto appaiato con Qwen | [Report e casi](results_kaggle_dipper_smoke/report.md), [ZIP originale](exports/kaggle_dipper_smoke/README.md) | [Notebook e guida](kaggle/README.md) |
 
 La suite produce [score continui](results_semantic_fairness/continuous_suite/manifest.json); la soglia storica OpAI 0,04075 non si trasferisce ad altri humanizer. NLI mantiene un vantaggio sulle corruzioni testate, ma il minimo dipende dalla lunghezza e può essere superato dalla media su errori distribuiti. Le cautele restano problematiche.
 
@@ -27,7 +28,7 @@ La suite produce [score continui](results_semantic_fairness/continuous_suite/man
 - `main` contiene codice, test, report, CSV e figure. `cloud-backup` conserva dataset, modelli, venv e cache tramite Git LFS: [inventario](TRANSFER_STATUS.md) e [ripristino](backups/README.md).
 - Per continuare in Codex leggere [CODEX_HANDOFF.md](CODEX_HANDOFF.md). La venv archiviata è uno snapshot Linux x86_64/Python 3.12, da ricreare su Windows, macOS o percorsi incompatibili.
 
-La politica delle entità rimane `v1` per default; `--entity-policy clean` attiva le guardie nuove. Clean significa più conservativa, non gold semantica: rimangono errori NER e di sottotipo, descritti nell'[audit](results_semantic_clean/clean_entity_text_audit.md). Le review disponibili sono dell'assistente; le nuove annotazioni manuali dell'utente non sono contenute nella patch ricevuta. DIPPER, EditLens e nuovi servizi di humanization non sono stati eseguiti.
+La politica delle entità rimane `v1` per default; `--entity-policy clean` attiva le guardie nuove. Clean significa più conservativa, non gold semantica: rimangono errori NER e di sottotipo, descritti nell'[audit](results_semantic_clean/clean_entity_text_audit.md). Le review disponibili sono dell'assistente; le nuove annotazioni manuali dell'utente non sono contenute nella patch ricevuta. DIPPER è stato eseguito sullo smoke; il suo pilot, EditLens e nuovi servizi di humanization restano da eseguire.
 
 ## Eseguire lo stile
 

@@ -137,6 +137,20 @@ Il preset è disabilitato nel config normale e viene attivato esplicitamente dal
 
 DIPPER lavora sull'intero passaggio breve senza prefisso di contesto: è una variante esplicita, non una replica della procedura ufficiale a finestre di tre frasi. DeBERTa NLI rimane base float32 anche quando il riscrittore DIPPER è quantizzato.
 
+### Smoke DIPPER completato: avvio del pilot
+
+Lo [smoke restituito da Kaggle](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_dipper_smoke/report.md) completa tre riscritture e tre identità con tutti gli stadi. Nessuna evasione sui tre input; si osservano compressione e omissioni, incluso il riferimento ai problemi legali in Reuters. Le tre fonti sono tutte ChatGLM e non permettono di concludere sull'efficacia generale del sistema.
+
+Per il confronto appaiato con il pilot Qwen, nel notebook aggiornato impostare:
+
+```python
+MODE = "pilot"
+RUN_SUFFIX = "_dipper"
+ACTIVE_SYSTEMS = ["identity", "dipper"]
+```
+
+Rieseguire le sezioni 1–9: nella sezione 3 devono risultare 300 umani di calibrazione e 42 fonti test, nella sezione 4 sono attesi 84 esiti. Scaricare `humanization_pilot_dipper.zip`. Modelli e venv vengono riusati se presenti nella stessa sessione. Mantenere il preset fissato; lo smoke è incluso nei 42 e non è una validazione indipendente.
+
 ## 8. Limiti e problemi pratici
 
 Il primo pilot completa l'applicazione degli assi evasione, significato e stile a riscritture prodotte dal sistema. **La naturalezza non è automaticamente validata:** i moduli manuali sono da compilare, e Flesch/PPL non equivalgono a naturalezza. Un giudice LLM separato richiede un protocollo e risorse propri.
