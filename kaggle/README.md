@@ -72,6 +72,8 @@ REPO = Path("/kaggle/temp/Humanization_pilot")
 
 Questo permette di scaricare il codice corretto senza sovrascrivere le patch del vecchio clone. Lascia `TMP` invariato. Esegui poi le celle dall'inizio; non occorre ripetere lo smoke. Il [report del primo smoke completo](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_smoke/report.md) documenta i risultati e i limiti emersi.
 
+Il [pilot su 42 fonti è ora completato](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_pilot/report.md). Prima di ampliare il campione, sono disponibili [schede di annotazione](https://github.com/FrancescoM00/Humanization/blob/main/exports/kaggle_pilot/README.md): 24 coppie per la semantica e 28 testi per la naturalezza. Il confronto successivo consigliato è con un secondo sistema sulle stesse fonti; la sezione DIPPER qui sotto permette di iniziare dal suo smoke separato.
+
 I testi sono i passaggi iniziali di 90–180 parole del precedente controllo a lunghezza esattamente abbinata. **Non sono documenti completi** e le lunghezze delle riscritture non vengono forzate a coincidere. Questo mantiene il primo esperimento contenuto e chiarisce a quali testi si riferiscono i risultati.
 
 Il preset `MODE="study"` prepara 126 fonti, ma l'estensione va decisa dopo aver letto il pilot. Mantieni gli stessi prompt, detector e regole durante il confronto.

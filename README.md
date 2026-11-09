@@ -4,7 +4,7 @@ Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I ri
 
 La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
 
-La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: prova tecnica su 3 fonti, pilot su 42, humanization via prompt, tre detector e riuso della suite semantica/stilometrica su GPU. Lo **[smoke completo](results_kaggle_smoke/report.md)** è stato importato e analizzato: Qwen evade il solo OpenAI su 2/3 casi; la lettura dei testi mostra sia variazioni reali di contenuto sia allarmi NLI dovuti al contesto fra frasi. Il pilot su 42 è il passo successivo; DIPPER è opzionale.
+La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: lo [smoke](results_kaggle_smoke/report.md) e il **[pilot Qwen su 42 fonti](results_kaggle_pilot/report.md)** sono completi e analizzati. ASR: OpenAI 17/24, Fakespot 1/37, RADAR 2/28 e maggioranza 2/31, con denominatori condizionati agli originali riconosciuti. I casi commentati mostrano variazioni reali di contenuto e limiti dell'NLI. Il passo successivo è [l'annotazione manuale](exports/kaggle_pilot/README.md) e il confronto con un secondo humanizer; naturalezza e DIPPER restano da eseguire.
 
 ## Risultati e protocolli
 
@@ -17,6 +17,7 @@ La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: prova tecnica su 3
 | Similarità allineate, errori distribuiti e lunghezza | [Interpretazione](results_semantic_fairness/interpretazione.md) | [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) |
 | Stile nelle frasi OpAI toccate | [Report e casi](results_opai_touched_style/report.md) | `scripts/run_opai_touched_style.py` |
 | Entity clean v2 e controllo numerico | [Interpretazione](results_semantic_clean/interpretazione.md), [34 date/importi/percentuali](results_semantic_clean/numeric34/report.md) | [ENTITY_CLEAN_EXPERIMENT.md](ENTITY_CLEAN_EXPERIMENT.md) |
+| Pilot Kaggle: Qwen, detector, semantica e stile | [Report e casi](results_kaggle_pilot/report.md), [ZIP e annotazione](exports/kaggle_pilot/README.md) | [Notebook e guida](kaggle/README.md) |
 
 La suite produce [score continui](results_semantic_fairness/continuous_suite/manifest.json); la soglia storica OpAI 0,04075 non si trasferisce ad altri humanizer. NLI mantiene un vantaggio sulle corruzioni testate, ma il minimo dipende dalla lunghezza e può essere superato dalla media su errori distribuiti. Le cautele restano problematiche.
 
