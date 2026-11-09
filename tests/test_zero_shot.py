@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 import numpy as np
 import pandas as pd
@@ -7,7 +8,35 @@ import torch
 
 from humanizers.detection import text_records
 from humanizers.zero_shot import (binoculars_components, calibrate_low_threshold,
+    cached_weight_snapshot, select_writable_cache,
     ratio_from_components, summarize_zero_shot, token_windows)
+
+
+def test_complete_pinned_snapshot_is_reused_but_partial_shards_are_not(tmp_path):
+    snapshot = tmp_path/'models--owner--model'/'snapshots'/('a'*40)
+    snapshot.mkdir(parents=True)
+    (snapshot/'config.json').write_text('{}')
+    (snapshot/'model.safetensors.index.json').write_text(json.dumps({'weight_map': {'a': 'one.safetensors', 'b': 'two.safetensors'}}))
+    (snapshot/'one.safetensors').write_text('completed')
+    (snapshot/'two.safetensors.incomplete').write_text('partial')
+    assert cached_weight_snapshot('owner/model', 'a'*40, [tmp_path]) is None
+    (snapshot/'two.safetensors').write_text('completed')
+    assert cached_weight_snapshot('owner/model', 'a'*40, [tmp_path]) == snapshot
+    assert cached_weight_snapshot('owner/model', 'b'*40, [tmp_path]) is None
+
+
+def test_cache_selection_skips_a_read_only_mount_without_deleting_existing_data(tmp_path, monkeypatch):
+    from pathlib import Path
+    first, second = tmp_path/'read_only', tmp_path/'writable'
+    first.mkdir(); (first/'existing').write_text('keep')
+    original = Path.write_text
+    def write(path, *args, **kwargs):
+        if path.parent == first:
+            raise OSError(30, 'Read-only file system')
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'write_text', write)
+    assert select_writable_cache([first, second], missing_models=1, min_free_bytes=1) == second
+    assert (first/'existing').read_text() == 'keep'
 
 
 def test_binoculars_observed_nll_and_cross_entropy_have_correct_direction_and_masks():

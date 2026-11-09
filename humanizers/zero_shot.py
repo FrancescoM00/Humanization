@@ -11,8 +11,10 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import os
 from pathlib import Path
 import re
+import shutil
 import time
 
 import numpy as np
@@ -212,9 +214,77 @@ def _settings(detector):
     return settings
 
 
+def cached_weight_snapshot(repo_id, revision, roots):
+    """Read a pinned snapshot only when config and every weight shard exist."""
+    for root in roots:
+        snapshot = Path(root) / ('models--' + repo_id.replace('/', '--')) / 'snapshots' / revision
+        if not (snapshot / 'config.json').is_file():
+            continue
+        index = snapshot / 'model.safetensors.index.json'
+        if index.is_file():
+            try:
+                names = set(json.loads(index.read_text())['weight_map'].values())
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+            if names and all(Path(n).name == n and (snapshot / n).is_file() for n in names):
+                return snapshot
+        elif (snapshot / 'model.safetensors').is_file():
+            return snapshot
+    return None
+
+
+def select_writable_cache(candidates, *, missing_models, min_free_bytes=None):
+    """Probe another filesystem rather than changing permissions on a mount."""
+    needed = missing_models * 15 * 2**30 if min_free_bytes is None else min_free_bytes
+    failures = []
+    for candidate in candidates:
+        candidate = Path(candidate)
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            probe = candidate / '.humanization_write_probe'
+            probe.write_text('ok')
+            probe.unlink()
+            free = shutil.disk_usage(candidate).free
+            if free < needed:
+                failures.append(f'{candidate}: insufficient free space')
+                continue
+            # disk_usage may describe the host rather than Kaggle's output quota.
+            if str(candidate).startswith('/kaggle/working/') and missing_models > 1:
+                failures.append(f'{candidate}: two new Falcon checkpoints exceed the usual 20-GB output quota')
+                continue
+            return candidate
+        except OSError as exc:
+            failures.append(f'{candidate}: {exc.strerror} (errno {exc.errno})')
+    raise RuntimeError('No writable model cache with sufficient space. ' + '; '.join(failures))
+
+
+def _prepare_model_storage(settings):
+    initial = Path(os.environ.get('HUMANIZATION_HF_READ_CACHE') or os.environ.get('HF_HUB_CACHE')
+                   or str(Path(os.environ.get('HF_HOME', str(Path.home()/'.cache/huggingface'))) / 'hub'))
+    roots = list(dict.fromkeys([initial, Path.home()/'.cache/huggingface/hub',
+                               Path('/kaggle/temp/humanization_runtime/huggingface/hub')]))
+    snapshots = {p: cached_weight_snapshot(settings[p+'_model_id'], settings[p+'_revision'], roots)
+                 for p in ('observer', 'performer')}
+    override = os.environ.get('HUMANIZATION_HF_WRITE_CACHE')
+    candidates = ([Path(override)] if override else [initial,
+        Path('/kaggle/temp/humanization_downloads_http/hub'),
+        Path('/tmp/humanization_downloads_http/hub'),
+        Path('/kaggle/working/.humanization_downloads_http/hub')])
+    writable = select_writable_cache(candidates, missing_models=sum(p is None for p in snapshots.values()))
+    os.environ['HF_HUB_CACHE'] = str(writable)
+    os.environ['HF_HUB_DISABLE_XET'] = '1'
+    scratch = writable / '_tmp'
+    scratch.mkdir(exist_ok=True)
+    os.environ['TMPDIR'] = str(scratch)
+    for name in ('TRANSFORMERS_CACHE', 'HUGGINGFACE_HUB_CACHE'):
+        if name in os.environ:
+            os.environ[name] = str(writable)
+    print(f'Model cache: {writable}; complete cached checkpoints: {sum(p is not None for p in snapshots.values())}/2', flush=True)
+    return writable, snapshots
+
+
 def _load_pair(settings, observer_device, performer_device):
     import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     devices = [torch.device(observer_device), torch.device(performer_device)]
     if any(d.type != 'cuda' or d.index is None for d in devices) or devices[0] == devices[1]:
@@ -229,15 +299,23 @@ def _load_pair(settings, observer_device, performer_device):
                 raise RuntimeError(f'{device}: free at least 14 GiB before loading an unquantized Falcon 7B')
             if dtype == torch.bfloat16 and not torch.cuda.is_bf16_supported():
                 raise RuntimeError('This GPU does not support the requested bfloat16 condition; use explicit float16 on T4')
-    tokenizers = [AutoTokenizer.from_pretrained(settings[prefix + '_model_id'], revision=settings[prefix + '_revision'])
-                  for prefix in ['observer', 'performer']]
+    writable, snapshots = _prepare_model_storage(settings)
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    def source(prefix):
+        if snapshots[prefix] is not None:
+            return str(snapshots[prefix]), {'local_files_only': True}
+        return settings[prefix+'_model_id'], {'revision': settings[prefix+'_revision']}
+    tokenizers = [AutoTokenizer.from_pretrained(source(prefix)[0], cache_dir=str(writable),
+                  trust_remote_code=False, **source(prefix)[1]) for prefix in ['observer', 'performer']]
     if tokenizers[0].get_vocab() != tokenizers[1].get_vocab():
         raise ValueError('Observer and performer vocabularies/token indices differ')
     models = []
     try:
         for prefix, device in zip(['observer', 'performer'], devices):
-            model = AutoModelForCausalLM.from_pretrained(settings[prefix + '_model_id'],
-                revision=settings[prefix + '_revision'], torch_dtype=dtype, device_map={'': device.index},
+            location, kwargs = source(prefix)
+            print(f'{prefix}: '+('reuse complete pinned snapshot' if snapshots[prefix] else 'download missing checkpoint'), flush=True)
+            model = AutoModelForCausalLM.from_pretrained(location,
+                **kwargs, cache_dir=str(writable), torch_dtype=dtype, device_map={'': device.index},
                 low_cpu_mem_usage=True, use_safetensors=True, trust_remote_code=False,
                 attn_implementation='sdpa').eval()
             models.append(model)

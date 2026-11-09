@@ -73,3 +73,13 @@ Nel primo smoke v2 il Falcon observer è stato scaricato e caricato; il download
 Il notebook aggiornato imposta `HF_HUB_CACHE`, `HF_XET_CACHE` e `TMPDIR` sotto `/kaggle/temp/humanization_runtime`, verifica che siano scrivibili e usa `HF_HUB_DISABLE_XET=1`. Le variabili devono essere presenti **prima degli import Hugging Face**: il subprocess della sezione 7 le rilegge a ogni avvio. Si conserva la cache dei file completi; si possono rimuovere soltanto i `.incomplete` del performer interrotto per evitare il riuso di un file parziale Xet durante il passaggio a HTTP.
 
 La sessione attuale può impostare queste variabili in una cella nuova e poi rieseguire solo la sezione 7. Non cambiano checkpoint, precisione, formula del ratio o calibrazione. Il download HTTP standard deve ancora completarsi sul runtime dell'autore; non è già dichiarato risolto dal test locale del notebook.
+
+### Cache originale confermata di sola lettura: ripresa dedicata
+
+La successiva prova di scrittura dell'autore fallisce direttamente in `/kaggle/temp/humanization_runtime/huggingface/hub`: usare lo stesso percorso non risolve il problema, anche con Xet disabilitato. Il loader aggiornato cerca uno spazio scrivibile distinto, prima sotto `/kaggle/temp/humanization_downloads_http`, poi `/tmp/humanization_downloads_http`, infine `/kaggle/working/.humanization_downloads_http`.
+
+Prima di scaricare controlla le snapshot alle revisioni fissate: una configurazione e **tutti** gli shard safetensors devono essere presenti. Una snapshot completa viene letta direttamente dalla cache precedente, anche se il filesystem è di sola lettura; i `.incomplete` non valgono come pesi completi. Non viene ricopiato il primo Falcon. I file mancanti vanno nella nuova cache, dopo una prova di scrittura e spazio libero. Non si cambiano permessi al mount e non si cancellano i vecchi pesi.
+
+Il [pacchetto di ripresa](../kaggle/Binoculars_Resume.zip) contiene il runner e i suoi tre file di supporto. Può essere estratto sotto il RUN in `/kaggle/working`, così la correzione funziona anche se il checkout precedente non è modificabile. La stessa sezione viene eseguita indicando coorte, controlli, config e directory di output esistenti. Il codice corretto e il suo hash sono inclusi negli output.
+
+Con due checkpoint mancanti il fallback su `/kaggle/working` non viene scelto, perché circa 28 GB di pesi superano la consueta quota di output di 20 GB. Quando il primo è già completo, il secondo richiede circa 14 GB. I controlli locali verificano la selezione del filesystem e il rifiuto delle snapshot parziali; la ripresa sul runtime Kaggle resta da confermare dall'esecuzione.

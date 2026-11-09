@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Run Binoculars on the frozen cohort and rewrites, calibrating on humans only."""
 import argparse
+import os
 from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+os.environ.setdefault('HF_HUB_DISABLE_XET', '1')
 
 from humanizers.zero_shot import run
 
