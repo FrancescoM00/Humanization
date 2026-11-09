@@ -30,6 +30,7 @@ def main():
     parser.add_argument('--model', type=Path, default=ROOT/'data/models/bertscore')
     parser.add_argument('--threads', type=int, default=4)
     parser.add_argument('--batch-size', type=int, default=4)
+    parser.add_argument('--device', default='cpu', help='Explicit PyTorch device for BERTScore: cpu, cuda or cuda:0')
     args = parser.parse_args()
     pairs = [json.loads(x) for x in args.pairs.read_text().splitlines() if x.strip()]
     alignment = json.loads(args.alignment.read_text())
@@ -43,7 +44,7 @@ def main():
         frame, units = aligned_cosine_scores(pairs, alignment, progress_callback=progress)
     else:
         frame, units = aligned_bert_scores(pairs, alignment, args.model, n_threads=args.threads,
-                                           batch_size=args.batch_size, progress_callback=progress)
+                                           batch_size=args.batch_size, progress_callback=progress, device=args.device)
     frame.to_csv(args.output/(stem+'.csv'), index=False)
     (args.output/(stem+'_units.jsonl')).write_text(''.join(json.dumps(row)+'\n' for row in units))
     metadata = {'stage':stem,'status':'executed','n_pairs':len(frame),
@@ -52,6 +53,7 @@ def main():
                 'elapsed_seconds':time.monotonic()-start,
                 'peak_rss_mib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,
                 'threads':args.threads,'batch_size':args.batch_size,
+                'device':args.device if args.stage=='bertscore' else 'cpu',
                 'model':str(args.model) if args.stage=='bertscore' else 'cached MiniLM sentence similarities',
                 'unit_protocol':'exact existing NLI alignment chunks; no silent truncation',
                 'alignment':'maximum across all premise units; both directions',

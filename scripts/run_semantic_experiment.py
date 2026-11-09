@@ -108,10 +108,10 @@ def stage(args):
     if args.stage == 'lexical':
         frame = lexical_scores(pairs)
     elif args.stage == 'embedding':
-        frame, alignment = embedding_scores(pairs, args.models / 'embedding', n_threads=args.threads, progress_callback=progress)
+        frame, alignment = embedding_scores(pairs, args.models / 'embedding', n_threads=args.threads, progress_callback=progress, device=args.device)
         write_json(args.data_dir / 'alignment.json', alignment)
     elif args.stage == 'bertscore':
-        frame = bert_scores(pairs, args.models / 'bertscore', batch_size=4, n_threads=args.threads, progress_callback=progress)
+        frame = bert_scores(pairs, args.models / 'bertscore', batch_size=4, n_threads=args.threads, progress_callback=progress, device=args.device)
     else:
         cache = args.data_dir / 'alignment.json'
         if not cache.is_file():
@@ -119,7 +119,7 @@ def stage(args):
         frame = nli_scores(pairs, args.models / 'nli', alignment_cache=json.loads(cache.read_text()),
                            batch_size=args.nli_batch_size, n_threads=args.threads,
                            probability_cache_path=args.data_dir / 'nli_probability_cache.jsonl', progress_callback=progress,
-                           cache_only=args.require_nli_cache)
+                           cache_only=args.require_nli_cache, device=args.device)
     frame.to_csv(args.output / (args.stage + '.csv'), index=False)
     versions = {}
     for name in ['torch', 'transformers', 'sentence-transformers', 'bert-score', 'rouge-score', 'sacrebleu',
@@ -132,7 +132,7 @@ def stage(args):
                'n_pairs': len(frame), 'elapsed_seconds': time.monotonic() - start,
                'peak_rss_mib': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024,
                'pairs_sha256': hashlib.sha256((args.data_dir / 'pairs.jsonl').read_bytes()).hexdigest(),
-               'versions': versions, 'device': 'cpu', 'threads': args.threads,
+               'versions': versions, 'device': 'cpu' if args.stage == 'lexical' else args.device, 'threads': args.threads,
                'batch_size': args.nli_batch_size if args.stage == 'nli' else (4 if args.stage == 'bertscore' else None),
                'model_directory': None if args.stage == 'lexical' else str(args.models / args.stage),
                'metrics_code_sha256': hashlib.sha256((ROOT / 'semantics/metrics.py').read_bytes()).hexdigest()}
@@ -170,6 +170,7 @@ def main():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--entity-policy', choices=['v1', 'clean'], default='v1')
     parser.add_argument('--threads', type=int, default=2)
+    parser.add_argument('--device', default='cpu', help='Explicit PyTorch device: cpu, cuda or cuda:0; no automatic CPU fallback')
     parser.add_argument('--nli-batch-size', type=int, default=8)
     parser.add_argument('--require-nli-cache', action='store_true', help='Refuse missing evidence instead of falling back to native inference')
     args = parser.parse_args()
@@ -179,7 +180,7 @@ def main():
         stages = ['prepare', 'lexical', 'embedding', 'bertscore', 'nli', 'report']
         common = ['--input', str(args.input), '--data-dir', str(args.data_dir), '--output', str(args.output),
                   '--models', str(args.models), '--n', str(args.n), '--seed', str(args.seed), '--threads', str(args.threads),
-                  '--nli-batch-size', str(args.nli_batch_size)]
+                  '--nli-batch-size', str(args.nli_batch_size), '--device', args.device]
         common += ['--entity-policy', args.entity_policy]
         if args.opai_file:
             common += ['--opai-file', str(args.opai_file)]

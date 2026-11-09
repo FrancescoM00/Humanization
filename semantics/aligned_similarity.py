@@ -16,7 +16,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .metrics import _cached_chunks, _cpu_threads, _hash, _identity, _model_path, _records
+from .metrics import (_cached_chunks, _cpu_threads, _hash, _identity, _model_path,
+                      _records, _release_device_cache, _resolve_device)
 
 
 BERT_F1_BASELINE = .814463  # Official English RoBERTa-base, layer 10.
@@ -93,7 +94,7 @@ def aligned_cosine_scores(pairs, alignment, progress_callback=None):
 
 
 def aligned_bert_scores(pairs, alignment, modelpath, *, num_layers=10, batch_size=4,
-                        n_threads=4, token_cache_limit_mib=512, progress_callback=None):
+                        n_threads=4, token_cache_limit_mib=512, progress_callback=None, device='cpu'):
     """Max BERTScore F1 per shared sentence/chunk, with no document averaging.
 
     Unlike the old BERTScore document approximation, F1 is computed for every
@@ -106,10 +107,13 @@ def aligned_bert_scores(pairs, alignment, modelpath, *, num_layers=10, batch_siz
     import torch
 
     _cpu_threads(n_threads)
+    device = _resolve_device(device)
     scorer = BERTScorer(model_type=_model_path(modelpath), num_layers=num_layers,
                         batch_size=batch_size, nthreads=min(n_threads, 4), idf=False,
-                        device='cpu', lang='en', rescale_with_baseline=False,
+                        device=device, lang='en', rescale_with_baseline=False,
                         use_fast_tokenizer=True)
+    if device.startswith('cuda'):
+        scorer._model.float()
     tokenizer = scorer._tokenizer
     token_limit = min(int(tokenizer.model_max_length), 512)
     idf = defaultdict(lambda: 1.0)
@@ -144,7 +148,7 @@ def aligned_bert_scores(pairs, alignment, modelpath, *, num_layers=10, batch_siz
         for offset in range(0, len(missing), batch_size):
             batch = missing[offset:offset+batch_size]
             embeddings, masks, weights = get_bert_embedding(batch, scorer._model, tokenizer, idf,
-                                                            device='cpu', all_layers=False)
+                                                            device=device, all_layers=False)
             for i, text in enumerate(batch):
                 length = int(masks[i].sum())
                 vec = embeddings[i, :length].clone()
@@ -212,4 +216,5 @@ def aligned_bert_scores(pairs, alignment, modelpath, *, num_layers=10, batch_siz
     finally:
         del scorer
         gc.collect()
+        _release_device_cache(device)
     return pd.DataFrame(rows), units

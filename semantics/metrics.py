@@ -69,6 +69,26 @@ def _cpu_threads(n_threads):
     torch.set_num_threads(max(1, min(int(n_threads), 4)))
 
 
+def _resolve_device(device):
+    """Require an explicitly requested CPU/CUDA device; never silently fall back."""
+    import torch
+    resolved = torch.device(device)
+    if resolved.type not in {'cpu', 'cuda'}:
+        raise ValueError('Semantic metrics support cpu or cuda devices')
+    if resolved.type == 'cuda':
+        if not torch.cuda.is_available():
+            raise RuntimeError('CUDA was requested but is unavailable. Enable a GPU accelerator or select --device cpu.')
+        if resolved.index is not None and resolved.index >= torch.cuda.device_count():
+            raise RuntimeError(f'Requested CUDA device {resolved.index} is unavailable')
+    return str(resolved)
+
+
+def _release_device_cache(device):
+    if device.startswith('cuda'):
+        import torch
+        torch.cuda.empty_cache()
+
+
 def _hash(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
@@ -185,7 +205,7 @@ def _top_candidates(similarities, top_k):
     return forward, reverse
 
 
-def embedding_scores(pairs, modelpath, *, chunk_tokens=160, top_k=3, batch_size=16, n_threads=4, progress_callback=None):
+def embedding_scores(pairs, modelpath, *, chunk_tokens=160, top_k=3, batch_size=16, n_threads=4, progress_callback=None, device='cpu'):
     """Return (scores, JSON-serializable evidence-alignment cache) using MiniLM.
 
     Alignment retrieves top-k original chunks for each modified chunk and vice
@@ -194,7 +214,10 @@ def embedding_scores(pairs, modelpath, *, chunk_tokens=160, top_k=3, batch_size=
     """
     from sentence_transformers import SentenceTransformer
     _cpu_threads(n_threads)
-    model = SentenceTransformer(_model_path(modelpath), device="cpu", local_files_only=True)
+    device = _resolve_device(device)
+    model = SentenceTransformer(_model_path(modelpath), device=device, local_files_only=True)
+    if device.startswith('cuda'):
+        model.float()
     tokenizer = model.tokenizer
     special = tokenizer.num_special_tokens_to_add(pair=False)
     budget = min(chunk_tokens, int(model.max_seq_length) - special)
@@ -245,6 +268,7 @@ def embedding_scores(pairs, modelpath, *, chunk_tokens=160, top_k=3, batch_size=
     finally:
         del model
         gc.collect()
+        _release_device_cache(device)
     return pd.DataFrame(rows), cache
 
 
@@ -257,7 +281,7 @@ def _cached_chunks(pair, cache):
     return item
 
 
-def bert_scores(pairs, modelpath, *, num_layers=10, chunk_tokens=160, batch_size=8, n_threads=4, progress_callback=None):
+def bert_scores(pairs, modelpath, *, num_layers=10, chunk_tokens=160, batch_size=8, n_threads=4, progress_callback=None, device='cpu'):
     """Chunk-matched BERTScore approximation; local targets scored directly.
 
     For document precision, each modified chunk selects the original chunk
@@ -270,9 +294,12 @@ def bert_scores(pairs, modelpath, *, num_layers=10, chunk_tokens=160, batch_size
     from bert_score.utils import get_bert_embedding
     import torch
     _cpu_threads(n_threads)
+    device = _resolve_device(device)
     scorer = BERTScorer(model_type=_model_path(modelpath), num_layers=num_layers, batch_size=batch_size,
-                        nthreads=min(n_threads, 4), idf=False, device="cpu", lang="en",
+                        nthreads=min(n_threads, 4), idf=False, device=device, lang="en",
                         rescale_with_baseline=False, use_fast_tokenizer=True)
+    if device.startswith('cuda'):
+        scorer._model.float()
     tokenizer = scorer._tokenizer
     limit = getattr(tokenizer, "model_max_length", 512)
     limit = min(int(limit), 512)
@@ -297,7 +324,7 @@ def bert_scores(pairs, modelpath, *, num_layers=10, chunk_tokens=160, batch_size
         for start in range(0, len(missing), batch_size):
             batch = missing[start:start+batch_size]
             vectors, masks, weights = get_bert_embedding(batch, scorer._model, tokenizer, idf,
-                                                        device="cpu", all_layers=False)
+                                                        device=device, all_layers=False)
             for i, text in enumerate(batch):
                 length = int(masks[i].sum())
                 vector = vectors[i, :length].clone()
@@ -365,6 +392,7 @@ def bert_scores(pairs, modelpath, *, num_layers=10, chunk_tokens=160, batch_size
     finally:
         del scorer
         gc.collect()
+        _release_device_cache(device)
     return pd.DataFrame(rows)
 
 
@@ -438,7 +466,7 @@ def _nli_direction(premises, hypotheses, candidates, tokenizer, predict, labels,
 
 def nli_scores(pairs, modelpath, alignment_cache=None, *, max_pair_tokens=384,
                low_support_threshold=.5, batch_size=8, n_threads=4, label_map=None,
-               probability_cache_path=None, progress_callback=None, cache_only=False):
+               probability_cache_path=None, progress_callback=None, cache_only=False, device='cpu'):
     """Directional sentence/chunk support with max entailment over evidence.
 
     Forward=original entails modified; reverse=modified entails original.
@@ -455,8 +483,12 @@ def nli_scores(pairs, modelpath, alignment_cache=None, *, max_pair_tokens=384,
     from transformers import AutoModelForSequenceClassification, AutoTokenizer
     path = _model_path(modelpath)
     _cpu_threads(n_threads)
+    device = _resolve_device(device)
     tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True)
-    model = AutoModelForSequenceClassification.from_pretrained(path, local_files_only=True).to("cpu").eval()
+    model_options = {'local_files_only': True}
+    if device.startswith('cuda'):
+        model_options['torch_dtype'] = torch.float32
+    model = AutoModelForSequenceClassification.from_pretrained(path, **model_options).to(device).eval()
     labels = resolve_nli_labels(model.config, label_map)
     configured_limit = min(int(getattr(tokenizer, "model_max_length", 512)),
                            int(getattr(model.config, "max_position_embeddings", 512)))
@@ -471,6 +503,10 @@ def nli_scores(pairs, modelpath, alignment_cache=None, *, max_pair_tokens=384,
         header = {"type": "nli_probability_cache_v1", "model_path": path,
                   "config_sha256": hashlib.sha256((Path(path)/"config.json").read_bytes()).hexdigest(),
                   "weight_files": [list(item) for item in weights_metadata]}
+        if device.startswith('cuda'):
+            # Leave historical CPU headers unchanged, while refusing to mix
+            # predictions produced by different numerical backends in one cache.
+            header.update(inference_device=device, inference_precision='float32')
         if cache_file.exists():
             with cache_file.open("rb") as handle:
                 first = handle.readline()
@@ -511,6 +547,7 @@ def nli_scores(pairs, modelpath, alignment_cache=None, *, max_pair_tokens=384,
                                 truncation=False, return_tensors="pt")
             if encoded["input_ids"].shape[1] > limit:
                 raise ValueError("NLI tokenizer exceeded the explicit safe pair budget; no text was truncated")
+            encoded = {key: value.to(device) for key, value in encoded.items()}
             with torch.inference_mode():
                 probability = model(**encoded).logits.softmax(-1).cpu().numpy()
             n_model_scored += len(batch)
@@ -562,4 +599,5 @@ def nli_scores(pairs, modelpath, alignment_cache=None, *, max_pair_tokens=384,
     finally:
         del model
         gc.collect()
+        _release_device_cache(device)
     return pd.DataFrame(rows)

@@ -15,6 +15,14 @@ Repository: `FrancescoM00/Humanization`. Tesi su stile dei testi generati e cons
 
 I quattro protocolli da usare sono [SEMANTIC_EXPERIMENT.md](SEMANTIC_EXPERIMENT.md) per la baseline, [SEMANTIC_CONTROLS.md](SEMANTIC_CONTROLS.md) per positivi/sottili, [FAIRNESS_EXPERIMENT.md](FAIRNESS_EXPERIMENT.md) e [ENTITY_CLEAN_EXPERIMENT.md](ENTITY_CLEAN_EXPERIMENT.md). Le interpretazioni e i report contengono i numeri completi; le sezioni seguenti fissano le decisioni da non perdere.
 
+## Nuova fase Kaggle, preparata ma non ancora eseguita su GPU
+
+[Guida](kaggle/README.md), [notebook](kaggle/Humanization_Pilot.ipynb), [protocollo](kaggle/PROTOCOL.md) e [checkpoint](kaggle/MODELS.md). L'utente può selezionare una GPU Kaggle. Il preset parte da 3 testi, poi 42 (2 per dominio/generatore), con 300 umani disgiunti per calibrazione e 126 fonti di studio riservate. Input: i precedenti passaggi a lunghezza abbinata, ricostruiti dai CSV verificati e dagli ID storici.
+
+`humanizers/` gestisce coorti, riscritture e detector; i nuovi CLI sono `prepare_humanizer_pilot.py`, `run_humanizers.py`, `run_detectors.py`, `score_humanizer_style.py`. Qwen3B è una baseline di humanization via prompt; DIPPER è opzionale per il download di circa 45 GB. Il pool iniziale è OpenAI/Fakespot/RADAR, con etichette AI esplicite e soglie umane separate. ASR condizionata agli originali riconosciuti; fallimenti di generazione nel denominatore. Nessun detector è stato eseguito realmente nel cloud per questa preparazione.
+
+Le metriche semantiche accettano ora `--device cuda`, con default CPU conservato. Su nuovi output chiamare gli stadi singoli: **non `--stage all`**, che preparerebbe le vecchie perturbazioni. Usare `requirements-kaggle.txt` preservando PyTorch CUDA, non i lockfile CPU. Schede manuali di naturalezza sono generate ma non annotate; nessun giudice LLM è stato eseguito. I risultati storici non sono modificati da questa fase.
+
 ## Decisioni sperimentali
 
 - **Stile:** 300 umani e 300 macchine per ciascuno di Essay, WritingPrompts e Reuters; 105 feature. Il controllo successivo abbina esattamente le parole nei prefissi a fine frase. La shortlist `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn` è esplorativa e richiede validazione indipendente.

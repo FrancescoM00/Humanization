@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from semantics.metrics import (_cached_chunks, _hash, _nli_direction, _top_candidates,
+from semantics.metrics import (_cached_chunks, _hash, _nli_direction, _top_candidates, _resolve_device,
                                bert_scores, lexical_scores, nli_scores,
                                resolve_nli_labels, token_chunks)
 
@@ -54,6 +54,19 @@ class FakeTokenizer:
 
 
 class CoverageAndDirectionTests(unittest.TestCase):
+    def test_explicit_cuda_request_fails_without_a_gpu_instead_of_using_cpu(self):
+        with patch('torch.cuda.is_available', return_value=False):
+            self.assertEqual(_resolve_device('cpu'), 'cpu')
+            with self.assertRaisesRegex(RuntimeError, 'CUDA was requested but is unavailable'):
+                _resolve_device('cuda')
+
+    def test_cuda_index_must_exist(self):
+        with patch('torch.cuda.is_available', return_value=True), \
+                patch('torch.cuda.device_count', return_value=1):
+            self.assertEqual(_resolve_device('cuda:0'), 'cuda:0')
+            with self.assertRaisesRegex(RuntimeError, 'device 1 is unavailable'):
+                _resolve_device('cuda:1')
+
     def test_actual_fast_wordpiece_preserves_original_words(self):
         from transformers import BertTokenizerFast
         vocab = ['[PAD]', '[UNK]', '[CLS]', '[SEP]', '[MASK]', 'alpha', 'play', '##ing', 'café', 'beta', 'gamma']
