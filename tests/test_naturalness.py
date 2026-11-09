@@ -166,3 +166,41 @@ def test_rating_validation_distinguishes_assistant_proxy_and_empty_human_forms(t
     proxy = validate_ratings(plan, rows, ratings, key, label_source="assistant_proxy")
     assert proxy["n_compared"] == 1 and proxy["agreement"] == 1
     assert not proxy["reference_is_human"] and proxy["cohen_kappa"] is None
+
+
+def test_catalog_403_reports_provider_reason_without_key_or_inference_options():
+    secret = 'gsk_test_credential_for_unit_test'
+
+    class Response:
+        status_code = 403
+        headers = {'Retry-After': '2'}
+        text = json.dumps({'error': {'code': 'access_denied', 'message': f'Account denied for {secret}'}})
+
+    class Session:
+        def request(self, method, url, **kwargs):
+            assert method == 'GET' and url.endswith('/models') and kwargs['json'] is None
+            assert kwargs['headers']['Authorization'] == 'Bearer ' + secret
+            assert kwargs['allow_redirects'] is False
+            return Response()
+
+    with pytest.raises(APIError) as caught:
+        GroqClient(api_key=' ' + secret + '\n', session=Session()).check_model(MODEL)
+    message = str(caught.value)
+    assert caught.value.status == 403 and caught.value.retry_after == '2'
+    assert 'access_denied' in message and 'catalog' in message
+    assert 'no inference options submitted' in message and secret not in message
+
+
+def test_plain_waf_403_remains_diagnosable_with_no_redirect_or_secret_echo():
+    class Response:
+        status_code = 403
+        headers = {}
+        text = '<html><body>error code: 1010; Bearer gsk_some_other_secret</body></html>'
+
+    class Session:
+        def request(self, *args, **kwargs):
+            return Response()
+
+    with pytest.raises(APIError) as caught:
+        GroqClient(api_key='test-key', session=Session()).check_model(MODEL)
+    assert '1010' in str(caught.value) and 'gsk_' not in str(caught.value)

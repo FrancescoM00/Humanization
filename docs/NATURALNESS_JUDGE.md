@@ -14,6 +14,14 @@ python scripts/judge_naturalness.py --check-model --model qwen/qwen3.8-27b
 
 La chiave viene letta dall'ambiente, non scritta nei file o nei log. Il client usa soltanto `https://api.groq.com/openai/v1` e non segue redirect. Non incollare la chiave in chat o nel notebook pubblico.
 
+### HTTP 403 sul catalogo
+
+Un 403 da `GET /models` avviene prima di inviare ID del modello e opzioni di generazione: non dimostra che `reasoning_effort=none` sia incompatibile o che il modello richiesto sia assente. Servono codice e motivo del rifiuto per distinguere autorizzazione, account e filtro di rete/client.
+
+Il client aggiornato usa `requests` (già nelle dipendenze Kaggle), rimuove soltanto gli spazi esterni della chiave e conserva nei messaggi una versione limitata e redatta del motivo restituito dal provider. Non cambia host, non segue redirect e non aggira restrizioni dell'account o dell'IP. Le eccezioni distinguono il catalogo dalle richieste di completamento; i manifest registrano anche il motivo sanitizzato dell'ultimo errore e l'hash del client effettivo.
+
+Per aggiornare una sessione già alla sezione 3 è sufficiente sostituire il solo `humanizers/naturalness.py` con la versione pubblicata e rieseguire la sezione 3. Non occorre ripetere setup o generazioni. Se il 403 rimane, condividere la nuova riga di errore redatta, senza la chiave. Il cambio di trasporto è una correzione e una diagnosi: finché il catalogo non risponde non viene dichiarato risolto il problema.
+
 Ogni richiesta include esplicitamente **`reasoning_effort: "none"`**, temperatura zero e output JSON. Questo parametro deve essere accettato dal modello selezionato; se non lo supporta, il run si arresta. Nascondere il ragionamento con `reasoning_format=hidden` non equivale a disabilitarlo e non è usato. La presenza nel catalogo conferma l'ID, non la compatibilità delle opzioni: questa resta da verificare sulla prima richiesta reale. Le risposte con campi di ragionamento non vuoti, modello differente o output troncato sono respinte. Non si elimina il parametro per ottenere una risposta.
 
 ## Preparazione senza chiamate API

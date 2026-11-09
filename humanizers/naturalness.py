@@ -14,9 +14,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import time
-import urllib.error
-import urllib.request
 
 
 PROTOCOL = "groq_pairwise_naturalness_ab_ba_v1"
@@ -175,37 +174,58 @@ class APIError(RuntimeError):
         self.retry_after = retry_after
 
 
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        # The credential is scoped to the fixed API host; no redirect is needed.
-        return None
+def _safe_provider_error(response, api_key):
+    """Expose a bounded provider reason, never the credential or all headers."""
+    body = response.text[:16384]
+    try:
+        data = json.loads(body)
+        error = data.get('error', data) if isinstance(data, dict) else {}
+        if isinstance(error, dict):
+            detail = '; '.join(f'{k}: {error[k]}' for k in ('type', 'code', 'message') if error.get(k))
+        else:
+            detail = str(error)
+    except (ValueError, TypeError):
+        # WAF responses may be plain text (e.g. error 1010) or HTML.
+        detail = re.sub(r'<[^>]*>', ' ', body)
+    detail = detail.replace(api_key, '[REDACTED]')
+    detail = re.sub(r'gsk_[A-Za-z0-9_-]+', '[REDACTED]', detail)
+    detail = re.sub(r'(?i)Bearer\s+\S+', 'Bearer [REDACTED]', detail)
+    return ' '.join(detail.split())[:800] or 'No provider detail returned'
 
 
 class GroqClient:
     """Only the fixed Groq host receives the environment-provided secret."""
-    def __init__(self, api_key=None, *, timeout=120, opener=None):
+    def __init__(self, api_key=None, *, timeout=120, session=None):
+        import requests
         self._key = api_key if api_key is not None else os.environ.get("GROQ_API_KEY")
         if not self._key:
             raise ValueError("Set GROQ_API_KEY using an environment secret; never paste it into a form or report")
+        self._key = self._key.strip()
+        if not self._key:
+            raise ValueError('GROQ_API_KEY is empty after removing surrounding whitespace')
         self.timeout = timeout
-        self.opener = opener if opener is not None else urllib.request.build_opener(_NoRedirect()).open
+        self.session = session if session is not None else requests.Session()
 
     def request(self, method, endpoint, payload=None):
+        import requests
         if endpoint not in {"/models", "/chat/completions"}:
             raise ValueError("Unexpected API endpoint")
-        body = None if payload is None else json.dumps(payload).encode()
-        request = urllib.request.Request(API_ROOT + endpoint, data=body, method=method,
-                                         headers={"Authorization": "Bearer " + self._key,
-                                                  "Content-Type": "application/json"})
         try:
-            with self.opener(request, timeout=self.timeout) as response:
-                return json.loads(response.read())
-        except urllib.error.HTTPError as exc:
-            # Avoid reproducing a provider error body which could echo a secret.
-            raise APIError(exc.code, f"Groq HTTP {exc.code}; check model availability and submitted no-thinking options",
-                           exc.headers.get("Retry-After")) from None
-        except urllib.error.URLError as exc:
-            raise APIError(0, "Groq network request failed; no implicit provider or model fallback") from exc
+            response = self.session.request(method, API_ROOT + endpoint, json=payload,
+                headers={"Authorization": "Bearer " + self._key,
+                         "Content-Type": "application/json", "Accept": "application/json"},
+                timeout=self.timeout, allow_redirects=False)
+        except requests.RequestException:
+            raise APIError(0, "Groq network request failed; no implicit provider or model fallback") from None
+        if not 200 <= response.status_code < 300:
+            phase = 'catalog request; no inference options submitted' if endpoint == '/models' else 'completion request'
+            detail = _safe_provider_error(response, self._key)
+            raise APIError(response.status_code, f'Groq HTTP {response.status_code} during {phase}. {detail}',
+                           response.headers.get('Retry-After'))
+        try:
+            return response.json()
+        except ValueError:
+            raise APIError(response.status_code, 'Groq returned an invalid JSON response') from None
 
     def check_model(self, model):
         catalog = self.request("GET", "/models")
@@ -258,7 +278,7 @@ def run_plan(plan, output, *, execute=False, client=None, max_requests=6,
         if any(row.get(k) != expected[k] for k in ("source_id", "source_group_id", "order", "system_a", "system_b")):
             raise ValueError("Stored judgment metadata differ from the frozen request")
     attempts = read_jsonl(attempts_path) if attempts_path.exists() else []
-    status, blocked_reason = "planned", None
+    status, blocked_reason, provider_error = "planned", None, None
     old_manifest = output / "judge_run.json"
     model_check = json.loads(old_manifest.read_text()).get("model_check") if old_manifest.exists() else None
     if execute:
@@ -290,6 +310,7 @@ def run_plan(plan, output, *, execute=False, client=None, max_requests=6,
                             sleep(wait)
                             continue
                     status, blocked_reason, stop = "partial", f"provider_http_{exc.status}", True
+                    provider_error = str(exc)
                     break
                 row = {k: item[k] for k in ("request_id", "source_id", "source_group_id", "order", "system_a", "system_b")}
                 row.update(label_source="LLM", requested_model=plan["model"], response_model=response.get("model"),
@@ -316,6 +337,9 @@ def run_plan(plan, output, *, execute=False, client=None, max_requests=6,
     (output / "pairwise_summary.json").write_text(json.dumps(summaries, indent=2) + "\n")
     manifest = dict(protocol=PROTOCOL, plan_sha256=_digest(plan), status=status,
                     blocked_reason=blocked_reason, api_execution_requested=execute,
+                    last_provider_error=provider_error,
+                    client_code_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                    http_transport='requests; redirects disabled',
                     generation_api_executed=bool(attempts),
                     max_requests=max_requests, generation_post_attempts=len(attempts),
                     expected_orders=len(plan["requests"]), completed_valid_orders=valid_orders,
