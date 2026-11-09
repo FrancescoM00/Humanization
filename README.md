@@ -4,6 +4,8 @@ Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I ri
 
 La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
 
+Il **[report cumulativo aggiornato](REPORT_SPERIMENTALE.md)** collega tutte le fasi, include i primi risultati Kaggle e spiega numerosità e limiti di smoke, pilot e futura estensione. Il pilot DIPPER 42 è in corso; l'archivio non è ancora stato ricevuto.
+
 La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: lo [smoke Qwen](results_kaggle_smoke/report.md), il **[pilot Qwen su 42 fonti](results_kaggle_pilot/report.md)** e lo **[smoke DIPPER su tre fonti](results_kaggle_dipper_smoke/report.md)** sono completi e analizzati. ASR Qwen nel pilot: OpenAI 17/24, Fakespot 1/37, RADAR 2/28 e maggioranza 2/31, con denominatori condizionati agli originali riconosciuti. Nello smoke DIPPER non elude i detector; omette alcuni contenuti, con un caso chiaro di asimmetria NLI in Reuters. Il passo successivo è [l'annotazione manuale](exports/kaggle_pilot/README.md) e il pilot DIPPER sulle stesse 42 fonti. La naturalezza resta da valutare.
 
 ## Risultati e protocolli
