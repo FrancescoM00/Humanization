@@ -1,0 +1,25 @@
+review_id,naturalness_1_to_5,notes,label_source
+PN0001,3,"Esposizione comprensibile, ma con riprese meccaniche e passaggi astratti; il lessico della conservazione rimane poco spiegato.",assistant
+PN0002,4,Registro giornalistico coerente e periodi ben collegati; alcune formulazioni sono più verbose del necessario.,assistant
+PN0003,4,Narrazione scorrevole e scena chiara; qualche collocazione insolita e aggettivo convenzionale appesantiscono lievemente il ritmo.,assistant
+PN0004,5,"Registro giornalistico convincente, informazioni ben scandite e variazione sintattica naturale; un singolo refuso non compromette la lettura.",assistant
+PN0005,3,"Voce narrante leggibile, ma emozioni e domande vengono reiterate; alcune precisazioni suonano costruite e rallentano la scena.",assistant
+PN0006,4,"Racconto fluido nel proprio genere, con raccordi chiari e sintassi variata; lessico in parte convenzionale.",assistant
+PN0007,2,"Diversi accordi grammaticali difettosi e formulazioni rigide ostacolano la fluidità, pur lasciando riconoscibile la struttura espositiva.",assistant
+PN0008,3,"Breve notizia comprensibile, ma alcune denominazioni e collocazioni suonano poco idiomatiche; la chiusura resta generica.",assistant
+PN0009,5,"Prosa giornalistica compatta e idiomatica, con ritmo sostenuto e transizioni chiare fra notizia e reazioni.",assistant
+PN0010,2,Periodi accumulati e ripetizioni ravvicinate rendono la voce laboriosa; punteggiatura e delimitazione della citazione sono poco curate.,assistant
+PN0011,4,Dialoghi vivaci e andamento narrativo naturale; alcune lacune di punteggiatura nei raccordi limitano la rifinitura.,assistant
+PN0012,3,"Esposizione chiara ma monotona, con ripetizione di soggetto e avvertimenti e diversi gruppi nominali pesanti.",assistant
+PN0013,2,"Il registro è riconoscibile, ma locuzioni poco idiomatiche e una costruzione finale grammaticalmente incompleta interrompono la lettura.",assistant
+PN0014,3,"Scena comprensibile, ma aggettivazione insistita e alcune collocazioni forzate danno alla narrazione un ritmo costruito.",assistant
+PN0015,4,Voce narrante coerente e passaggio alla lettera ben segnalato; l’apertura insiste un poco sulla stessa sorpresa.,assistant
+PN0016,4,"Esposizione divulgativa chiara e ben organizzata, con lessico generalmente idiomatico; alcune enumerazioni risultano prevedibili.",assistant
+PN0017,4,Notizia lineare e ben scandita in paragrafi brevi; qualche espressione ridondante appesantisce leggermente la formulazione.,assistant
+PN0018,3,"La forma di scaletta è riconoscibile e appropriata al genere, ma alcuni frammenti e raccordi restano opachi e ripetitivi.",assistant
+PN0019,4,Registro informativo coerente e progressione leggibile; qualche inciso e una virgola impropria interrompono lievemente la fluidità.,assistant
+PN0020,3,"Dialogo energico e tono riconoscibile, ma alcuni raccordi e locuzioni sono poco idiomatici; refusi e punteggiatura accentuano gli scarti.",assistant
+PN0021,4,Registro giornalistico naturale e concatenazione chiara; nella parte finale compaiono alcune riprese lessicali evitabili.,assistant
+PN0022,3,Esposizione comprensibile ma ripetitiva; la lunga enumerazione centrale forza il parallelismo e appesantisce il ritmo.,assistant
+PN0023,4,Periodi fluidi e raccordi espositivi chiari; alcune nominalizzazioni e categorie poco spiegate rendono la prosa leggermente astratta.,assistant
+PN0024,3,"Testo ordinato ma ripetitivo, con qualche reggenza poco idiomatica e passaggio di riferimento che indebolisce la fluidità.",assistant

@@ -1,12 +1,14 @@
-# Pilot DIPPER: 42 fonti e confronto appaiato con Qwen
+# Pilot DIPPER: 42 fonti e confronto appaiato con baseline 3B
 
-**Il pilot DIPPER è completo: 42 riscritture e 42 identità, tutte tecnicamente riuscite.** Rispetto a Qwen, DIPPER evade meno spesso OpenAI e più spesso Fakespot raw; sul voto di maggioranza entrambi hanno due successi, su fonti differenti. La compressione è molto più frequente con DIPPER. La lettura dei testi mostra omissioni e cambiamenti puntuali, ma anche limiti dell'NLI quando la riscrittura fonde più frasi.
+In questo report **baseline 3B** indica Qwen2.5-3B-Instruct con il prompt fissato e decoding greedy; **DIPPER** indica la configurazione XXL NF4 sul passaggio intero senza prefisso, lessico 60/ordine 0. I risultati non descrivono ogni configurazione dei due modelli.
+
+**Il pilot DIPPER è completo: 42 riscritture e 42 identità, tutte tecnicamente riuscite.** Rispetto a baseline 3B, DIPPER evade meno spesso OpenAI e più spesso Fakespot raw; sul voto di maggioranza entrambi hanno due successi, su fonti differenti. La compressione è molto più frequente con DIPPER. La lettura dei testi mostra omissioni e cambiamenti puntuali, ma anche limiti dell'NLI quando la riscrittura fonde più frasi.
 
 L'analisi usa esclusivamente gli output ricevuti, senza nuove generazioni o inferenze. [Archivio e schede manuali](../exports/kaggle_dipper_pilot/README.md), [dati per coppia](per_pair_summary.csv), [confronto dei due sistemi](comparison_with_qwen.csv), [confronto ASR appaiato](paired_comparison.md), [distribuzioni](metric_distributions.csv), [casi commentati](case_review.md), [integrità](integrity.md), [provenienza](provenance.json).
 
 ## Dati e condizioni
 
-Le 42 fonti sono quelle del pilot Qwen: due per ciascuna delle 21 combinazioni di tre domini e sette generatori. Originali, 300 umani di calibrazione, umani test, soglie e scale stilometriche coincidono. I tre casi dello smoke sono inclusi e le loro riscritture sono rimaste identiche; non si sommano come nuovi dati indipendenti.
+Le 42 fonti sono quelle del pilot baseline 3B: due per ciascuna delle 21 combinazioni di tre domini e sette generatori. Originali, 300 umani di calibrazione, umani test, soglie e scale stilometriche coincidono. I tre casi dello smoke sono inclusi e le loro riscritture sono rimaste identiche; non si sommano come nuovi dati indipendenti.
 
 I passaggi iniziali hanno 90–180 parole alfabetiche e terminano a fine frase. Il risultato riguarda questi passaggi e questi generatori storici, non documenti lunghi o tutti gli LLM attuali.
 
@@ -18,16 +20,16 @@ Gli input DIPPER hanno 181–276 token registrati, gli output 72–200; tutte le
 
 L'ASR è condizionata agli originali che il detector riconosceva AI. Il denominatore è identico fra i due sistemi.
 
-| Detector | Qwen: successi / originali AI | ASR Qwen | DIPPER: successi / originali AI | ASR DIPPER |
+| Detector | baseline 3B: successi / originali AI | ASR baseline 3B | DIPPER: successi / originali AI | ASR DIPPER |
 | --- | ---: | ---: | ---: | ---: |
 | OpenAI RoBERTa-base | 17/24 | 70,8% | 4/24 | 16,7% |
 | Fakespot raw | 1/37 | 2,7% | 7/37 | 18,9% |
 | RADAR | 2/28 | 7,1% | 3/28 | 10,7% |
 | Voto di maggioranza | 2/31 | 6,5% | 2/31 | 6,5% |
 
-Lo smoke DIPPER non aveva evasioni sui suoi tre input; il pilot ne mostra su altre fonti. Questo conferma che il collaudo su tre testi non poteva stimare l'efficacia generale. La macro-media dei tre detector è 15,4% per DIPPER contro 26,9% per Qwen, ma non è la percentuale di testi che evade l'intero pool.
+Lo smoke DIPPER non aveva evasioni sui suoi tre input; il pilot ne mostra su altre fonti. Questo conferma che il collaudo su tre testi non poteva stimare l'efficacia generale. La macro-media dei tre detector è 15,4% per DIPPER contro 26,9% per baseline 3B, ma non è la percentuale di testi che evade l'intero pool.
 
-Il confronto appaiato ricampiona insieme i due esiti della stessa fonte, entro il sottoinsieme degli originali AI. Con 5.000 ricampionamenti e seed 42, la differenza ASR DIPPER−Qwen è:
+Il confronto appaiato ricampiona insieme i due esiti della stessa fonte, entro il sottoinsieme degli originali AI. Con 5.000 ricampionamenti e seed 42, la differenza ASR DIPPER−baseline 3B è:
 
 | Detector | Differenza | Intervallo bootstrap appaiato 95% |
 | --- | ---: | --- |
@@ -57,7 +59,7 @@ Gli umani test sono gli stessi: falsi positivi 3/42 OpenAI, 0/42 Fakespot, 2/42 
 
 Medie sulle stesse 42 fonti, con uguale peso per fonte. BERTScore documentale è l'approssimazione raw con matching di chunk usata dal protocollo. Forward indica originale → riscrittura, reverse riscrittura → originale.
 
-| Metrica | Qwen | DIPPER |
+| Metrica | baseline 3B | DIPPER |
 | --- | ---: | ---: |
 | Coseno documentale | 0,9282 | 0,9215 |
 | BERTScore documentale F1 | 0,9445 | 0,9478 |
@@ -84,13 +86,13 @@ La [review dell'assistente](case_review.md) comprende 12 casi: sei selezionati t
 
 **Un forward quasi nullo può penalizzare la fusione.** Nel racconto Maria/Sofia, 15 frasi originali diventano cinque. Gran parte della trama rimane riconoscibile, pur con differenze di nome e intensità; ciascuna nuova frase combina più informazioni. Il forward medio è solo **0,00262**, mentre il reverse è 0,76640. Non si tratta di cinque invenzioni dimostrate: le singole premesse originali non sostengono da sole le ipotesi fuse. Il caso rende particolarmente urgente misurare i falsi allarmi dell'NLI sulle riscritture reali prima di interpretare le medie come qualità dei sistemi.
 
-**Gli input rumorosi producono comportamenti diversi.** Le due consegne StableLM già identificate per Qwen restano consegne con DIPPER, ma perdono requisiti; Qwen invece le svolgeva. In Reuters/StableLM parte della richiesta compare cinque volte, di cui quattro consecutive alla fine: ridurre la ripetizione abbassa le parole senza una perdita proporzionale di informazione unica. Non tutto l'accorciamento equivale quindi a distruzione di contenuto.
+**Gli input rumorosi producono comportamenti diversi.** Le due consegne StableLM già identificate per baseline 3B restano consegne con DIPPER, ma perdono requisiti; baseline 3B invece le svolgeva. In Reuters/StableLM parte della richiesta compare cinque volte, di cui quattro consecutive alla fine: ridurre la ripetizione abbassa le parole senza una perdita proporzionale di informazione unica. Non tutto l'accorciamento equivale quindi a distruzione di contenuto.
 
 **Esistono anche casi conservativi.** Essay/GPT4All passa da 161 a 158 parole e mantiene gran parte del contenuto, con reverse 0,986. Conserva però l'autoriferimento «As an AI language model». Fedeltà, rimozione di formule e naturalezza sono obiettivi distinti.
 
 ## Stile e lunghezza: DIPPER comprime sistematicamente
 
-| Indicatore | Qwen | DIPPER |
+| Indicatore | baseline 3B | DIPPER |
 | --- | ---: | ---: |
 | Rapporto parole medio | 0,9752 | 0,7393 |
 | Rapporto parole mediano | 0,9150 | 0,7664 |
@@ -106,11 +108,11 @@ La [review dell'assistente](case_review.md) comprende 12 casi: sei selezionati t
 
 Il rapporto mediano DIPPER corrisponde a circa **−23,4% di parole**. In 33/42 fonti DIPPER produce meno parole di Qwen. Le lunghezze dei suoi output vanno da 59 a 158 parole, tutte senza interruzione al limite di generazione. Il profilo osservato comprende quindi una forte componente di sintesi, importante per interpretare evasione, stile e conservazione insieme.
 
-La media RMS DIPPER è inferiore a Qwen, ma la mediana è superiore: non emerge un ordinamento uniforme della quantità di cambiamento. MATTR50 diminuisce in 29/42 casi DIPPER. Queste differenze non sono voti di qualità. Anche l'aumento medio di Flesch misura quella formula di leggibilità, non naturalezza; la sua variazione mediana è soltanto +1,52. Le scale sono comuni e stimate sui 300 umani di calibrazione.
+La media RMS DIPPER è inferiore a baseline 3B, ma la mediana è superiore: non emerge un ordinamento uniforme della quantità di cambiamento. MATTR50 diminuisce in 29/42 casi DIPPER. Queste differenze non sono voti di qualità. Anche l'aumento medio di Flesch misura quella formula di leggibilità, non naturalezza; la sua variazione mediana è soltanto +1,52. Le scale sono comuni e stimate sui 300 umani di calibrazione.
 
 ## Sensibilità alle due consegne già note
 
-Il risultato primario mantiene tutte le 42 fonti. Come analisi secondaria si escludono le stesse due fonti StableLM già segnalate nel report Qwen, senza cercare ulteriori esclusioni sulla base degli score DIPPER. Il sottoinsieme da 40 rimane sbilanciato e non è un nuovo dataset clean certificato.
+Il risultato primario mantiene tutte le 42 fonti. Come analisi secondaria si escludono le stesse due fonti StableLM già segnalate nel report baseline 3B, senza cercare ulteriori esclusioni sulla base degli score DIPPER. Il sottoinsieme da 40 rimane sbilanciato e non è un nuovo dataset clean certificato.
 
 | Misura DIPPER | Tutte le 42 fonti | Sottoinsieme di 40 |
 | --- | ---: | ---: |
@@ -130,6 +132,6 @@ La configurazione e i dati sono identici a quelli Qwen. I 1.278 score detector c
 
 Il confronto riguarda **42 fonti**, non 84 osservazioni indipendenti perché sono presenti due sistemi. Si conferma l'utilità di estendere il campione comune; le 126 fonti sono già riservate, mentre la proposta da 420 richiede una nuova coorte con i 300 gruppi di calibrazione esplicitamente fissi. Nessuna estensione è stata ancora eseguita e i preset non sono modificati dopo la lettura degli output.
 
-Sono pronte [schede comuni](../exports/kaggle_dipper_pilot/README.md): **45 coppie semantiche**, con Qwen e DIPPER sulle stesse 21 fonti più tre identità, e **24 testi per naturalezza** su sei fonti comuni, con umani, originali macchina e riscritture dei due sistemi. Le selezioni usano identificatori, non score; chiavi separate e giudizi vuoti. Le 24 coppie del precedente modulo Qwen sono incluse nella nuova scheda semantica e non vanno conteggiate come nuovi giudizi indipendenti se già annotate.
+Sono pronte [schede comuni](../exports/kaggle_dipper_pilot/README.md): **45 coppie semantiche**, con baseline 3B e DIPPER sulle stesse 21 fonti più tre identità, e **24 testi per naturalezza** su sei fonti comuni, con umani, originali macchina e riscritture dei due sistemi. Le selezioni usano identificatori, non score; chiavi separate e giudizi vuoti. Le 24 coppie del precedente modulo baseline 3B sono incluse nella nuova scheda semantica e non vanno conteggiate come nuovi giudizi indipendenti se già annotate.
 
 L'estensione migliorerà la precisione dell'evasione; le annotazioni serviranno a distinguere errori reali e falsi allarmi delle metriche, e a completare l'asse naturalezza. Fino ad allora i risultati mostrano profili differenti dei due preset, senza un vincitore generale sui quattro assi.

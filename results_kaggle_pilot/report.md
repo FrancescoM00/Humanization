@@ -1,6 +1,10 @@
-# Pilot Kaggle: 42 riscritture Qwen e tre detector
+# Pilot Kaggle: 42 riscritture baseline 3B e tre detector
 
-Il pilot è tecnicamente completo: **42 fonti macchina, 42 riscritture Qwen e 42 identità**, senza generazioni fallite. L'evasione si concentra sul detector storico OpenAI. Su Fakespot, RADAR e voto di maggioranza rimane bassa; dopo la riscrittura questi ultimi riconoscono anche diversi originali che prima sfuggivano. La conservazione del contenuto richiede una lettura più articolata delle sole medie: sono presenti cambiamenti reali, input anomali e limiti delle metriche.
+In questo report **baseline 3B** indica Qwen2.5-3B-Instruct con il prompt fissato e decoding greedy; **DIPPER** indica la configurazione XXL NF4 sul passaggio intero senza prefisso, lessico 60/ordine 0. I risultati non descrivono ogni configurazione dei due modelli.
+
+Il punto da verificare nell’estensione è la variazione complessiva di rilevabilità: Fakespot passa da 37 a 41 testi rilevati e RADAR da 28 a 35. L’ASR elevata sul detector storico OpenAI resta un risultato specifico di quel checkpoint. I controlli di lunghezza e il detector zero-shot sono definiti nel [protocollo v2](../STUDY_V2_PROTOCOL.md), senza modificare questi score.
+
+Il pilot è tecnicamente completo: **42 fonti macchina, 42 riscritture baseline 3B e 42 identità**, senza generazioni fallite. L'evasione si concentra sul detector storico OpenAI. Su Fakespot, RADAR e voto di maggioranza rimane bassa; dopo la riscrittura questi ultimi riconoscono anche diversi originali che prima sfuggivano. La conservazione del contenuto richiede una lettura più articolata delle sole medie: sono presenti cambiamenti reali, input anomali e limiti delle metriche.
 
 [Archivio originale e schede da annotare](../exports/kaggle_pilot/README.md), [dati per coppia](per_pair_summary.csv), [riepilogo detector](detection_summary.csv), [transizioni](detection_transitions.csv), [distribuzioni](metric_distributions.csv), [casi commentati](case_review.md), [integrità](integrity.md), [provenienza](provenance.json).
 
@@ -16,7 +20,7 @@ L'analisi riusa i file ricevuti. Non sono state eseguite nuove generazioni, pred
 
 ASR condizionata agli originali riconosciuti AI. Fra parentesi, l'intervallo bootstrap per fonte già prodotto dalla pipeline; soglie e modelli sono fissi nel ricampionamento.
 
-| Detector | Originali riconosciuti AI | Successi Qwen | ASR | IC 95% ASR | Riscritture riconosciute AI |
+| Detector | Originali riconosciuti AI | Successi baseline 3B | ASR | IC 95% ASR | Riscritture riconosciute AI |
 | --- | ---: | ---: | ---: | --- | ---: |
 | OpenAI RoBERTa-base | 24/42 | 17/24 | 70,8% | 52,0–87,5% | 8/42 |
 | Fakespot raw | 37/42 | 1/37 | 2,7% | 0–10,8% | 41/42 |
@@ -71,9 +75,9 @@ Le guardie segnalano altre differenze nella coppia (numero e quantificatore camb
 
 Nel caso Reuters/Dolly `humanizer_8f156ecd5373a52262810d37`, **“more than 200,000 trades”** diventa **“nearly 200,000 trades”** e alcuni riferimenti temporali scompaiono. Qui il reverse medio è 0,1958, ma il calo non permette da solo di identificare quale cambiamento sia stato rilevato. La [review](case_review.md) distingue osservazioni testuali da interpretazione dei punteggi.
 
-## Due input sono consegne: Qwen cambia compito
+## Due input sono consegne: baseline 3B cambia compito
 
-Due originali StableLM sono istruzioni di scrittura, non normale prosa espositiva. In Essay si richiede di discutere il marketing verso consumatori vulnerabili; in Reuters si richiede un elaborato sul mercato cinese e sulla soddisfazione dei clienti bancari. Qwen sviluppa le risposte invece di parafrasare le consegne, nonostante il prompt di sistema chiedesse di trattare il passaggio come materiale da riscrivere.
+Due originali StableLM sono istruzioni di scrittura, non normale prosa espositiva. In Essay si richiede di discutere il marketing verso consumatori vulnerabili; in Reuters si richiede un elaborato sul mercato cinese e sulla soddisfazione dei clienti bancari. baseline 3B sviluppa le risposte invece di parafrasare le consegne, nonostante il prompt di sistema chiedesse di trattare il passaggio come materiale da riscrivere.
 
 Questi sono i due casi con maggior espansione: **133→381 parole** e **164→274 parole**. Le medie NLI forward/reverse sono rispettivamente 0,0873/0,0320 e 0,0778/0,0654. Nel secondo output compaiono anche riferimenti bibliografici assenti dall'input e non verificati; non si afferma qui che siano falsi senza un controllo esterno.
 
@@ -95,7 +99,7 @@ La lunghezza mediana è **0,915 volte l'originale**, cioè circa −8,5%. Si acc
 
 Tutti gli 84 output hanno stato `ok`; è uno stato di completamento tecnico, non un giudizio semantico. Le identità hanno distanze e guardie zero, rapporto parole uno e coseno/BERTScore circa uno. NLI identità medio 0,9910, senza impostarlo artificialmente a uno. I riepiloghi dei detector sono stati ricalcolati dai dati registrati e coincidono; gli hash delle coppie e dei sorgenti corretti sono coerenti. Il [dettaglio](integrity.md) documenta le verifiche senza nuove inferenze.
 
-Le 42 generazioni Qwen sommano **339,8 secondi** registrati, esclusi caricamento e download. I sei stadi semantici/allineati sommano **62,3 secondi**, esclusi download e altri blocchi. Non sono tempi dell'intero notebook.
+Le 42 generazioni baseline 3B sommano **339,8 secondi** registrati, esclusi caricamento e download. I sei stadi semantici/allineati sommano **62,3 secondi**, esclusi download e altri blocchi. Non sono tempi dell'intero notebook.
 
 La naturalezza resta da valutare. I moduli originali contengono 12 coppie semantiche e 28 testi singoli, tutti senza annotazioni. La review esplorativa dell'assistente copre 12 casi: sei selezionati tramite hash senza usare gli score e sei scelti per approfondire outlier o evasioni rare. Non è una review umana cieca e non produce un'accuratezza delle metriche.
 
@@ -105,4 +109,4 @@ La naturalezza resta da valutare. I moduli originali contengono 12 coppie semant
 
 Compilare la scheda e i [28 giudizi di naturalezza](../exports/kaggle_pilot/naturalness_review_form.csv) fornirà un primo riferimento umano. Un singolo valutatore resta un controllo esplorativo; eventuali giudizi indipendenti vanno conservati separatamente. Non usare NLI o il verdetto dei detector per decidere l'etichetta.
 
-Il confronto successivo utile è un secondo sistema, per esempio **DIPPER sugli stessi input**, iniziando dal suo smoke di tre fonti prima dei 42. L'espansione a 126 Qwen da sola aumenterebbe il campione ma non risolverebbe la dipendenza dal singolo humanizer o la mancanza di annotazioni. La naturalezza tramite giudice LLM grande rimane un esperimento distinto.
+Il confronto successivo utile è un secondo sistema, per esempio **DIPPER sugli stessi input**, iniziando dal suo smoke di tre fonti prima dei 42. L'espansione a 126 baseline 3B da sola aumenterebbe il campione ma non risolverebbe la dipendenza dal singolo humanizer o la mancanza di annotazioni. La naturalezza tramite giudice LLM grande rimane un esperimento distinto.

@@ -6,6 +6,8 @@ La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, ris
 
 Il **[report cumulativo aggiornato](REPORT_SPERIMENTALE.md)** collega tutte le fasi, include i risultati Kaggle e spiega numerosità e limiti di smoke, pilot e futura estensione. I due pilot da 42 fonti sono completi; sono disponibili confronto appaiato e schede comuni da annotare.
 
+La revisione prima dell'estensione è nel **[protocollo v2 su 126 fonti](STUDY_V2_PROTOCOL.md)** e nel **[nuovo notebook Kaggle](kaggle/README_Study_v2.md)**: Binoculars zero-shot, controlli nulli, baseline 14B, due configurazioni DIPPER XXL, NLI contestuale, giudice di naturalezza e annotazione con due lettori. È già eseguita la [prova NLI su 19 coppie](results_nli_context_pilot/report.md); i nuovi run GPU/Groq restano da eseguire. Le 420 fonti sono rinviate.
+
 La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: sono completi il **[pilot Qwen](results_kaggle_pilot/report.md)** e il **[pilot DIPPER sugli stessi 42 input](results_kaggle_dipper_pilot/report.md)**. ASR Qwen/DIPPER: OpenAI 17/24 contro 4/24, Fakespot 1/37 contro 7/37, RADAR 2/28 contro 3/28 e maggioranza 2/31 per entrambi, su fonti differenti. L'ordine dipende dal detector. DIPPER comprime più spesso; i casi mostrano errori reali e limiti NLI sulla fusione delle frasi. Il passo successivo è [l'annotazione comune](exports/kaggle_dipper_pilot/README.md) e l'estensione del campione. La naturalezza resta da valutare.
 
 ## Risultati e protocolli

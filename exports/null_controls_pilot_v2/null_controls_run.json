@@ -1,0 +1,67 @@
+{
+  "protocol": "humanizer_null_controls_v1",
+  "seed": 42,
+  "noise_max_edits": 1,
+  "cohort_sha256": "ed6b343dc972038515ff6dc4ebdfe7e1ce6ce50386cb49c5e104732da440574a",
+  "reference_files": [
+    {
+      "file": "data/v2_pilot_reference/qwen3b.jsonl",
+      "sha256": "c36e16e4298ebef4fd3fd6ae49d8ca175dd2ad06da5bbed19703dabdf60de1e1"
+    },
+    {
+      "file": "data/kaggle_received/pilotdipper_20261109/rewriting/rewrites.jsonl",
+      "sha256": "a7965a827d497a682ccbff9b348e0e581b9c9fec8935020e265d90fcd0e2a7f3"
+    }
+  ],
+  "rows_sha256": "0edede06a2acc6f9dfb7c13f43c627df9c38a446bac090ba0b1f952257970cc3",
+  "n_rows": 336,
+  "include_rewrites": true,
+  "conditions": {
+    "dipper": 42,
+    "qwen_humanize": 42,
+    "null_identity": 42,
+    "null_lexical_noise": 42,
+    "null_length__dipper": 42,
+    "null_length_noise__dipper": 42,
+    "null_length__qwen_humanize": 42,
+    "null_length_noise__qwen_humanize": 42
+  },
+  "dictionary": {
+    "also": "likewise",
+    "although": "though",
+    "however": "nevertheless",
+    "therefore": "thus",
+    "use": "utilize",
+    "uses": "utilizes",
+    "used": "utilized",
+    "using": "utilizing",
+    "help": "assist",
+    "helps": "assists",
+    "helped": "assisted",
+    "helping": "assisting",
+    "begin": "start",
+    "begins": "starts",
+    "began": "started",
+    "beginning": "starting",
+    "large": "big",
+    "big": "large"
+  },
+  "dictionary_sha256": "f03ada036803c7f7086c3e6acda2cf374e2187e42b42f46cc7960fbf6a223764",
+  "nlp_model": "core_web_sm",
+  "nlp_model_version": "3.8.0",
+  "nlp_pipes": [
+    "tok2vec",
+    "tagger",
+    "parser",
+    "attribute_ruler",
+    "lemmatizer",
+    "ner"
+  ],
+  "word_count_definition": "spaCy is_alpha, as in existing stylometry",
+  "prefix_policy": "exact alphabetic count; may end mid-sentence; no padding",
+  "longer_target_policy": "original retained, length-match comparison ineligible",
+  "failed_reference_policy": "reference_unavailable; target not imputed",
+  "calibration": "unchanged human-only cohort; no recalibration on rewrites",
+  "causal_attribution": false,
+  "semantic_gold": false
+}

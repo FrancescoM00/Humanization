@@ -1,6 +1,6 @@
 # Report cumulativo della sperimentazione
 
-Aggiornamento: **9 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot Qwen e DIPPER sulle stesse 42 fonti sono stati ricevuti e analizzati; sono disponibili il confronto appaiato e le schede comuni da annotare.
+Aggiornamento: **9 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti sono stati ricevuti e analizzati; sono disponibili il confronto appaiato e le schede comuni da annotare.
 
 ## 1. Obiettivo e stato dei quattro assi
 
@@ -8,7 +8,7 @@ La suite valuta le riscritture rispetto a quattro domande distinte: eludono i de
 
 | Asse | Lavoro completato | Stato e limite principale |
 | --- | --- | --- |
-| Evasione | Tre detector reali, calibrazione umana, ASR condizionata, transizioni prima/dopo e voto di maggioranza | Qwen e DIPPER sulle stesse 42 fonti. Pool interamente RoBERTa, campione ancora pilota |
+| Evasione | Tre detector reali, calibrazione umana, ASR condizionata, transizioni prima/dopo e voto di maggioranza | baseline 3B e DIPPER sulle stesse 42 fonti. Pool interamente RoBERTa, campione ancora pilota |
 | Conservazione | Perturbazioni controllate, positivi OpAI, confronti allineati, aggregatori, lunghezza, guardie e applicazione ai nuovi output | Metriche operative; sui nuovi humanizer manca un riferimento semantico umano indipendente |
 | Stile | Umano/macchina a lunghezza abbinata, regressione logistica, trasferimento, frasi OpAI toccate e distanze sulle riscritture | Differenze misurate; non equivalgono a qualità o naturalezza |
 | Naturalezza | Preparazione delle schede a testo singolo, separate dalle chiavi dei sistemi | Giudizi ancora assenti; nessun risultato di naturalezza o giudice LLM grande già eseguito |
@@ -29,7 +29,7 @@ Le trasformazioni dello stesso originale condividono una fonte. Più coppie, pi�
 
 Con spaCy piccolo, textstat e MATTR implementato nel progetto sono state estratte **105 feature**: lunghezza e variabilità delle frasi, punteggiatura, distribuzioni POS, parole funzionali, diversità lessicale, leggibilità e proxy della guida Wikipedia sui testi AI. Le definizioni e i denominatori sono salvati insieme ai risultati.
 
-È stata corretta una confusione iniziale fra stile e lunghezza mediante il matching esatto delle parole. Dopo il matching, il classificatore basato soltanto sul numero di parole ha AUC 0,500. Le differenze fra le altre feature vengono analizzate con differenza standardizzata delle medie, intervalli e controlli per dominio/generatore. Hedges g esprime la differenza rispetto alla variabilità; Benjamini–Hochberg corregge i confronti multipli. Sono strumenti statistici adottati nel protocollo, non procedure che si assume siano state trattate nei corsi dell'autore.
+È stata corretta una confusione iniziale fra stile e lunghezza mediante il matching esatto delle parole. Dopo il matching, il classificatore basato soltanto sul numero di parole ha AUC 0,500. Le differenze fra le altre feature vengono analizzate con differenza standardizzata delle medie, intervalli e controlli per dominio/generatore. Hedges g esprime la differenza rispetto alla variabilità; Benjamini–Hochberg corregge i confronti multipli. Sono strumenti statistici adottati nel protocollo per descrivere la grandezza degli effetti e controllare i confronti multipli.
 
 La regressione logistica sulle feature stilistiche dà AUC entro dominio di **0,876 in Essay, 0,928 in Reuters e 0,881 in WritingPrompts**. Escludendo il dominio di test dall'addestramento, scende rispettivamente a **0,670, 0,759 e 0,580**. Esiste quindi segnale stilometrico, ma una sua parte dipende dal dominio.
 
@@ -97,7 +97,7 @@ L'ASR usa come denominatore gli originali che il detector riconosceva già come 
 
 Sono stati risolti i problemi osservati nella reale immagine Kaggle: bootstrap della venv senza `ensurepip`, conservazione di PyTorch CUDA, indice esplicito `cuda:0` e pesi BERTScore trasferiti sul dispositivo dei vettori. L'esecuzione usa subprocess nella venv, cache condivisa e directory distinte per modalità e sistema. L'NLI rimane base float32 anche con DIPPER quantizzato.
 
-### Qwen: pilot completato
+### Baseline Qwen2.5-3B-Instruct con prompt fissato: pilot completato
 
 Il pilot comprende **42 fonti**, due per ciascuna combinazione di tre domini e sette generatori, con 42 riscritture e 42 identità tecnicamente riuscite.
 
@@ -112,21 +112,21 @@ L'evasione si concentra sul detector storico OpenAI. Fakespot e RADAR riconoscon
 
 Coseno documentale medio 0,9282 e BERTScore 0,9445 coesistono con NLI forward/reverse medio 0,7899/0,6708. Questi ultimi non sono percentuali di significato preservato. La lettura dei casi mostra omissioni, aggiunte, falsi allarmi da fusione/coreferenza e un limite quantitativo: `up to 100 feet` diventa `over 100 feet` con NLI comunque vicino a 0,98.
 
-Due input StableLM sono consegne: Qwen risponde invece di riscriverle, espandendo 133→381 e 164→274 parole. Restano nell'analisi primaria; l'esclusione esplorativa dei due non sostituisce il campione congelato. Le review dell'assistente non sono annotazioni umane.
+Due input StableLM sono consegne: baseline 3B risponde invece di riscriverle, espandendo 133→381 e 164→274 parole. Restano nell'analisi primaria; l'esclusione esplorativa dei due non sostituisce il campione congelato. Le review dell'assistente non sono annotazioni umane.
 
 La distanza RMS media è 0,8164; MATTR aumenta in 37/42 casi, ma il centroide umano si avvicina solo in 20/42. Lo stile cambia senza una direzione universalmente più umana. Sono disponibili le [schede da annotare](exports/kaggle_pilot/README.md); la naturalezza non è ancora misurata.
 
-[Report Qwen](results_kaggle_pilot/report.md), [casi](results_kaggle_pilot/case_review.md), [archivio e moduli](exports/kaggle_pilot/README.md).
+[Report baseline 3B](results_kaggle_pilot/report.md), [casi](results_kaggle_pilot/case_review.md), [archivio e moduli](exports/kaggle_pilot/README.md).
 
-### DIPPER: smoke e pilot completati
+### DIPPER XXL NF4 sul passaggio intero senza prefisso: smoke e pilot completati
 
 Lo smoke usa gli stessi tre input ChatGLM già esaminati per Qwen. Tutte le riscritture terminano con EOS; nessuna raggiunge il limite d'uscita. Ogni detector continua a riconoscerle AI: ASR 0/3. DIPPER accorcia i testi del 18–27%.
 
 Reuters perde il riferimento ai problemi legali dell'azienda: NLI forward medio 0,984, reverse 0,679, minimo reverse 0,000334 proprio sulla frase omessa. Essay mostra anche un allarme da fusione di due frasi; WritingPrompts cambia il meccanismo del potere del protagonista ed elimina la risposta finale di Sarah. Sono esempi leggibili, non una stima dell'accuratezza semantica o una classifica degli humanizer.
 
-Il pilot DIPPER sugli stessi 42 input è **completo**: 42 riscritture e 42 identità, tutte con stato `ok`, nessun arresto al limite di generazione. L'archivio ricevuto è `humanization_pilotdipper.zip`; configurazione, dati, soglie e scale restano quelli precedenti. Il confronto Qwen–DIPPER è appaiato per fonte.
+Il pilot DIPPER sugli stessi 42 input è **completo**: 42 riscritture e 42 identità, tutte con stato `ok`, nessun arresto al limite di generazione. L'archivio ricevuto è `humanization_pilotdipper.zip`; configurazione, dati, soglie e scale restano quelli precedenti. Il confronto baseline 3B–DIPPER è appaiato per fonte.
 
-| Detector | Qwen: successi / originali rilevati | DIPPER: successi / originali rilevati | Differenza ASR DIPPER−Qwen |
+| Detector | baseline 3B: successi / originali rilevati | DIPPER: successi / originali rilevati | Differenza ASR DIPPER−baseline 3B |
 | --- | ---: | ---: | ---: |
 | OpenAI | 17/24 | 4/24 | −54,2 punti percentuali |
 | Fakespot raw | 1/37 | 7/37 | +16,2 punti percentuali |
@@ -135,7 +135,7 @@ Il pilot DIPPER sugli stessi 42 input è **completo**: 42 riscritture e 42 ident
 
 L'ordine dipende dal detector. Il bootstrap appaiato esplorativo dà intervalli 95% della differenza di [−75,0; −29,2] punti per OpenAI, [+5,4; +27,0] per Fakespot, [−7,1; +17,9] per RADAR e [−12,9; +12,9] per maggioranza, mantenendo fissi modelli e calibrazione. I due successi di maggioranza riguardano fonti completamente diverse. Dopo DIPPER le rilevazioni complessive sono 25/42 OpenAI, 33/42 Fakespot, 33/42 RADAR e 32/42 maggioranza: alcune fonti prima non rilevate diventano AI, perciò ASR e TPR complessivo vanno letti separatamente.
 
-DIPPER accorcia 41/42 testi, con rapporto parole medio 0,739 e mediano 0,766; 23 output scendono sotto l'80% della lunghezza iniziale. Qwen ha rapporto mediano 0,915. MATTR aumenta in 13/42 DIPPER contro 37/42 Qwen; il centroide umano si avvicina in 13/42 contro 20/42. La RMS media è 0,7765 per DIPPER e 0,8164 per Qwen, mentre le mediane invertono l'ordine. Distanza e leggibilità non determinano la naturalezza.
+DIPPER accorcia 41/42 testi, con rapporto parole medio 0,739 e mediano 0,766; 23 output scendono sotto l'80% della lunghezza iniziale. baseline 3B ha rapporto mediano 0,915. MATTR aumenta in 13/42 DIPPER contro 37/42 baseline 3B; il centroide umano si avvicina in 13/42 contro 20/42. La RMS media è 0,7765 per DIPPER e 0,8164 per baseline 3B, mentre le mediane invertono l'ordine. Distanza e leggibilità non determinano la naturalezza.
 
 Coseno/BERTScore documentali medi DIPPER sono 0,9215/0,9478 e NLI forward/reverse 0,6840/0,5949. La lettura di 12 coppie mostra omissioni e variazioni puntuali, fra cui euro→franchi e 100→30 piedi, ma anche falsi allarmi del protocollo a premessa singola: nel racconto Maria/Sofia la fusione da 15 a cinque frasi accompagna forward 0,00262 pur mantenendo gran parte della trama. Le medie non diventano una classifica di fedeltà senza etichette indipendenti. Le due consegne StableLM già note restano nel risultato primario; l'analisi secondaria da 40 non risolve tutti i problemi di qualità degli input.
 
@@ -152,7 +152,7 @@ La riduzione del campione riguarda la nuova fase humanizer, non tutti gli esperi
 | Smoke | 3 | Una per dominio, tutte ChatGLM | Collaudo di caricamento, generazione e suite |
 | Pilot | 42 | 2 × 3 domini × 7 generatori | Primo confronto bilanciato, completato per entrambi i sistemi |
 | Study | 126 | 6 × 3 × 7 | Già congelato, non ancora eseguito sui due sistemi |
-| Possibile estensione | 420 | 20 × 3 × 7 | Proposta tecnicamente fattibile; nuova coorte da definire, non già preparata o eseguita |
+| Estensione rinviata | 420 | 20 × 3 × 7 | Tecnicamente fattibile, rinviata fino alla verifica del protocollo v2 su 126 fonti |
 
 I 300 umani di calibrazione servono a fissare soglie e scale. Non aggiungono 300 casi al denominatore dell'evasione. Due sistemi sugli stessi 42 input danno 84 riscritture ma mantengono **42 fonti nel confronto appaiato**. Identità e tre detector non moltiplicano le fonti indipendenti. Smoke, pilot e study sono annidati: non si sommano 3+42+126 come campioni distinti.
 
@@ -183,12 +183,26 @@ Le directory locali `data/` e `.venv/` non sono versionate in `main`; gli archiv
 
 Coorti, configurazioni, revisioni dei checkpoint, hash delle coppie e metadati rendono verificabili gli input effettivi e le condizioni. I controlli già completati coprono split, identità, denominatori, copertura dei testi e coerenza dei risultati salvati. Non sono necessarie nuove infrastrutture di verifica prima dell'analisi dei prossimi dati.
 
-## 9. Attività successive e confini delle conclusioni
+## 9. Revisione del protocollo prima delle 126 fonti
+
+Il feedback successivo ai pilot ha spostato il centro dell'esperimento dalle sole evasioni alla **variazione complessiva di rilevabilità**. Dopo la baseline 3B, Fakespot passa da 37 a 41 rilevazioni e RADAR da 28 a 35. Queste transizioni sono una candidata a risultato centrale da confermare; il 70,8% di ASR sul detector storico OpenAI non descrive il successo generale dello humanizer.
+
+Il [protocollo v2](STUDY_V2_PROTOCOL.md) mantiene le 126 fonti già congelate e i 300 gruppi di calibrazione. Include gli input-consegna nel risultato primario e prepara una classificazione del tipo sul solo originale. Le analisi sulla sola prosa richiedono etichette di tipo e conteggi espliciti; i flag automatici non escludono fonti. Le 420 fonti sono rinviate.
+
+Sono implementati **Binoculars zero-shot**, controlli nulli di lunghezza esatta e rumore lessicale minimo, la condizione **Qwen2.5-14B NF4 con lo stesso prompt della baseline 3B** e una nuova condizione **DIPPER XXL con finestre di tre frasi e prefisso riscritto cumulativo**. I checkpoint e i preset sono fissati in un config separato. Le prove GPU dei nuovi sistemi e Binoculars sono ancora da eseguire su Kaggle; Fast-DetectGPT e servizi commerciali non sono stati aggiunti.
+
+La [prova NLI contestuale](results_nli_context_pilot/report.md) è invece già eseguita: 19 coppie esplicative, 5.446 confronti con DeBERTa-v3 base float32. Nel caso Maria/Sofia il forward medio passa da 0,0038 con singole premesse esaustive a 0,7994 con finestre fino a tre e 0,9820 con il documento esatto. Il documento assegna però soltanto 0,6624 a un controllo identico; non viene adottato come soluzione automatica. Finestre più ampie possono aumentare anche il supporto a modifiche errate. Score storici e nuovi restano separati, senza trasferire l'AUC 0,958 alle nuove condizioni.
+
+Le 24 schede di naturalezza sono state [valutate dall'assistente](results_naturalness_assistant24/report.md), con provenienza AI esplicita: non sono gold umana. È preparato il giudice Groq richiesto, con confronto AB/BA e ragionamento disabilitato; la chiave è disponibile nei Secrets Kaggle secondo l'autore, ma ID del modello e opzioni devono ancora essere verificati dal runtime. Non esistono risposte Groq già ottenute nel cloud né un accordo calcolabile: il confronto iniziale sarà AI–AI sulle sei fonti comuni.
+
+Il [sampler di annotazione v2](docs/ANNOTATION_V2.md) separa un reference scelto senza score e un diagnostico arricchito per NLI basso e coseno alto/NLI basso, con moduli per due annotatori. Nel pilot ci sono soltanto 84 coppie non identità: il censimento disponibile non può diventare 100 casi nuovi. Il target diagnostico di 100 si applicherà al pannello esteso. Un'AUC sul solo campione diagnostico non stimerebbe ingenuamente la prestazione nella popolazione.
+
+## 10. Attività successive e confini delle conclusioni
 
 1. Usare il confronto appaiato completato per documentare i comportamenti dei due preset e i limiti emersi, senza modificare a posteriori i risultati.
 2. Raccogliere annotazioni indipendenti di conservazione e naturalezza sulle schede comuni. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani; la fusione delle frasi è un caso prioritario per misurare i falsi allarmi dell'NLI.
-3. Fissare l'estensione comune del campione prima di esaminarne gli output, mantenendo la calibrazione attuale. Il pannello da 126 è già disponibile; un'estensione più ampia richiede la nuova coorte descritta sopra.
+3. Eseguire lo smoke del protocollo v2 e poi il pannello da 126 su Kaggle, con nuovi sistemi, Binoculars e controlli nulli, mantenendo la calibrazione attuale. Il passaggio a 420 è rinviato.
 4. Tenere espliciti i limiti: testi brevi e iniziali, generatori storici, pool RoBERTa, singolo preset per humanizer, input anomali e assenza di stima gold dell'accuratezza semantica sui nuovi output.
 5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens e un eventuale giudice LLM grande restano attività distinte, non ancora eseguite.
 
-Il risultato attuale è una suite implementata e sottoposta a controlli, con una prima applicazione reale a Qwen e a DIPPER. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.
+Il risultato attuale è una suite implementata e sottoposta a controlli, con una prima applicazione reale a baseline 3B e a DIPPER. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.

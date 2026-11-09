@@ -1,8 +1,10 @@
-# Smoke DIPPER su Kaggle: esito e confronto con Qwen
+# Smoke DIPPER su Kaggle: esito e confronto con baseline 3B
+
+In questo report **baseline 3B** indica Qwen2.5-3B-Instruct con il prompt fissato e decoding greedy; **DIPPER** indica la configurazione XXL NF4 sul passaggio intero senza prefisso, lessico 60/ordine 0. I risultati non descrivono ogni configurazione dei due modelli.
 
 **Lo smoke DIPPER è completo e permette di passare al pilot congelato di 42 fonti.** Sono riuscite tutte e tre le riscritture e tutti gli stadi di valutazione. Nei tre casi DIPPER non elude alcuno dei detector, comprime i passaggi e introduce alcune perdite di informazione. Il caso Reuters mostra un'asimmetria NLI interpretabile direttamente nel testo; altri minimi bassi risentono della fusione di frasi.
 
-Analisi dei soli output ricevuti, senza nuove generazioni o inferenze. Sono disponibili [ZIP originale](../exports/kaggle_dipper_smoke/README.md), [score per coppia](per_pair_summary.csv), [confronto appaiato con Qwen](comparison_with_qwen_smoke.csv), [lettura dei testi](text_review.md), [integrità](integrity.md) e [provenienza](provenance.json). Le letture qualitative sono dell'assistente e non costituiscono annotazioni umane indipendenti.
+Analisi dei soli output ricevuti, senza nuove generazioni o inferenze. Sono disponibili [ZIP originale](../exports/kaggle_dipper_smoke/README.md), [score per coppia](per_pair_summary.csv), [confronto appaiato con baseline 3B](comparison_with_qwen_smoke.csv), [lettura dei testi](text_review.md), [integrità](integrity.md) e [provenienza](provenance.json). Le letture qualitative sono dell'assistente e non costituiscono annotazioni umane indipendenti.
 
 ## Protocollo effettivamente eseguito
 
@@ -14,16 +16,16 @@ Le tre identità e le tre riscritture hanno stato `ok`. Gli input hanno 206–21
 
 ## Evasione dei detector
 
-| Detector | Originali rilevati AI | Successi DIPPER | Successi Qwen sugli stessi input |
+| Detector | Originali rilevati AI | Successi DIPPER | Successi baseline 3B sugli stessi input |
 | --- | ---: | ---: | ---: |
 | OpenAI RoBERTa-base | 3/3 | 0/3 | 2/3 |
 | Fakespot raw | 3/3 | 0/3 | 0/3 |
 | RADAR | 3/3 | 0/3 | 0/3 |
 | Voto di maggioranza | 3/3 | 0/3 | 0/3 |
 
-Tutti i detector continuano a classificare AI ogni riscrittura DIPPER. L'ASR e la macro-ASR sono zero; anche l'identità ha ASR zero. Nessuno dei tre umani test è classificato AI. Le soglie individuali sono identiche a quelle Qwen, calibrate sui medesimi 300 umani con FPR empirico del 5%; il voto di maggioranza ha FPR di calibrazione 5/300.
+Tutti i detector continuano a classificare AI ogni riscrittura DIPPER. L'ASR e la macro-ASR sono zero; anche l'identità ha ASR zero. Nessuno dei tre umani test è classificato AI. Le soglie individuali sono identiche a quelle baseline 3B, calibrate sui medesimi 300 umani con FPR empirico del 5%; il voto di maggioranza ha FPR di calibrazione 5/300.
 
-Gli score AI DIPPER restano fra 0,993584 e 0,999905, sopra le soglie fissate. Non è un errore di inversione delle classi: le etichette AI sono esplicite e originali e identità hanno risultati coerenti. **Zero evasioni su tre fonti non dimostra che DIPPER sia inefficace nella popolazione.** Gli eventuali intervalli bootstrap 0–0 sono degeneri per questo campione e non costituiscono una garanzia. Anche il vantaggio osservato di Qwen sul solo OpenAI va verificato sui 42 testi. I tre modelli condividono la famiglia RoBERTa e non rappresentano tutti i detector.
+Gli score AI DIPPER restano fra 0,993584 e 0,999905, sopra le soglie fissate. Non è un errore di inversione delle classi: le etichette AI sono esplicite e originali e identità hanno risultati coerenti. **Zero evasioni su tre fonti non dimostra che DIPPER sia inefficace nella popolazione.** Gli eventuali intervalli bootstrap 0–0 sono degeneri per questo campione e non costituiscono una garanzia. Anche il vantaggio osservato di baseline 3B sul solo OpenAI va verificato sui 42 testi. I tre modelli condividono la famiglia RoBERTa e non rappresentano tutti i detector.
 
 ## Conservazione del significato
 
@@ -55,15 +57,15 @@ Non viene applicata la soglia semantica storica 0,04075, né una nuova soglia sc
 
 ## Stile e lunghezza
 
-| Dominio | Parole prima → dopo | Variazione | RMS stile DIPPER | RMS stile Qwen | Δ MATTR50 DIPPER |
+| Dominio | Parole prima → dopo | Variazione | RMS stile DIPPER | RMS stile baseline 3B | Δ MATTR50 DIPPER |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Essay | 160 → 122 | −23,8% | 0,505852 | 0,736460 | −0,042604 |
 | Reuters | 149 → 122 | −18,1% | 0,479741 | 1,015054 | −0,026723 |
 | WritingPrompts | 153 → 112 | −26,8% | 0,727539 | 0,889197 | +0,019051 |
 
-DIPPER produce in tutti e tre i casi meno parole di Qwen e una distanza RMS dall'originale più piccola, sulla medesima scala stimata dagli umani di calibrazione. Questo descrive una variazione stilometrica, non una maggiore qualità. Le differenze di lunghezza e copertura restano parte dell'interpretazione, soprattutto in presenza di compressione.
+DIPPER produce in tutti e tre i casi meno parole di baseline 3B e una distanza RMS dall'originale più piccola, sulla medesima scala stimata dagli umani di calibrazione. Questo descrive una variazione stilometrica, non una maggiore qualità. Le differenze di lunghezza e copertura restano parte dell'interpretazione, soprattutto in presenza di compressione.
 
-MATTR50 cala in Essay e Reuters e aumenta nel racconto; Qwen lo aumentava in tutti e tre i casi. La distanza dal centroide umano diminuisce soltanto in Reuters e aumenta negli altri due. Né RMS, né centroide, né diversità lessicale equivalgono a naturalezza. I moduli di revisione ricevuti sono ancora vuoti.
+MATTR50 cala in Essay e Reuters e aumenta nel racconto; baseline 3B lo aumentava in tutti e tre i casi. La distanza dal centroide umano diminuisce soltanto in Reuters e aumenta negli altri due. Né RMS, né centroide, né diversità lessicale equivalgono a naturalezza. I moduli di revisione ricevuti sono ancora vuoti.
 
 Le tre generazioni DIPPER sommano **34,90 secondi** registrati; i sei stadi semantici/allineati sommano **39,50 secondi**. Sono tempi parziali, esclusi download e caricamento dei modelli e gli altri blocchi del notebook; non stimano il tempo dell'intera sessione.
 
@@ -79,4 +81,4 @@ ACTIVE_SYSTEMS = ["identity", "dipper"]
 
 Rieseguire le sezioni 1–9 dall'inizio. La sezione 3 deve riportare **300 umani di calibrazione e 42 fonti test**, due per dominio/generatore; la sezione 4 deve completare 84 esiti fra identità e DIPPER. Il file finale sarà `humanization_pilot_dipper.zip`. Il clone e il RUN vengono derivati da modalità e suffisso; la cache temporanea è comune e riusa i modelli se la sessione Kaggle è ancora attiva.
 
-Mantenere invariati parametri di DIPPER, detector, soglie e valutatori: un output poco convincente è un risultato da analizzare, non una ragione per modificare il preset dopo aver visto lo smoke. Il pilot include i tre input appena esaminati e non è quindi una nuova prova indipendente da essi. Il confronto con il pilot Qwen sarà appaiato sulle stesse 42 fonti. Le due fonti StableLM già identificate come consegne rimangono nel campione primario; il loro tipo di input va annotato e discusso.
+Mantenere invariati parametri di DIPPER, detector, soglie e valutatori: un output poco convincente è un risultato da analizzare, non una ragione per modificare il preset dopo aver visto lo smoke. Il pilot include i tre input appena esaminati e non è quindi una nuova prova indipendente da essi. Il confronto con il pilot baseline 3B sarà appaiato sulle stesse 42 fonti. Le due fonti StableLM già identificate come consegne rimangono nel campione primario; il loro tipo di input va annotato e discusso.

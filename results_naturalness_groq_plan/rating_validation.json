@@ -1,0 +1,15 @@
+{
+  "label_source": "assistant_proxy",
+  "reference_is_human": false,
+  "status": "not_validated_no_complete_labeled_pairs",
+  "n_filled_single_text_ratings": 24,
+  "n_plan_sources": 6,
+  "n_sources_with_both_ratings": 6,
+  "n_valid_judge_order_pairs": 0,
+  "n_order_consistent_pairs": 0,
+  "n_compared": 0,
+  "agreement": null,
+  "cohen_kappa": null,
+  "details": [],
+  "limitations": "Exploratory paired preferences derived from ordinal single-text ratings; excluded incomplete/order-inconsistent calls reduce coverage. Proxy labels are not human validation."
+}

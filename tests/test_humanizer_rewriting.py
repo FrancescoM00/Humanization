@@ -10,6 +10,54 @@ from humanizers.rewriting import (
 )
 
 
+@pytest.mark.parametrize('oversized_second', [False, True])
+def test_dipper_three_sentence_context_keeps_prefix_and_records_incomplete_windows(monkeypatch, oversized_second):
+    import torch
+    import humanizers.rewriting as rewriting
+    monkeypatch.setattr(rewriting, '_dipper_sentences', lambda text: ['A.', 'B.', 'C.', 'D.'])
+    source = dict(id='a', source_group_id='g', domain='Essay', generator='Claude', machine='A. B. C. D.')
+    system = dict(name='dipper_context3', kind='dipper', window_protocol='three_sentence_context_v2',
+                  max_input_tokens=12, max_new_tokens=8, lexical_diversity=60, order_diversity=0)
+
+    class Tokenizer:
+        pad_token_id = 0
+        eos_token_id = 9
+        prompts = []
+
+        def __call__(self, text, **kwargs):
+            assert kwargs['truncation'] is False
+            self.prompts.append(text)
+            length = 13 if oversized_second and len(self.prompts) == 2 else 4
+            return {'input_ids': torch.ones((1, length), dtype=torch.long)}
+
+        def decode(self, tokens, **kwargs):
+            return 'First rewrite.' if tokens[0] == 2 else 'Second rewrite.'
+
+    class Model:
+        config = SimpleNamespace(decoder_start_token_id=0)
+        generation_config = SimpleNamespace(eos_token_id=9)
+        calls = 0
+
+        def generate(self, **kwargs):
+            assert kwargs['do_sample'] is False and kwargs['max_new_tokens'] == 8
+            self.calls += 1
+            return torch.tensor([[0, self.calls+1, 9]])
+
+    tokenizer, model = Tokenizer(), Model()
+    row = _rewrite_one(source, system, 42, tokenizer, model, torch.device('cpu'))
+    assert tokenizer.prompts == ['lexical = 40, order = 100 <sent> A. B. C. </sent>',
+                                 'lexical = 40, order = 100 First rewrite. <sent> D. </sent>']
+    assert row['metadata']['n_windows_expected'] == 2
+    if oversized_second:
+        assert row['status'] == 'input_too_long' and model.calls == 1
+        assert row['modified'] == 'First rewrite.' and not row['metadata']['finished_eos']
+        assert row['metadata']['failed_window_index'] == 1
+    else:
+        assert row['status'] == 'ok' and model.calls == 2
+        assert row['modified'] == 'First rewrite. Second rewrite.'
+        assert row['metadata']['n_windows_completed'] == 2 and row['metadata']['finished_eos']
+
+
 def inputs(tmp_path):
     cohort = tmp_path / "cohort.jsonl"
     sources = [

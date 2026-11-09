@@ -1,0 +1,204 @@
+{
+  "protocol": "semantic_audit_reference_diagnostic_v2",
+  "seed": 42,
+  "parameters": {
+    "reference_per_cell": 1,
+    "diagnostic_size": 100,
+    "low_nli": 0.1,
+    "high_cosine": 0.9
+  },
+  "input_files": [
+    {
+      "path": "exports/kaggle_pilot/humanization_pilot.zip",
+      "sha256": "7a35ca521ccc4e2147b42e479fe2ac6bde1ef676ddb462137a27af046960f272"
+    },
+    {
+      "path": "exports/kaggle_dipper_pilot/humanization_pilotdipper.zip",
+      "sha256": "21a66ed1cb1d3744be742a79f4fb7b924668d21200ed11033364ac48a18df31d"
+    },
+    {
+      "path": "results_kaggle_dipper_pilot/comparison_with_qwen.csv",
+      "sha256": "6094fc9c0032054ebccdbe615a7d3d061b1a9fa11e128b7b3e8c3b5e133f2d9c"
+    }
+  ],
+  "excluded_input_rows": {
+    "identity_or_null": 84
+  },
+  "available_pairs": 84,
+  "available_sources": 42,
+  "reference_pairs": 42,
+  "reference_sources": 21,
+  "requested_diagnostic_pairs": 100,
+  "available_diagnostic_pairs": 42,
+  "selected_diagnostic_pairs": 42,
+  "diagnostic_sources": 21,
+  "diagnostic_target_met": false,
+  "total_selected_unique_pairs": 84,
+  "total_selected_unique_sources": 42,
+  "selected_is_full_census": true,
+  "cell_summary": [
+    {
+      "domain": "Essay",
+      "generator": "ChatGLM",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Essay",
+      "generator": "ChatGPT",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Essay",
+      "generator": "ChatGPT-turbo",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Essay",
+      "generator": "Claude",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Essay",
+      "generator": "Dolly",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Essay",
+      "generator": "GPT4All",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Essay",
+      "generator": "StableLM",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "ChatGLM",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "ChatGPT",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "ChatGPT-turbo",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "Claude",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "Dolly",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "GPT4All",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "Reuters",
+      "generator": "StableLM",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "ChatGLM",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "ChatGPT",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "ChatGPT-turbo",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "Claude",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "Dolly",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "GPT4All",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    },
+    {
+      "domain": "WritingPrompts",
+      "generator": "StableLM",
+      "available_sources": 2,
+      "reference_sources": 1,
+      "inclusion_probability": 0.5
+    }
+  ],
+  "diagnostic_pair_strata": {
+    "high_cosine_low_nli": 30,
+    "low_nli": 8,
+    "other": 4
+  },
+  "warning": "Diagnostic target not reached: finite remaining capacity and complete-source grouping; no duplicated or fabricated pairs.",
+  "reference_unit": "source group within domain/generator; all successful humanizers retained",
+  "reference_selection": "seeded hash of source identifiers, independent of metric scores",
+  "diagnostic_selection": "score strata with weighted 3:2:1 schedule; complete source groups; cell interleaving",
+  "identity_and_null_controls_included": false,
+  "annotators": 2,
+  "labels_present": false,
+  "gold_labels_created": false,
+  "diagnostic_population_accuracy_allowed": false,
+  "reference_probability_scope": "successful scored humanizer outputs in the supplied frame",
+  "annotator_judgments_are_not_additional_independent_sources": true
+}
