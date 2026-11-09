@@ -2,6 +2,8 @@
 
 Data: 9 novembre 2026. I pilot da 42 fonti sono risultati esplorativi già osservati. Questo protocollo definisce l'estensione e i controlli; **non dichiara che le nuove inferenze GPU o Groq siano già eseguite**. Il pannello da 126 include i 42 pilot e non è una replica indipendente. L'estensione a 420 è rinviata.
 
+**Aggiornamento di esecuzione:** il successivo [smoke v2](results_kaggle_v2_smoke/report.md) ha completato le nuove condizioni GPU e Groq sulle tre fonti tecniche. Il pannello da 126 resta da eseguire. Le formulazioni di disponibilità nelle sezioni seguenti descrivono il momento in cui il protocollo è stato fissato; il report documenta gli esiti senza cambiare coorte o preset. La naturalezza risulta sensibile all'ordine: quattro dei nove confronti nuovi sono instabili AB/BA.
+
 ## Domande principali e conclusioni candidate
 
 1. **La riscrittura con un LLM riduce o aumenta la rilevabilità?** Si riportano TPR sull'intera coorte e transizioni in entrambe le direzioni prima dell'ASR. Nei pilot, la baseline 3B porta Fakespot da 37 a 41 rilevazioni e RADAR da 28 a 35. È una candidata a risultato da verificare sul pannello esteso, non una conclusione generale su tutti gli LLM.

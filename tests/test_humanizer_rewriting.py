@@ -1,5 +1,6 @@
 """Meaningful checks of output validity and provenance-bound rewrite resume."""
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -118,6 +119,7 @@ def test_cuda_alias_and_explicit_gpu_select_an_integer_without_downloading(
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    monkeypatch.delenv('HUMANIZATION_REUSE_CACHED_MODELS', raising=False)
     selected = []
     monkeypatch.setattr(torch.cuda, 'is_available', lambda: True)
     monkeypatch.setattr(torch.cuda, 'current_device', lambda: current)
@@ -142,6 +144,9 @@ def test_cuda_alias_and_explicit_gpu_select_an_integer_without_downloading(
     model = Model()
 
     def from_pretrained(*args, **kwargs):
+        assert args == ('test/no-download',)
+        assert kwargs['revision'] == '0'*40
+        assert 'local_files_only' not in kwargs
         assert kwargs['torch_dtype'] == torch.float16
         return model
 
@@ -151,6 +156,146 @@ def test_cuda_alias_and_explicit_gpu_select_an_integer_without_downloading(
     assert selected == [expected]
     assert actual_device == torch.device('cuda', expected) == model.device
     assert actual_model is model and actual_tokenizer is tokenizer
+
+
+def _checkpoint(root, repo_id, revision, *, complete=True):
+    snapshot = root / ('models--' + repo_id.replace('/', '--')) / 'snapshots' / revision
+    snapshot.mkdir(parents=True)
+    (snapshot / 'config.json').write_text('{}')
+    (snapshot / 'model.safetensors.index.json').write_text(json.dumps({
+        'weight_map': {'a': 'model-00001-of-00002.safetensors',
+                       'b': 'model-00002-of-00002.safetensors'}}))
+    (snapshot / 'model-00001-of-00002.safetensors').write_bytes(b'fake')
+    if complete:
+        (snapshot / 'model-00002-of-00002.safetensors').write_bytes(b'fake')
+    return snapshot
+
+
+@pytest.mark.parametrize('wrong_revision', [False, True])
+def test_strict_cached_reuse_rejects_incomplete_or_unpinned_weights_before_cuda(
+        tmp_path, monkeypatch, wrong_revision):
+    import torch
+    import humanizers.rewriting as rewriting
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    monkeypatch.setenv('HUMANIZATION_REUSE_CACHED_MODELS', '1')
+    monkeypatch.setattr(rewriting, '_cached_hf_roots', lambda: [tmp_path])
+    _checkpoint(tmp_path, 'test/model', '1'*40 if wrong_revision else '0'*40,
+                complete=wrong_revision)
+    monkeypatch.setattr(torch.cuda, 'set_device', lambda *a: pytest.fail('Must not select CUDA'))
+    monkeypatch.setattr(AutoTokenizer, 'from_pretrained',
+                        lambda *a, **k: pytest.fail('Weights must be checked before the tokenizer'))
+    monkeypatch.setattr(AutoModelForCausalLM, 'from_pretrained',
+                        lambda *a, **k: pytest.fail('Must not download or allocate weights'))
+    with pytest.raises(RuntimeError, match='no complete pinned checkpoint for test/model@' + '0'*40):
+        _load_model({'kind': 'causal', 'model_id': 'test/model', 'revision': '0'*40}, 'cuda:0')
+
+
+def test_strict_cached_reuse_rejects_missing_tokenizer_before_cuda(tmp_path, monkeypatch):
+    import torch
+    import humanizers.rewriting as rewriting
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    monkeypatch.setenv('HUMANIZATION_REUSE_CACHED_MODELS', '1')
+    monkeypatch.setattr(rewriting, '_cached_hf_roots', lambda: [tmp_path])
+    _checkpoint(tmp_path, 'test/model', '0'*40)
+    monkeypatch.setattr(torch.cuda, 'set_device', lambda *a: pytest.fail('Must not select CUDA'))
+    monkeypatch.setattr(AutoModelForCausalLM, 'from_pretrained',
+                        lambda *a, **k: pytest.fail('Must not allocate weights'))
+
+    def tokenizer_missing(repo_id, **kwargs):
+        assert repo_id == 'test/model'
+        assert kwargs['revision'] == '0'*40 and kwargs['local_files_only'] is True
+        assert kwargs['cache_dir'] == str(tmp_path)
+        raise OSError('Tokenizer is not cached')
+
+    monkeypatch.setattr(AutoTokenizer, 'from_pretrained', tokenizer_missing)
+    with pytest.raises(RuntimeError, match='tokenizer test/model@' + '0'*40):
+        _load_model({'kind': 'causal', 'model_id': 'test/model', 'revision': '0'*40}, 'cuda:0')
+
+
+@pytest.mark.parametrize('kind,device,quantized,free_gib', [
+    ('causal', 'cpu', False, 10), ('causal', 'cuda:1', False, 10),
+    ('causal', 'cuda:1', True, 10), ('dipper', 'cuda:1', True, 10),
+    ('dipper', 'cuda:1', True, 7), ('dipper', 'cuda:1', False, 10),
+])
+def test_strict_cached_reuse_preserves_precision_and_checks_with_separate_tokenizer_cache(
+        tmp_path, monkeypatch, kind, device, quantized, free_gib):
+    import torch
+    import transformers
+    import humanizers.rewriting as rewriting
+
+    model_root, tokenizer_root = tmp_path / 'weights', tmp_path / 'tokenizer'
+    snapshot = _checkpoint(model_root, 'test/model', '0'*40)
+    tokenizer_root.mkdir()
+    monkeypatch.setenv('HUMANIZATION_REUSE_CACHED_MODELS', '1')
+    monkeypatch.setattr(rewriting, '_cached_hf_roots', lambda: [model_root, tokenizer_root])
+    monkeypatch.setattr(rewriting.shutil, 'disk_usage',
+                        lambda *a: pytest.fail('Complete checkpoints need no download space'))
+    monkeypatch.setattr(torch.cuda, 'is_available', lambda: True)
+    selected = []
+    monkeypatch.setattr(torch.cuda, 'set_device', selected.append)
+    monkeypatch.setattr(torch.cuda, 'mem_get_info', lambda *a: (free_gib * 2**30, 16 * 2**30))
+    monkeypatch.setattr(transformers, 'BitsAndBytesConfig', lambda **kwargs: kwargs)
+    tokenizer, tokenizer_calls, model_calls = object(), [], []
+    tokenizer_class = transformers.T5Tokenizer if kind == 'dipper' else transformers.AutoTokenizer
+    tokenizer_id = rewriting.DIPPER_TOKENIZER if kind == 'dipper' else 'test/model'
+    tokenizer_revision = rewriting.DIPPER_TOKENIZER_REVISION if kind == 'dipper' else '0'*40
+
+    def load_tokenizer(repo_id, **kwargs):
+        assert repo_id == tokenizer_id and kwargs['revision'] == tokenizer_revision
+        assert kwargs['local_files_only'] is True
+        tokenizer_calls.append(kwargs['cache_dir'])
+        if kwargs['cache_dir'] != str(tokenizer_root):
+            raise OSError('Tokenizer lives in a different cache')
+        return tokenizer
+
+    monkeypatch.setattr(tokenizer_class, 'from_pretrained', load_tokenizer)
+
+    class Model:
+        moved_to = None
+
+        def to(self, target):
+            self.moved_to = target
+            return self
+
+        def eval(self):
+            return self
+
+    model = Model()
+    def load_weights(location, **kwargs):
+        model_calls.append((location, kwargs))
+        return model
+
+    model_class = transformers.T5ForConditionalGeneration if kind == 'dipper' else transformers.AutoModelForCausalLM
+    monkeypatch.setattr(model_class, 'from_pretrained', load_weights)
+    system = dict(kind=kind, model_id='test/model', revision='0'*40, load_in_4bit=quantized)
+    environment = dict(os.environ)
+    if kind == 'dipper' and (free_gib < 8 or not quantized):
+        error = RuntimeError if free_gib < 8 else ValueError
+        message = '8 GiB' if free_gib < 8 else 'load_in_4bit=true'
+        with pytest.raises(error, match=message):
+            _load_model(system, device)
+        assert model_calls == []
+    else:
+        actual_tokenizer, actual_model, actual_device = _load_model(system, device)
+        assert actual_tokenizer is tokenizer and actual_model is model
+        assert actual_device == torch.device(device)
+        location, kwargs = model_calls[0]
+        assert location == str(snapshot)
+        assert kwargs['local_files_only'] is True and kwargs['revision'] == '0'*40
+        assert kwargs['trust_remote_code'] is False and kwargs['low_cpu_mem_usage'] is True
+        assert kwargs['torch_dtype'] == (torch.float32 if device == 'cpu' else torch.float16)
+        if quantized:
+            assert model.moved_to is None and kwargs['device_map'] == {'': 1}
+            assert kwargs['quantization_config'] == dict(
+                load_in_4bit=True, bnb_4bit_quant_type='nf4',
+                bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.float16)
+        else:
+            assert 'quantization_config' not in kwargs and model.moved_to == actual_device
+    assert selected == ([] if device == 'cpu' else [1])
+    assert tokenizer_calls == [str(model_root), str(tokenizer_root)]
+    assert dict(os.environ) == environment
 
 
 def test_dipper_prompt_uses_inverse_codes_and_does_not_drop_text():

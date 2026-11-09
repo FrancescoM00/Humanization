@@ -261,15 +261,19 @@ def select_writable_cache(candidates, *, missing_models, min_free_bytes=None):
 def _prepare_model_storage(settings):
     initial = Path(os.environ.get('HUMANIZATION_HF_READ_CACHE') or os.environ.get('HF_HUB_CACHE')
                    or str(Path(os.environ.get('HF_HOME', str(Path.home()/'.cache/huggingface'))) / 'hub'))
+    override = os.environ.get('HUMANIZATION_HF_WRITE_CACHE')
+    fallbacks = [Path('/kaggle/temp/humanization_downloads_http/hub'),
+                 Path('/tmp/humanization_downloads_http/hub'),
+                 Path('/kaggle/working/.humanization_downloads_http/hub')]
+    # A previous resumed run can have one Falcon in the old read-only cache
+    # and the other in a fallback. Find both before budgeting new downloads.
     roots = list(dict.fromkeys([initial, Path.home()/'.cache/huggingface/hub',
-                               Path('/kaggle/temp/humanization_runtime/huggingface/hub')]))
+        Path('/kaggle/temp/humanization_runtime/huggingface/hub'),
+        *([Path(override)] if override else []), *fallbacks]))
     snapshots = {p: cached_weight_snapshot(settings[p+'_model_id'], settings[p+'_revision'], roots)
                  for p in ('observer', 'performer')}
-    override = os.environ.get('HUMANIZATION_HF_WRITE_CACHE')
     candidates = ([Path(override)] if override else [initial,
-        Path('/kaggle/temp/humanization_downloads_http/hub'),
-        Path('/tmp/humanization_downloads_http/hub'),
-        Path('/kaggle/working/.humanization_downloads_http/hub')])
+        *fallbacks])
     writable = select_writable_cache(candidates, missing_models=sum(p is None for p in snapshots.values()))
     os.environ['HF_HUB_CACHE'] = str(writable)
     os.environ['HF_HUB_DISABLE_XET'] = '1'

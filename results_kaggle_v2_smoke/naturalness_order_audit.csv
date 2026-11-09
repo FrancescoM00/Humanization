@@ -1,0 +1,16 @@
+stage,comparison,source_id,domain,system_a,system_b,AB__visible_preference,AB__canonical_preference,AB__naturalness_A,AB__naturalness_B,BA__visible_preference,BA__canonical_preference,BA__naturalness_A,BA__naturalness_B,order_consistent,canonical_preference_if_consistent,same_visible_position_both_orders
+pilot_validation,judge_pilot_validation,Essay:196:4ec0780c728f72c3,Essay,qwen_humanize,dipper,A,qwen_humanize,4,3,B,qwen_humanize,3,5,True,qwen_humanize,False
+pilot_validation,judge_pilot_validation,Essay:745:d6def8558de2ce4f,Essay,qwen_humanize,dipper,A,qwen_humanize,4,3,B,qwen_humanize,3,4,True,qwen_humanize,False
+pilot_validation,judge_pilot_validation,Reuters:432:ad8ebf2ed590432b,Reuters,qwen_humanize,dipper,A,qwen_humanize,5,3,A,dipper,5,4,False,,True
+pilot_validation,judge_pilot_validation,Reuters:99:72f0d777c8384b92,Reuters,qwen_humanize,dipper,A,qwen_humanize,4,3,B,qwen_humanize,2,4,True,qwen_humanize,False
+pilot_validation,judge_pilot_validation,WritingPrompts:440:e85378f4f9e16583,WritingPrompts,qwen_humanize,dipper,A,qwen_humanize,4,3,B,qwen_humanize,3,4,True,qwen_humanize,False
+pilot_validation,judge_pilot_validation,WritingPrompts:559:653bf94a80f68f73,WritingPrompts,qwen_humanize,dipper,B,dipper,3,4,B,qwen_humanize,4,5,False,,True
+study_smoke,dipper__dipper_context3,Essay:198:ee27e99f1bc3dc32,Essay,dipper,dipper_context3,B,dipper_context3,3,4,A,dipper_context3,4,3,True,dipper_context3,False
+study_smoke,dipper__dipper_context3,Reuters:417:b07c03bd035b9249,Reuters,dipper,dipper_context3,B,dipper_context3,2,3,B,dipper,2,3,False,,True
+study_smoke,dipper__dipper_context3,WritingPrompts:562:785eead74dc70cd2,WritingPrompts,dipper,dipper_context3,B,dipper_context3,3,4,B,dipper,3,4,False,,True
+study_smoke,qwen_humanize__dipper_context3,Essay:198:ee27e99f1bc3dc32,Essay,qwen_humanize,dipper_context3,A,qwen_humanize,4,3,B,qwen_humanize,3,5,True,qwen_humanize,False
+study_smoke,qwen_humanize__dipper_context3,Reuters:417:b07c03bd035b9249,Reuters,qwen_humanize,dipper_context3,A,qwen_humanize,3,2,B,qwen_humanize,2,4,True,qwen_humanize,False
+study_smoke,qwen_humanize__dipper_context3,WritingPrompts:562:785eead74dc70cd2,WritingPrompts,qwen_humanize,dipper_context3,B,dipper_context3,3,4,B,qwen_humanize,2,4,False,,True
+study_smoke,qwen_humanize__qwen14b_humanize,Essay:198:ee27e99f1bc3dc32,Essay,qwen_humanize,qwen14b_humanize,A,qwen_humanize,4,3,B,qwen_humanize,3,4,True,qwen_humanize,False
+study_smoke,qwen_humanize__qwen14b_humanize,Reuters:417:b07c03bd035b9249,Reuters,qwen_humanize,qwen14b_humanize,B,qwen14b_humanize,3,5,A,qwen14b_humanize,4,3,True,qwen14b_humanize,False
+study_smoke,qwen_humanize__qwen14b_humanize,WritingPrompts:562:785eead74dc70cd2,WritingPrompts,qwen_humanize,qwen14b_humanize,B,qwen14b_humanize,3,4,B,qwen_humanize,3,4,False,,True

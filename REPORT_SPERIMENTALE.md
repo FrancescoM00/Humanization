@@ -183,26 +183,59 @@ Le directory locali `data/` e `.venv/` non sono versionate in `main`; gli archiv
 
 Coorti, configurazioni, revisioni dei checkpoint, hash delle coppie e metadati rendono verificabili gli input effettivi e le condizioni. I controlli già completati coprono split, identità, denominatori, copertura dei testi e coerenza dei risultati salvati. Non sono necessarie nuove infrastrutture di verifica prima dell'analisi dei prossimi dati.
 
-## 9. Revisione del protocollo prima delle 126 fonti
+## 9. Protocollo v2 e smoke completato prima delle 126 fonti
 
 Il feedback successivo ai pilot ha spostato il centro dell'esperimento dalle sole evasioni alla **variazione complessiva di rilevabilità**. Dopo la baseline 3B, Fakespot passa da 37 a 41 rilevazioni e RADAR da 28 a 35. Queste transizioni sono una candidata a risultato centrale da confermare; il 70,8% di ASR sul detector storico OpenAI non descrive il successo generale dello humanizer.
 
-Il [protocollo v2](STUDY_V2_PROTOCOL.md) mantiene le 126 fonti già congelate e i 300 gruppi di calibrazione. Include gli input-consegna nel risultato primario e prepara una classificazione del tipo sul solo originale. Le analisi sulla sola prosa richiedono etichette di tipo e conteggi espliciti; i flag automatici non escludono fonti. Le 420 fonti sono rinviate.
+Il [protocollo v2](STUDY_V2_PROTOCOL.md) mantiene le 126 fonti già congelate e i 300 gruppi di calibrazione. Include gli input-consegna nel risultato primario e prepara una classificazione del tipo sul solo originale. Le analisi sulla sola prosa richiedono etichette di tipo e conteggi espliciti; i flag automatici non escludono fonti. Le 420 fonti sono rinviate. Per le ipotesi sviluppate osservando il pilot, le **84 fonti non viste** vanno riportate anche separatamente dalle 42 già analizzate.
 
-Sono implementati **Binoculars zero-shot**, controlli nulli di lunghezza esatta e rumore lessicale minimo, la condizione **Qwen2.5-14B NF4 con lo stesso prompt della baseline 3B** e una nuova condizione **DIPPER XXL con finestre di tre frasi e prefisso riscritto cumulativo**. I checkpoint e i preset sono fissati in un config separato. Le prove GPU dei nuovi sistemi e Binoculars sono ancora da eseguire su Kaggle; Fast-DetectGPT e servizi commerciali non sono stati aggiunti.
+### 9.1. Nuove condizioni effettivamente eseguite su Kaggle
 
-La [prova NLI contestuale](results_nli_context_pilot/report.md) è invece già eseguita: 19 coppie esplicative, 5.446 confronti con DeBERTa-v3 base float32. Nel caso Maria/Sofia il forward medio passa da 0,0038 con singole premesse esaustive a 0,7994 con finestre fino a tre e 0,9820 con il documento esatto. Il documento assegna però soltanto 0,6624 a un controllo identico; non viene adottato come soluzione automatica. Finestre più ampie possono aumentare anche il supporto a modifiche errate. Score storici e nuovi restano separati, senza trasferire l'AUC 0,958 alle nuove condizioni.
+Lo [smoke v2 completo](results_kaggle_v2_smoke/report.md), ricevuto il 9 novembre 2026, contiene tre fonti ChatGLM, una per dominio, e **15 esiti tutti `ok`**: identità, baseline Qwen2.5-3B FP16, Qwen2.5-14B NF4 con lo stesso prompt e DIPPER XXL NF4 nelle condizioni passaggio intero e finestre di tre frasi/prefisso riscritto cumulativo. Quest'ultima differisce comunque dal protocollo originale per segmentazione spaCy e generazione greedy con budget per finestra. Non si isola causalmente la dimensione del modello, la quantizzazione o la sola finestra.
 
-Le 24 schede di naturalezza sono state [valutate dall'assistente](results_naturalness_assistant24/report.md), con provenienza AI esplicita: non sono gold umana. I successivi log incollati dall'autore confermano sul runtime Kaggle il modello Groq richiesto e 12/12 risposte valide con ragionamento disabilitato. Quattro confronti su sei mantengono la stessa preferenza invertendo l'ordine; nei quattro stabili l'accordo col proxy dell'assistente è 100%, con kappa indefinito perché tutte le preferenze sono della stessa classe. Due confronti sono discordanti all'ordine e non entrano in quell'accordo: non è una validazione umana né un'accuratezza generale. I file completi del nuovo smoke non sono ancora stati ricevuti. La sezione Binoculars è ferma sul download Xet del secondo Falcon, con errore di filesystem di sola lettura; la correzione usa cache scrivibili e HTTP standard.
+Sono completi i classificatori, **Binoculars zero-shot**, controlli nulli, sei stadi semantici, stile, NLI contestuale e giudice Groq. [Archivio originale](exports/kaggle_v2_smoke/README.md), [audit](results_kaggle_v2_smoke/integrity.md) e [review dei dodici output](results_kaggle_v2_smoke/text_review.md) conservano dati e limiti. I riepiloghi sono stati ricalcolati dagli score ricevuti senza nuove inferenze. I pannelli e le scale stilometriche coincidono con quelli congelati; i testi storici 3B e DIPPER passaggio non sono cambiati.
 
-Il [sampler di annotazione v2](docs/ANNOTATION_V2.md) separa un reference scelto senza score e un diagnostico arricchito per NLI basso e coseno alto/NLI basso, con moduli per due annotatori. Nel pilot ci sono soltanto 84 coppie non identità: il censimento disponibile non può diventare 100 casi nuovi. Il target diagnostico di 100 si applicherà al pannello esteso. Un'AUC sul solo campione diagnostico non stimerebbe ingenuamente la prestazione nella popolazione.
+| Riscrittore | ASR OpenAI | ASR Fakespot | ASR RADAR | ASR Binoculars | ASR maggioranza RoBERTa |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline 3B | 2/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+| 14B NF4 | 3/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+| DIPPER passaggio | 0/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+| DIPPER tre frasi | 0/3 | 0/3 | 0/3 | 0/3 | 0/3 |
+
+Tutti i tre originali sono rilevati da ciascun detector; nessuno dei tre umani test lo è. Le frequenze su tre fonti sono un collaudo e non stimano prestazioni generali. Binoculars esegue realmente Falcon 7B base/instruct su due T4 FP16, con statistiche FP32 e copertura registrata. Usa il ratio grezzo, AI se minore di **0,9046559856180912**, calibrato su 300 umani con 15 falsi positivi; non è una probabilità. La maggioranza resta quella separata dei tre classificatori correlati. Fast-DetectGPT e humanizer commerciali non sono stati aggiunti.
+
+### 9.2. Lunghezza, rumore e stile
+
+I controlli nulli sono ora valutati da tutti e quattro i detector e non producono evasioni nei casi eleggibili. Su OpenAI, 14B evade in 3/3 casi e i prefissi alla stessa lunghezza in 0/3; baseline 3B evade in 1/2 confronti eleggibili contro 0/2 prefissi, con l'Essay espanso escluso dal controllo. Il denominatore del prefisso con rumore è talvolta inferiore perché manca una sostituzione lessicale applicabile. Non si presenta il rumore come gold semantico. L'accorciamento da solo non riproduce queste evasioni, senza autorizzare una conclusione causale generale.
+
+DIPPER a tre frasi accorcia meno in tutti e tre i casi: rapporto parole medio **0,892** contro **0,771** del passaggio intero. Recupera contenuto, ma conserva errori, come ricavi trasformati in profitti in Reuters. Il 14B ha rapporto medio **0,753** e può aggiungere o cambiare affermazioni: più grande non significa automaticamente più fedele. Le distanze RMS medie sono 0,880 per baseline 3B, 1,560 per 14B, 0,571 per DIPPER passaggio e 0,487 per DIPPER tre frasi. Misurano variazione nelle feature, non qualità o naturalezza.
+
+### 9.3. NLI contestuale e similarità allineate
+
+La [prova CPU precedente](results_nli_context_pilot/report.md) rimane distinta: 19 coppie esplicative, 5.446 confronti con DeBERTa-v3 base float32. Nel caso Maria/Sofia il forward medio passa da 0,0038 con singole premesse esaustive a 0,7994 con finestre fino a tre e 0,9820 con il documento esatto. Il documento assegna però soltanto 0,6624 a un controllo identico; non viene adottato come soluzione automatica.
+
+Nel nuovo smoke sono completati **3.594 confronti contestuali e 120 aggregati**, tutti con copertura completa su questi testi. Nel WritingPrompts DIPPER tre frasi il reverse storico è 0,307, quello con finestre fino a tre 0,754 e con documento 0,985: una premessa singola può penalizzare fusioni e coreferenza. Viceversa, il 14B Reuters ha forward circa 0,990 con finestre fino a tre pur introducendo modifiche verificabili. Le finestre sono annidate e prendono un massimo: l'aumento è in parte imposto dalla costruzione, non prova di accuratezza.
+
+Coseno e BERTScore restano riportati sia sul documento sia come minimi allineati; il nuovo report confronta esplicitamente queste aggregazioni. Non si trasferisce l'AUC 0,958 dei controlli ai nuovi humanizer, non si interpreta NLI come percentuale di significato conservato e non si applica la soglia OpAI 0,04075.
+
+### 9.4. Giudice di naturalezza: risposte reali, stabilità limitata
+
+Il runtime Kaggle conferma **`qwen/qwen3.8-27b`** e **`reasoning_effort=none`**. Fra vecchia prova e nuovi confronti sono presenti **30 risposte valide su 32 tentativi POST**. Nel preflight, quattro preferenze su sei sono stabili all'ordine e tutte concordano col proxy dell'assistente; due sono discordanti. Il 100% è accordo AI–AI condizionato a 4/6 casi, non validazione umana; il kappa è indefinito perché tutte le preferenze stabili appartengono alla stessa classe.
+
+Dei **nove nuovi confronti**, soltanto **cinque sono stabili AB/BA**. Gli altri quattro scelgono sempre il testo mostrato come **B in entrambi gli ordini**: il vincitore cambia con la posizione, senza un errore rilevato nel parser. Tutti e tre i confronti WritingPrompts sono instabili. Questa fragilità impedisce di presentare una graduatoria affidabile di naturalezza. I casi instabili restano mancanti con denominatore esplicito; non si ripetono chiamate fino a ottenere accordo e non si cambiano prompt sulla base di questi esiti.
+
+### 9.5. Annotazione e avvio del pannello esteso
+
+Il [sampler di annotazione v2](docs/ANNOTATION_V2.md) separa un reference scelto senza score e un diagnostico arricchito per NLI basso e coseno alto/NLI basso, con moduli per due annotatori. Nello smoke ci sono 12 coppie non identità, tutte reference e nessuna diagnostica; le schede sono vuote. Nel pilot ci sono soltanto 84 coppie non identità: il censimento disponibile non può diventare 100 casi nuovi. Il target diagnostico di 100 si applicherà al pannello esteso. Un'AUC sul solo campione diagnostico non stimerebbe ingenuamente la prestazione nella popolazione.
+
+Il [notebook aggiornato](kaggle/README_Study_v2.md) prepara l'avvio sulle 126 senza ripetere lo smoke e senza cambiare i preset. Riusa venv e cache complete leggibili della sessione, colloca checkout e file temporanei sotto `/kaggle/working` e mantiene i pesi fuori dai risultati. Le modifiche di storage sono verificate localmente; il run reale sulle 126 non è ancora avviato. L'archivio ricevuto documenta anche le correzioni operative applicate durante il run, tramite hash di codice e sorgenti inclusi, oltre al commit iniziale.
 
 ## 10. Attività successive e confini delle conclusioni
 
 1. Usare il confronto appaiato completato per documentare i comportamenti dei due preset e i limiti emersi, senza modificare a posteriori i risultati.
 2. Raccogliere annotazioni indipendenti di conservazione e naturalezza sulle schede comuni. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani; la fusione delle frasi è un caso prioritario per misurare i falsi allarmi dell'NLI.
-3. Eseguire lo smoke del protocollo v2 e poi il pannello da 126 su Kaggle, con nuovi sistemi, Binoculars e controlli nulli, mantenendo la calibrazione attuale. Il passaggio a 420 è rinviato.
+3. Passare dallo smoke v2 completato al pannello da 126 su Kaggle, con gli stessi preset, Binoculars e controlli nulli, mantenendo la calibrazione attuale. Il passaggio a 420 è rinviato.
 4. Tenere espliciti i limiti: testi brevi e iniziali, generatori storici, pool RoBERTa, singolo preset per humanizer, input anomali e assenza di stima gold dell'accuratezza semantica sui nuovi output.
-5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens e un eventuale giudice LLM grande restano attività distinte, non ancora eseguite.
+5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens rimane rinviato; il giudice LLM è eseguito nello smoke, ma manca una validazione umana indipendente.
 
-Il risultato attuale è una suite implementata e sottoposta a controlli, con una prima applicazione reale a baseline 3B e a DIPPER. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.
+Il risultato attuale è una suite implementata e sottoposta a controlli, con due pilot da 42 fonti e uno smoke v2 completo dei quattro riscrittori, dei controlli e di Binoculars. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.

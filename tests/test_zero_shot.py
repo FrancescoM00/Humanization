@@ -39,6 +39,29 @@ def test_cache_selection_skips_a_read_only_mount_without_deleting_existing_data(
     assert (first/'existing').read_text() == 'keep'
 
 
+def test_resumed_falcons_in_distinct_caches_need_no_download_budget(tmp_path, monkeypatch):
+    import humanizers.zero_shot as module
+    read_cache, write_cache = tmp_path/'old', tmp_path/'fallback'
+    settings = dict(module.DEFAULT_MODELS)
+    expected = {}
+    for prefix, root in [('observer', read_cache), ('performer', write_cache)]:
+        snapshot = root/('models--'+settings[prefix+'_model_id'].replace('/', '--'))/'snapshots'/settings[prefix+'_revision']
+        snapshot.mkdir(parents=True)
+        (snapshot/'config.json').write_text('{}')
+        (snapshot/'model.safetensors').write_text('complete')
+        expected[prefix] = snapshot
+    monkeypatch.setenv('HUMANIZATION_HF_READ_CACHE', str(read_cache))
+    monkeypatch.setenv('HUMANIZATION_HF_WRITE_CACHE', str(write_cache))
+    def select(candidates, *, missing_models):
+        assert missing_models == 0
+        assert candidates == [write_cache]
+        return write_cache
+    monkeypatch.setattr(module, 'select_writable_cache', select)
+    writable, snapshots = module._prepare_model_storage(settings)
+    assert writable == write_cache
+    assert snapshots == expected
+
+
 def test_binoculars_observed_nll_and_cross_entropy_have_correct_direction_and_masks():
     # p(observer)=[.75,.25], q(performer)=[.5,.5] at every position.
     # Both NLL and cross-entropy equal log(2), hence ratio one.

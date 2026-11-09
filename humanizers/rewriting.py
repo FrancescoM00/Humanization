@@ -12,6 +12,7 @@ import gc
 import hashlib
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -158,6 +159,42 @@ def _validate_system(system: dict) -> None:
                       system.get("order_diversity", 0))
 
 
+def _cached_hf_roots() -> list[Path]:
+    """Read existing caches without probing writes or changing HF globals."""
+    from huggingface_hub import constants
+    candidates = [os.environ.get("HF_HUB_CACHE"),
+                  os.environ.get("HUMANIZATION_HF_READ_CACHE"),
+                  constants.HF_HUB_CACHE,
+                  Path(os.environ.get("HF_HOME", str(Path.home() / ".cache/huggingface"))) / "hub",
+                  "/kaggle/temp/humanization_runtime/huggingface/hub",
+                  "/kaggle/temp/humanization_runtime/hf/hub",
+                  "/kaggle/temp/humanization_downloads_http/hub",
+                  "/tmp/humanization_downloads_http/hub",
+                  "/kaggle/working/.humanization_downloads_http/hub",
+                  Path.home() / ".cache/huggingface/hub"]
+    return list(dict.fromkeys(Path(root) for root in candidates if root))
+
+
+def _load_cached_tokenizer(system: dict, roots: list[Path], tokenizer_cls):
+    dipper = system["kind"] == "dipper"
+    repo_id = system.get("tokenizer_id", DIPPER_TOKENIZER if dipper else system["model_id"])
+    revision = system.get("tokenizer_revision", DIPPER_TOKENIZER_REVISION if dipper else system["revision"])
+    kwargs = {} if dipper else {"trust_remote_code": False}
+    for root in roots:
+        try:
+            return tokenizer_cls.from_pretrained(
+                repo_id, revision=revision, cache_dir=str(root),
+                local_files_only=True, **kwargs)
+        except OSError:
+            # In particular, DIPPER's external T5 tokenizer may be in another
+            # cache from its weights. Never fall back to a network request.
+            continue
+    raise RuntimeError(
+        f"HUMANIZATION_REUSE_CACHED_MODELS=1: tokenizer {repo_id}@{revision} "
+        "is not available in the existing caches. Populate its pinned cache "
+        "in a writable session before enabling strictly local model reuse.")
+
+
 def _load_model(system: dict, device: str):
     import torch
     from transformers import (
@@ -167,6 +204,20 @@ def _load_model(system: dict, device: str):
     selected_device = torch.device(device)
     if selected_device.type not in {"cpu", "cuda"}:
         raise ValueError("Use cpu, cuda or cuda:N")
+    reuse_cached = os.environ.get("HUMANIZATION_REUSE_CACHED_MODELS") == "1"
+    snapshot = None
+    if reuse_cached:
+        from humanizers.zero_shot import cached_weight_snapshot
+        roots = _cached_hf_roots()
+        snapshot = cached_weight_snapshot(system["model_id"], system["revision"], roots)
+        if snapshot is None:
+            raise RuntimeError(
+                f"HUMANIZATION_REUSE_CACHED_MODELS=1: no complete pinned checkpoint "
+                f"for {system['model_id']}@{system['revision']} in existing caches. "
+                "All safetensors shards and config.json are required; no download was attempted.")
+        # Check both assets before selecting/allocating a CUDA device.
+        tokenizer = _load_cached_tokenizer(
+            system, roots, T5Tokenizer if system["kind"] == "dipper" else AutoTokenizer)
     if selected_device.type == "cuda":
         if not torch.cuda.is_available():
             raise RuntimeError("CUDA is unavailable. Enable a Kaggle GPU before this stage.")
@@ -179,17 +230,18 @@ def _load_model(system: dict, device: str):
     if quantized and selected_device.type != "cuda":
         raise ValueError("The 4-bit rewriting configuration requires CUDA")
     if system["kind"] == "dipper":
-        # F32 checkpoint shards occupy ~45.1 GB even when loading in 4-bit.
-        from huggingface_hub import constants
-        cache = Path(constants.HF_HUB_CACHE)
-        cache.mkdir(parents=True, exist_ok=True)
-        model_cache = cache / ("models--" + system["model_id"].replace("/", "--"))
-        cached = sum(p.stat().st_size for p in model_cache.rglob("*")
-                     if p.is_file() and not p.is_symlink()) if model_cache.exists() else 0
-        minimum = max(0, 55 * 1024**3 - cached)
-        if shutil.disk_usage(cache).free < minimum:
-            raise RuntimeError("DIPPER needs approximately 45 GB of checkpoint files. "
-                               "Provide at least 55 GiB of free model-cache space before its first download.")
+        if not reuse_cached:
+            # F32 checkpoint shards occupy ~45.1 GB even when loading in 4-bit.
+            from huggingface_hub import constants
+            cache = Path(constants.HF_HUB_CACHE)
+            cache.mkdir(parents=True, exist_ok=True)
+            model_cache = cache / ("models--" + system["model_id"].replace("/", "--"))
+            cached = sum(p.stat().st_size for p in model_cache.rglob("*")
+                         if p.is_file() and not p.is_symlink()) if model_cache.exists() else 0
+            minimum = max(0, 55 * 1024**3 - cached)
+            if shutil.disk_usage(cache).free < minimum:
+                raise RuntimeError("DIPPER needs approximately 45 GB of checkpoint files. "
+                                   "Provide at least 55 GiB of free model-cache space before its first download.")
         if selected_device.type == "cuda":
             free, _ = torch.cuda.mem_get_info(selected_device)
             if free < 8 * 1024**3:
@@ -197,15 +249,17 @@ def _load_model(system: dict, device: str):
                                    "this is a preliminary check, not a guarantee against OOM.")
         if not quantized:
             raise ValueError("This Kaggle DIPPER preset requires load_in_4bit=true")
-        tokenizer = T5Tokenizer.from_pretrained(
-            system.get("tokenizer_id", DIPPER_TOKENIZER),
-            revision=system.get("tokenizer_revision", DIPPER_TOKENIZER_REVISION))
+        if not reuse_cached:
+            tokenizer = T5Tokenizer.from_pretrained(
+                system.get("tokenizer_id", DIPPER_TOKENIZER),
+                revision=system.get("tokenizer_revision", DIPPER_TOKENIZER_REVISION))
         model_cls = T5ForConditionalGeneration
     else:
-        tokenizer = AutoTokenizer.from_pretrained(
-            system.get("tokenizer_id", system["model_id"]),
-            revision=system.get("tokenizer_revision", system["revision"]),
-            trust_remote_code=False)
+        if not reuse_cached:
+            tokenizer = AutoTokenizer.from_pretrained(
+                system.get("tokenizer_id", system["model_id"]),
+                revision=system.get("tokenizer_revision", system["revision"]),
+                trust_remote_code=False)
         model_cls = AutoModelForCausalLM
     kwargs = {
         "revision": system["revision"],
@@ -220,7 +274,9 @@ def _load_model(system: dict, device: str):
                 bnb_4bit_use_double_quant=True,
                 bnb_4bit_compute_dtype=torch.float16),
             device_map={"": selected_device.index if selected_device.index is not None else 0})
-    model = model_cls.from_pretrained(system["model_id"], **kwargs)
+    if reuse_cached:
+        kwargs["local_files_only"] = True
+    model = model_cls.from_pretrained(str(snapshot) if reuse_cached else system["model_id"], **kwargs)
     if not quantized:
         model.to(selected_device)
     model.eval()
