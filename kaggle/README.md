@@ -103,6 +103,36 @@ RUN_SUFFIX = "_dipper"
 ACTIVE_SYSTEMS = ["identity", "dipper"]
 ```
 
+Nel vecchio notebook sostituire anche la riga `REPO`, più in basso nella stessa cella, con una definizione che segue modalità e suffisso:
+
+```python
+REPO = Path("/kaggle/temp") / f"Humanization_{MODE}{RUN_SUFFIX}"
+```
+
+Eseguire le sezioni 1–3: devono risultare 300 umani di calibrazione e tre fonti test. Il notebook aggiornato controlla anche il backend NF4 nella sezione 2. Per il notebook già aperto, prima della sezione 4 aggiungere questo controllo:
+
+```python
+quantization_probe = r"""
+import torch
+import bitsandbytes as bnb
+layer = bnb.nn.Linear4bit(
+    64, 64, bias=False, compute_dtype=torch.float16,
+    compress_statistics=True, quant_type="nf4"
+).to("cuda:0").eval()
+x = torch.ones((1, 64), device="cuda:0", dtype=torch.float16)
+with torch.inference_mode():
+    y = layer(x)
+torch.cuda.synchronize()
+assert bool(torch.isfinite(y).all())
+print("Backend CUDA 4-bit: OK")
+"""
+subprocess.run([str(PYTHON), "-c", quantization_probe], check=True)
+```
+
+Il test usa una piccola matrice, senza scaricare il modello, e verifica il backend bitsandbytes nella venv effettiva. Non dimostra ancora che l'intero DIPPER sia caricabile o che generi correttamente: a questo serve lo smoke. Se il test fallisce, esaminare l'errore prima del grande download.
+
+Se il controllo riesce, eseguire le sezioni 4–9 come per Qwen. Il file finale sarà **`humanization_smoke_dipper.zip`**. La condizione di generazione deve essere `dipper`, selezionata da `ACTIVE_SYSTEMS` attraverso gli argomenti `--only`; non serve modificare `enabled` nel config. La cartella di output con suffisso `_dipper` conserva i risultati Qwen.
+
 Il preset è disabilitato nel config normale e viene attivato esplicitamente dalla selezione. Richiede circa **45 GB di download**; il controllo iniziale richiede circa 55 GiB liberi prima del primo caricamento e almeno 8 GiB di VRAM libera come controllo preliminare. La quantizzazione a 4 bit riduce la memoria del modello, non la dimensione degli shard da scaricare. Il controllo non garantisce assenza di OOM: se la sessione non ha risorse sufficienti, il preset si interrompe prima di promettere un risultato.
 
 DIPPER lavora sull'intero passaggio breve senza prefisso di contesto: è una variante esplicita, non una replica della procedura ufficiale a finestre di tre frasi. DeBERTa NLI rimane base float32 anche quando il riscrittore DIPPER è quantizzato.

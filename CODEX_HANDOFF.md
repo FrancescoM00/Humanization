@@ -33,6 +33,8 @@ Il prossimo passo utile è annotare e aggiungere un secondo humanizer, per esemp
 
 Setup: venv `--without-pip --system-site-packages`, pip mirato alla venv, `USE_TF=0`, `USE_FLAX=0`, `USE_TORCH=1`, preservando Torch CUDA. Risolti indice CUDA e pesi IDF BERTScore. Sui nuovi humanizer chiamare gli stadi semantici singoli, non `--stage all`. I risultati storici restano invariati; nessun rilancio necessario. DIPPER, EditLens e il giudice di naturalezza restano da eseguire.
 
+Avvio DIPPER richiesto dall'utente: usare smoke + suffisso `_dipper`, sistemi identity/dipper e clone distinto. La guida e la sezione 2 del notebook aggiornato includono una prova NF4 (Linear4bit 64×64, doppia quantizzazione, compute FP16) prima del download da 45 GB. Il notebook già aperto può eseguire la cella equivalente dopo la sezione 3. Questa verifica richiede la GPU Kaggle ed è ancora da eseguire; non è una prova del caricamento completo o della qualità di DIPPER. Il file finale atteso è `humanization_smoke_dipper.zip`.
+
 ## Decisioni sperimentali
 
 - **Stile:** 300 umani e 300 macchine per ciascuno di Essay, WritingPrompts e Reuters; 105 feature. Il controllo successivo abbina esattamente le parole nei prefissi a fine frase. La shortlist `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn` è esplorativa e richiede validazione indipendente.
