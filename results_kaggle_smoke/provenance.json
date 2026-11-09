@@ -1,0 +1,29 @@
+{
+  "archive_file": "exports/kaggle_smoke/humanization_smoke.zip",
+  "archive_sha256": "5034fb1ddc52797e4fa3954f8ef821136cb77a2ca542ee6e5f8cf4538344e525",
+  "uploaded_archive_preserved_unmodified": true,
+  "source_pairs_sha256": "ffddf57518fecce351978dd29c2924375fc28f7a010c8d3f7f3bd0b1d523c9d2",
+  "analysis_method": "Join recorded CSVs, recompute detector summaries, review texts and trace cached NLI evidence. No new model inference.",
+  "n_pairs": 6,
+  "n_sources": 3,
+  "n_calibration_humans": 300,
+  "input_generators": [
+    "ChatGLM"
+  ],
+  "review_author": "assistant; not human gold",
+  "runtime": {
+    "repository_commit": "86d6992724d2f42908e1e8031bb6abf33449d086",
+    "mode": "smoke",
+    "active_systems": [
+      "identity",
+      "qwen_humanize"
+    ],
+    "torch": "2.11.0+cu130",
+    "gpus": [
+      "Tesla T4",
+      "Tesla T4"
+    ],
+    "requirements_sha256": "d47f409520ddc66f86a6eca8377551737ed0d146f056eb0db94bef2526b873d2",
+    "config_sha256": "86db7eb81f3d75fbfb306601395b70442659a3ea27d38b2e534991b571556d3b"
+  }
+}

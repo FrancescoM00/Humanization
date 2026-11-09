@@ -4,7 +4,7 @@ Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I ri
 
 La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
 
-La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: prova tecnica su 3 fonti, pilot su 42, humanization via prompt, tre detector e riuso della suite semantica/stilometrica su GPU. DIPPER è opzionale; lo smoke Kaggle è in corso e i risultati completi devono ancora essere importati e analizzati.
+La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: prova tecnica su 3 fonti, pilot su 42, humanization via prompt, tre detector e riuso della suite semantica/stilometrica su GPU. Lo **[smoke completo](results_kaggle_smoke/report.md)** è stato importato e analizzato: Qwen evade il solo OpenAI su 2/3 casi; la lettura dei testi mostra sia variazioni reali di contenuto sia allarmi NLI dovuti al contesto fra frasi. Il pilot su 42 è il passo successivo; DIPPER è opzionale.
 
 ## Risultati e protocolli
 

@@ -64,6 +64,14 @@ MODE = "pilot"
 
 Riparti dalla prima cella. I risultati vengono salvati in una directory distinta. Il pilot comprende **42 testi macchina: 2 per ciascuno dei 3 domini × 7 generatori**, più 42 umani appaiati di test. I 300 umani di calibrazione sono fonti diverse; la separazione vale anche rispetto alle 126 fonti riservate per l'eventuale studio successivo.
 
+Il notebook aggiornato usa un clone di codice distinto per ogni modalità, riutilizzando la stessa cache temporanea di modelli e venv. **Se stai continuando nel notebook iniziale con le patch locali dello smoke**, cambia anche la riga `REPO` nella prima cella:
+
+```python
+REPO = Path("/kaggle/temp/Humanization_pilot")
+```
+
+Questo permette di scaricare il codice corretto senza sovrascrivere le patch del vecchio clone. Lascia `TMP` invariato. Esegui poi le celle dall'inizio; non occorre ripetere lo smoke. Il [report del primo smoke completo](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_smoke/report.md) documenta i risultati e i limiti emersi.
+
 I testi sono i passaggi iniziali di 90–180 parole del precedente controllo a lunghezza esattamente abbinata. **Non sono documenti completi** e le lunghezze delle riscritture non vengono forzate a coincidere. Questo mantiene il primo esperimento contenuto e chiarisce a quali testi si riferiscono i risultati.
 
 Il preset `MODE="study"` prepara 126 fonti, ma l'estensione va decisa dopo aver letto il pilot. Mantieni gli stessi prompt, detector e regole durante il confronto.
