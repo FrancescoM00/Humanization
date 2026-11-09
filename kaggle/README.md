@@ -141,6 +141,22 @@ os.environ["USE_TORCH"] = "1"
 
 Il controllo va eseguito con `PYTHON` della venv in un nuovo subprocess: gli import del kernel Kaggle possono riferirsi a versioni diverse. Un eventuale errore negli import necessari va esaminato prima delle generazioni. `pip check` sull'intera immagine ereditata non è il criterio di avvio della suite, perché include anche le applicazioni estranee al pilot.
 
+### Errore `Expected a torch.device with a specified index ... cuda`
+
+Il runner iniziale passava l'alias `cuda` a `torch.cuda.set_device`, che richiede un indice esplicito. Il codice aggiornato risolve l'alias nella GPU corrente e il notebook passa esplicitamente `cuda:0` ai quattro CLI che eseguono modelli.
+
+Per continuare sul clone già aperto, sostituisci la cella della sezione 4 con:
+
+```python
+REWRITES = RUN / "rewriting_cuda0"
+selected_args = [item for name in ACTIVE_SYSTEMS for item in ("--only", name)]
+run("run_humanizers.py", "--cohort", COHORT, "--config", CONFIG,
+    "--output", REWRITES, "--device", "cuda:0", *selected_args)
+rewrites = read_jsonl(REWRITES / "rewrites.jsonl")
+```
+
+La directory nuova conserva il tentativo precedente e registra il dispositivo corretto. Cambiare dispositivo nella vecchia directory farebbe intervenire il controllo di compatibilità del manifest. Le identità vengono ricreate immediatamente, mentre Qwen riparte dal caricamento; le sezioni successive seguono la variabile `REWRITES`. Il rimedio non richiede di modificare i metadati dei risultati esistenti o reinstallare l'ambiente.
+
 Metodo e formule: [PROTOCOL.md](PROTOCOL.md). Modelli, revisioni, licenze e fonti: [MODELS.md](MODELS.md).
 
 ## Verifiche prima della consegna

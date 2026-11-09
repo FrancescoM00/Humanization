@@ -27,6 +27,8 @@ Il primo avvio Kaggle ha confermato Python 3.13, PyTorch `2.11.0+cu130`, due Tes
 
 Dopo la riparazione, l'utente ha confermato `CUDA nella venv: 2.11.0+cu130`, CMUdict scaricato e configurazione salvata. Pip segnala conflitti con TensorFlow/Google/Gradio/Diffusers ereditati; non aggiornare protobuf/huggingface-hub per soddisfare applicazioni estranee alla suite. Il notebook imposta ora `USE_TF=0`, `USE_FLAX=0`, `USE_TORCH=1` e controlla gli import dei modelli concreti e un piccolo kernel CUDA prima delle generazioni. Il prossimo passo nella sessione aperta è il controllo mirato, poi la preparazione dati su tre fonti.
 
+L'utente è arrivato alla sezione 4: salvate tre identità, poi errore in `torch.cuda.set_device(torch.device('cuda'))` prima del caricamento Qwen. Il loader ora risolve un indice concreto e passa l'intero a `set_device`; il notebook usa `cuda:0` in tutti i CLI. Per il vecchio clone si usa `REWRITES = RUN / 'rewriting_cuda0'` e `--device cuda:0`, mantenendo il tentativo precedente e senza alterarne il manifest. Le celle successive seguono `REWRITES`; Qwen e detector non risultano ancora eseguiti.
+
 ## Decisioni sperimentali
 
 - **Stile:** 300 umani e 300 macchine per ciascuno di Essay, WritingPrompts e Reuters; 105 feature. Il controllo successivo abbina esattamente le parole nei prefissi a fine frase. La shortlist `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn` è esplorativa e richiede validazione indipendente.

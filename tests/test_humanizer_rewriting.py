@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from humanizers.rewriting import (
-    _rewrite_one, dipper_prompt, generation_status, read_jsonl, run_humanizers,
+    _load_model, _rewrite_one, dipper_prompt, generation_status, read_jsonl, run_humanizers,
 )
 
 
@@ -62,6 +62,47 @@ def test_empty_and_token_limited_generations_are_not_successful_pairs():
     assert generation_status("A partial passage", 512, 512, False) == "truncated"
     assert generation_status("A finished passage.", 512, 512, True) == "ok"
     assert generation_status("A finished passage.", 20, 512, True) == "ok"
+
+
+@pytest.mark.parametrize('requested,current,expected', [('cuda', 1, 1), ('cuda:0', 1, 0)])
+def test_cuda_alias_and_explicit_gpu_select_an_integer_without_downloading(
+        monkeypatch, requested, current, expected):
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    selected = []
+    monkeypatch.setattr(torch.cuda, 'is_available', lambda: True)
+    monkeypatch.setattr(torch.cuda, 'current_device', lambda: current)
+
+    def set_device(index):
+        # Reproduce the strict API which rejected torch.device('cuda').
+        assert isinstance(index, int)
+        selected.append(index)
+
+    monkeypatch.setattr(torch.cuda, 'set_device', set_device)
+    tokenizer = object()
+    monkeypatch.setattr(AutoTokenizer, 'from_pretrained', lambda *a, **k: tokenizer)
+
+    class Model:
+        def to(self, device):
+            self.device = device
+            return self
+
+        def eval(self):
+            return self
+
+    model = Model()
+
+    def from_pretrained(*args, **kwargs):
+        assert kwargs['torch_dtype'] == torch.float16
+        return model
+
+    monkeypatch.setattr(AutoModelForCausalLM, 'from_pretrained', from_pretrained)
+    actual_tokenizer, actual_model, actual_device = _load_model(
+        {'kind': 'causal', 'model_id': 'test/no-download', 'revision': '0'*40}, requested)
+    assert selected == [expected]
+    assert actual_device == torch.device('cuda', expected) == model.device
+    assert actual_model is model and actual_tokenizer is tokenizer
 
 
 def test_dipper_prompt_uses_inverse_codes_and_does_not_drop_text():

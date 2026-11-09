@@ -133,7 +133,11 @@ def _load_model(system: dict, device: str):
     if selected_device.type == "cuda":
         if not torch.cuda.is_available():
             raise RuntimeError("CUDA is unavailable. Enable a Kaggle GPU before this stage.")
-        torch.cuda.set_device(selected_device)
+        # `Tensor.to('cuda')` accepts the current GPU alias, but set_device
+        # requires an explicit index. Resolve it before model/device_map use.
+        if selected_device.index is None:
+            selected_device = torch.device("cuda", torch.cuda.current_device())
+        torch.cuda.set_device(selected_device.index)
     quantized = bool(system.get("load_in_4bit", False))
     if quantized and selected_device.type != "cuda":
         raise ValueError("The 4-bit rewriting configuration requires CUDA")
