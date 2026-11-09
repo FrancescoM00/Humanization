@@ -4,7 +4,7 @@ Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I ri
 
 La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
 
-Il passo successivo è pronto nel **[notebook Kaggle](kaggle/README.md)**: prova tecnica su 3 fonti, pilot su 42, humanization via prompt, tre detector e riuso della suite semantica/stilometrica su GPU. DIPPER è opzionale; i risultati reali di questo nuovo esperimento devono ancora essere raccolti su Kaggle.
+La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: prova tecnica su 3 fonti, pilot su 42, humanization via prompt, tre detector e riuso della suite semantica/stilometrica su GPU. DIPPER è opzionale; lo smoke Kaggle è in corso e i risultati completi devono ancora essere importati e analizzati.
 
 ## Risultati e protocolli
 

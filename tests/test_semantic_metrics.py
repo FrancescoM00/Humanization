@@ -216,5 +216,57 @@ class NeuralPlumbingTests(unittest.TestCase):
         self.assertTrue(all(call["truncation"] is False for call in tokenizer.calls))
 
 
+class BertDevicePlacementTests(unittest.TestCase):
+    def check_document_and_aligned_paths(self, device):
+        """Match upstream: GPU token vectors, but CPU masks and IDF weights."""
+        import torch
+        from semantics.aligned_similarity import aligned_bert_scores
+
+        tokenizer = FakeTokenizer()
+        scorer = SimpleNamespace(_tokenizer=tokenizer,
+                                 _model=SimpleNamespace(float=lambda: None))
+
+        def embeddings(texts, *args, **kwargs):
+            self.assertEqual(kwargs['device'], device)
+            ids = [tokenizer.encode(text, True) for text in texts]
+            length = max(map(len, ids))
+            vectors = torch.zeros((len(texts), length, 128), device=device)
+            masks = torch.zeros((len(texts), length), device='cpu')
+            weights = torch.zeros((len(texts), length), device='cpu')
+            for i, row in enumerate(ids):
+                for j, token in enumerate(row):
+                    vectors[i, j, token] = 1
+                masks[i, :len(row)] = 1
+                weights[i, 1:len(row)-1] = 1
+            return vectors, masks, weights
+
+        a, b = 'Alice visited Rome.', 'Alice visited Paris.'
+        pairs = [{'id': 'same', 'original': a, 'modified': a},
+                 {'id': 'changed', 'original': a, 'modified': b}]
+        alignment = {p['id']: {
+            'original_sha256': _hash(p['original']), 'modified_sha256': _hash(p['modified']),
+            'original_chunks': [p['original']], 'modified_chunks': [p['modified']],
+            'forward_candidates': [[0]], 'reverse_candidates': [[0]],
+        } for p in pairs}
+        with tempfile.TemporaryDirectory() as path, \
+                patch('bert_score.BERTScorer', return_value=scorer), \
+                patch('bert_score.utils.get_bert_embedding', side_effect=embeddings):
+            document = bert_scores(pairs, path, device=device)
+            aligned, _ = aligned_bert_scores(pairs, alignment, path, device=device)
+        # Token-level expected scores are known; moving weights cannot change
+        # the score definition or replace identity inference with a constant.
+        np.testing.assert_allclose(document.bert_chunk_f1, [1, 2/3], atol=1e-6)
+        np.testing.assert_allclose(aligned.aligned_bert_f1_bidirectional_min, [1, 2/3], atol=1e-6)
+
+    def test_cpu_scores_retain_known_token_matching_values(self):
+        self.check_document_and_aligned_paths('cpu')
+
+    def test_cuda_embeddings_accept_cpu_idf_weights_in_both_paths(self):
+        import torch
+        if not torch.cuda.is_available():
+            self.skipTest('Requires CUDA; CPU cannot reproduce a cross-device tensor error')
+        self.check_document_and_aligned_paths('cuda:0')
+
+
 if __name__ == "__main__":
     unittest.main()

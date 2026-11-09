@@ -329,7 +329,8 @@ def bert_scores(pairs, modelpath, *, num_layers=10, chunk_tokens=160, batch_size
                 length = int(masks[i].sum())
                 vector = vectors[i, :length].clone()
                 vector = vector / vector.norm(dim=-1, keepdim=True).clamp_min(1e-12)
-                weight = weights[i, :length].clone()
+                # BERTScore returns IDF weights on CPU even for CUDA embeddings.
+                weight = weights[i, :length].to(device=vector.device).clone()
                 weight = weight / weight.sum().clamp_min(1e-12)
                 token_embedding_cache[text] = (vector, weight)
                 token_embedding_bytes += vector.numel() * vector.element_size() + weight.numel() * weight.element_size()

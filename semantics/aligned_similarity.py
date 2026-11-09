@@ -153,7 +153,8 @@ def aligned_bert_scores(pairs, alignment, modelpath, *, num_layers=10, batch_siz
                 length = int(masks[i].sum())
                 vec = embeddings[i, :length].clone()
                 vec = vec / vec.norm(dim=-1, keepdim=True).clamp_min(1e-12)
-                weight = weights[i, :length].clone()
+                # BERTScore returns IDF weights on CPU even for CUDA embeddings.
+                weight = weights[i, :length].to(device=vec.device).clone()
                 weight = weight / weight.sum().clamp_min(1e-12)
                 vectors[text] = (vec, weight)
                 vector_bytes += vec.numel()*vec.element_size() + weight.numel()*weight.element_size()

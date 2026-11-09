@@ -157,6 +157,34 @@ rewrites = read_jsonl(REWRITES / "rewrites.jsonl")
 
 La directory nuova conserva il tentativo precedente e registra il dispositivo corretto. Cambiare dispositivo nella vecchia directory farebbe intervenire il controllo di compatibilità del manifest. Le identità vengono ricreate immediatamente, mentre Qwen riparte dal caricamento; le sezioni successive seguono la variabile `REWRITES`. Il rimedio non richiede di modificare i metadati dei risultati esistenti o reinstallare l'ambiente.
 
+### BERTScore: tensori su `cuda:0` e `cpu`
+
+BERTScore 0.3.13 può restituire gli embedding sulla GPU e i pesi IDF dei token sulla CPU. Il calcolo del matching deve spostare anche questi pesi sul dispositivo degli embedding. La correzione è applicata sia al percorso documentale sia al BERTScore allineato, lasciando invariati definizione della metrica e comportamento CPU.
+
+Per la sessione già aperta, aggiungi una cella prima della sezione 7:
+
+```python
+snapshot = RUN / "patched_sources"
+snapshot.mkdir(exist_ok=True)
+for name, vector_name in {
+    "metrics.py": "vector",
+    "aligned_similarity.py": "vec",
+}.items():
+    path = REPO / "semantics" / name
+    code = path.read_text()
+    old = "weight = weights[i, :length].clone()"
+    new = f"weight = weights[i, :length].to(device={vector_name}.device).clone()"
+    assert old in code or new in code, f"Versione inattesa: {name}"
+    code = code.replace(old, new)
+    path.write_text(code)
+    (snapshot / name).write_text(code)
+    print(name, "corretto")
+```
+
+Poi riesegui la sezione 7. Gli stadi lessicali e gli embedding già completati vengono riusati, come i pesi scaricati. Le copie in `patched_sources` conservano nello ZIP i sorgenti effettivamente usati nel run; i metadati degli stadi registrano gli hash del codice. Non occorre rifare riscritture o detector.
+
+Il warning sui pesi `pooler.dense.*` di RoBERTa è distinto: il pooler non è usato per gli embedding token di BERTScore e non richiede addestramento per questo esperimento.
+
 Metodo e formule: [PROTOCOL.md](PROTOCOL.md). Modelli, revisioni, licenze e fonti: [MODELS.md](MODELS.md).
 
 ## Verifiche prima della consegna
