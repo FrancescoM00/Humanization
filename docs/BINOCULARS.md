@@ -62,7 +62,7 @@ Gli output sono `zero_shot_scores.csv`, `zero_shot_thresholds.json`, `zero_shot_
 
 ## Verifiche e limite attuale
 
-I test locali verificano formula e orientamento, maschere, copertura delle finestre, quantile con pareggi e denominatore ASR con generazioni fallite. Non scaricano Falcon e non sostituiscono la prova reale di caricamento/inferenza su due T4. Finché quella prova non è stata eseguita e restituita, non ci sono risultati Binoculars da presentare.
+I test locali verificano formula e orientamento, maschere, copertura delle finestre, quantile con pareggi e denominatore ASR con generazioni fallite. Lo [smoke v2 ricevuto](../results_kaggle_v2_smoke/report.md) documenta inoltre la prova reale su due T4: 348 record completati. Il run sulle 126 fonti è avviato ma non ancora completato o ricevuto.
 
 Fast-DetectGPT è un'altra opzione zero-shot, con statistica e checkpoint propri. Aggiungerlo richiede una condizione separata, calibrazione e verifica numerica; non è implementato in questo blocco. La priorità operativa è completare e verificare Binoculars prima dello studio esteso.
 
@@ -83,3 +83,30 @@ Prima di scaricare controlla le snapshot alle revisioni fissate: una configurazi
 Il [pacchetto di ripresa](../kaggle/Binoculars_Resume.zip) contiene il runner e i suoi tre file di supporto. Può essere estratto sotto il RUN in `/kaggle/working`, così la correzione funziona anche se il checkout precedente non è modificabile. La stessa sezione viene eseguita indicando coorte, controlli, config e directory di output esistenti. Il codice corretto e il suo hash sono inclusi negli output.
 
 Con due checkpoint mancanti il fallback su `/kaggle/working` non viene scelto, perché circa 28 GB di pesi superano la consueta quota di output di 20 GB. Quando il primo è già completo, il secondo richiede circa 14 GB. I controlli locali verificano la selezione del filesystem e il rifiuto delle snapshot parziali; la ripresa sul runtime Kaggle resta da confermare dall'esecuzione.
+
+### Study: controllo iniziale riuscito, scrittura HTTP poi rifiutata
+
+Nel successivo study il log mostra `complete cached checkpoints: 0/2`, download e caricamento completi dell'observer, poi errore `http_get → temp_file.write → OSError: [Errno 30] Read-only file system` scaricando il performer. Xet era già disabilitato. Il controllo iniziale di scrittura è passato, ma non garantisce la scrivibilità durante il trasferimento. Il log non dimostra esaurimento di spazio o OOM; non permette neppure di concludere perché le precedenti cache non fossero disponibili.
+
+In questa situazione eseguire una nuova cella **prima della sola sezione 7**, senza rieseguire setup o generazioni:
+
+```python
+from pathlib import Path
+import os
+
+cache = Path("/kaggle/working/.humanization_downloads_http/hub")
+cache.mkdir(parents=True, exist_ok=True)
+probe = cache / ".humanization_write_probe"
+probe.write_text("ok")
+probe.unlink()
+
+os.environ["HUMANIZATION_HF_READ_CACHE"] = "/kaggle/temp/humanization_runtime/huggingface/hub"
+os.environ["HUMANIZATION_HF_WRITE_CACHE"] = str(cache)
+os.environ["HF_HUB_OFFLINE"] = "0"
+os.environ["TRANSFORMERS_OFFLINE"] = "0"
+os.environ["HF_HUB_DISABLE_XET"] = "1"
+```
+
+Il loader già presente rispetta l'override di scrittura e cerca lo snapshot completo dell'observer nella vecchia cache: ci si attende ora **1/2 checkpoint completi**, con riuso locale del primo e download del solo performer nella nuova destinazione. I circa 14 GB di pesi aggiuntivi sono fuori dal RUN e non entrano nello ZIP finale. Non copiare l'observer, non cancellare i vecchi pesi e non cambiare precisione. Il nuovo percorso deve avere quota sufficiente; la lettura di `disk_usage` può riflettere il disco host anziché la quota Kaggle.
+
+La cella usa opzioni già supportate dal codice e non richiede aggiornamento del checkout o un nuovo commit nel RUN. Gli output precedenti e la cache degli score restano utilizzabili. Il successo di questa ripresa sullo study va confermato dal nuovo log; il completamento dello smoke non lo garantisce.

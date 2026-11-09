@@ -27,6 +27,8 @@ I log dello smoke hanno mostrato `/kaggle/temp/humanization_runtime` e le direct
 
 La sezione 9 conserva i circa 1 GB di modelli semantici in `/kaggle/working/.humanization_semantic_models`, fuori dallo ZIP. Riusa quanto già presente e copia gli asset leggibili dal vecchio `TMP/models` quando necessario. Le revisioni previste vengono verificate dal downloader. Le directory di pesi e la venv non entrano nell'archivio finale.
 
+Se la sezione 7 supera il controllo iniziale della cache ma fallisce poi con `http_get → temp_file.write → Read-only file system`, dopo aver completato l'observer, seguire la [ripresa con cache di scrittura esplicita](../docs/BINOCULARS.md#study-controllo-iniziale-riuscito-scrittura-http-poi-rifiutata). È il caso osservato nello study: una nuova cella forza il solo download mancante sotto `/kaggle/working`, poi si riesegue **soltanto la sezione 7**. Non reimportare il notebook né rifare le riscritture.
+
 ## Giudice e budget
 
 Lo smoke ha confermato la disponibilità su Groq di `qwen/qwen3.8-27b` e l'opzione `reasoning_effort="none"`. Il modello non viene sostituito implicitamente. I sei confronti iniziali con le 24 valutazioni dell'assistente sono **concordanza AI–AI, non validazione umana**; il notebook ne confronta il piano completo prima di riusare i risultati.
