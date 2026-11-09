@@ -125,6 +125,22 @@ subprocess.run([sys.executable, "-m", "pip", "--python", str(PYTHON),
 
 Poi riesegui la seconda cella originale. La sessione corrente può essere mantenuta; il controllo finale deve stampare `CUDA nella venv` con la versione CUDA di Kaggle.
 
+### Messaggi di conflitto con TensorFlow, Gradio e pacchetti Google
+
+Con `--system-site-packages`, pip vede anche i pacchetti preinstallati nell'immagine. Il progetto mantiene versioni compatibili con Transformers 4.57, incluse `huggingface-hub` 0.x e protobuf 5; altre applicazioni dell'immagine possono richiedere versioni diverse. Se pip termina e la cella stampa `Configurazione salvata`, il messaggio del resolver non è di per sé un fallimento dell'installazione.
+
+Il pilot usa PyTorch; TensorFlow, Gradio, Diffusers e i servizi Google elencati non ne fanno parte. Non si devono aggiornare le dipendenze per soddisfare indiscriminatamente tutti questi pacchetti. Il notebook aggiornato imposta `USE_TF=0`, `USE_FLAX=0`, `USE_TORCH=1` nei processi figli e verifica gli import concreti di Qwen, RoBERTa, DeBERTa, T5, Sentence Transformers e BERTScore, oltre a spaCy, textstat e un piccolo prodotto matriciale CUDA FP16. Non scarica checkpoint per questa verifica.
+
+Se usi la versione già aperta, imposta queste variabili in una cella prima di proseguire:
+
+```python
+os.environ["USE_TF"] = "0"
+os.environ["USE_FLAX"] = "0"
+os.environ["USE_TORCH"] = "1"
+```
+
+Il controllo va eseguito con `PYTHON` della venv in un nuovo subprocess: gli import del kernel Kaggle possono riferirsi a versioni diverse. Un eventuale errore negli import necessari va esaminato prima delle generazioni. `pip check` sull'intera immagine ereditata non è il criterio di avvio della suite, perché include anche le applicazioni estranee al pilot.
+
 Metodo e formule: [PROTOCOL.md](PROTOCOL.md). Modelli, revisioni, licenze e fonti: [MODELS.md](MODELS.md).
 
 ## Verifiche prima della consegna

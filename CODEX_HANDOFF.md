@@ -25,6 +25,8 @@ Le metriche semantiche accettano ora `--device cuda`, con default CPU conservato
 
 Il primo avvio Kaggle ha confermato Python 3.13, PyTorch `2.11.0+cu130`, due Tesla T4 e circa 967 GiB temporanei liberi. La creazione standard della venv è fallita su `ensurepip`: il notebook ora usa `venv --without-pip --system-site-packages` e bootstrap di pip nella venv tramite il pip dell'immagine (`--python`). La guida include una cella di riparazione per la sessione già aperta; l'inferenza Kaggle non è ancora confermata.
 
+Dopo la riparazione, l'utente ha confermato `CUDA nella venv: 2.11.0+cu130`, CMUdict scaricato e configurazione salvata. Pip segnala conflitti con TensorFlow/Google/Gradio/Diffusers ereditati; non aggiornare protobuf/huggingface-hub per soddisfare applicazioni estranee alla suite. Il notebook imposta ora `USE_TF=0`, `USE_FLAX=0`, `USE_TORCH=1` e controlla gli import dei modelli concreti e un piccolo kernel CUDA prima delle generazioni. Il prossimo passo nella sessione aperta è il controllo mirato, poi la preparazione dati su tre fonti.
+
 ## Decisioni sperimentali
 
 - **Stile:** 300 umani e 300 macchine per ciascuno di Essay, WritingPrompts e Reuters; 105 feature. Il controllo successivo abbina esattamente le parole nei prefissi a fine frase. La shortlist `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn` è esplorativa e richiede validazione indipendente.
