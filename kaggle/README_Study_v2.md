@@ -40,3 +40,5 @@ Il file finale è `humanization_v2_study_protocol_v2.zip`. Il manifest della nat
 Binoculars usa due Falcon 7B non quantizzati, uno per GPU. Richiede circa 14 GiB liberi su ciascuna T4 come controllo preliminare; non viene cambiato in 4 bit per farlo entrare. DIPPER scarica circa 45 GB; il nuovo 14B richiede il proprio checkpoint. I subprocess rilasciano i modelli tra una fase e l'altra.
 
 Il codice è verificato localmente con test matematici e di integrazione; nessun risultato Binoculars, 14B, DIPPER contestuale o Groq viene dichiarato prima dello smoke effettivo su Kaggle. La prova NLI contestuale è già stata eseguita su CPU con il modello base locale. Fast-DetectGPT e un humanizer commerciale restano rinviati. Il pannello da 420 non va avviato in questa fase.
+
+Se il download Falcon fallisce con `xet_get` e `Read-only file system`, usare la [correzione della cache/Xet](../docs/BINOCULARS.md) e riprendere dalla sola sezione 7. Il notebook aggiornato usa già directory scrivibili esplicite e `HF_HUB_DISABLE_XET=1`; i file completi in cache vengono riusati.

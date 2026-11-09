@@ -65,3 +65,11 @@ Gli output sono `zero_shot_scores.csv`, `zero_shot_thresholds.json`, `zero_shot_
 I test locali verificano formula e orientamento, maschere, copertura delle finestre, quantile con pareggi e denominatore ASR con generazioni fallite. Non scaricano Falcon e non sostituiscono la prova reale di caricamento/inferenza su due T4. Finché quella prova non è stata eseguita e restituita, non ci sono risultati Binoculars da presentare.
 
 Fast-DetectGPT è un'altra opzione zero-shot, con statistica e checkpoint propri. Aggiungerlo richiede una condizione separata, calibrazione e verifica numerica; non è implementato in questo blocco. La priorità operativa è completare e verificare Binoculars prima dello studio esteso.
+
+## Download Xet: filesystem di sola lettura su Kaggle
+
+Nel primo smoke v2 il Falcon observer è stato scaricato e caricato; il download del performer è fallito in `hf_hub_download → xet_get → download_files` con `Read-only file system (os error 30)`. Non è un errore CUDA/OOM e l'avviso `torch_dtype` è una deprecazione distinta. Dal solo traceback non si identifica il percorso interno di Xet che rifiuta la scrittura.
+
+Il notebook aggiornato imposta `HF_HUB_CACHE`, `HF_XET_CACHE` e `TMPDIR` sotto `/kaggle/temp/humanization_runtime`, verifica che siano scrivibili e usa `HF_HUB_DISABLE_XET=1`. Le variabili devono essere presenti **prima degli import Hugging Face**: il subprocess della sezione 7 le rilegge a ogni avvio. Si conserva la cache dei file completi; si possono rimuovere soltanto i `.incomplete` del performer interrotto per evitare il riuso di un file parziale Xet durante il passaggio a HTTP.
+
+La sessione attuale può impostare queste variabili in una cella nuova e poi rieseguire solo la sezione 7. Non cambiano checkpoint, precisione, formula del ratio o calibrazione. Il download HTTP standard deve ancora completarsi sul runtime dell'autore; non è già dichiarato risolto dal test locale del notebook.
