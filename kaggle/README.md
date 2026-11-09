@@ -105,6 +105,26 @@ La generazione e i detector salvano progressivamente. Rieseguire con gli stessi 
 
 Se NLI esaurisce la memoria GPU, riduci `NLI_BATCH_SIZE` a 2 e riesegui il blocco. Per errori di download verifica Internet e il messaggio della cella. Il notebook interrompe gli errori di scoring: non li interpreta come classificazioni umane.
 
+### Errore `ensurepip` nella creazione della venv
+
+Alcune immagini Kaggle, inclusa quella Python 3.13 segnalata durante il primo avvio, non completano il bootstrap `ensurepip`. Il notebook aggiornato crea la venv con `--without-pip`, abilita esplicitamente i pacchetti di sistema e usa il pip dell'immagine per installare pip nella sola venv. Questo conserva PyTorch CUDA preinstallato. La correzione gestisce anche una venv parziale, che può già contenere `bin/python`.
+
+Se hai già importato la versione iniziale, aggiungi una cella ed esegui:
+
+```python
+import sys, subprocess
+from pathlib import Path
+
+VENV = Path("/kaggle/temp/humanization_runtime/venv")
+PYTHON = VENV / "bin/python"
+subprocess.run([sys.executable, "-m", "venv", "--without-pip",
+                "--system-site-packages", str(VENV)], check=True)
+subprocess.run([sys.executable, "-m", "pip", "--python", str(PYTHON),
+                "install", "--upgrade", "--ignore-installed", "pip"], check=True)
+```
+
+Poi riesegui la seconda cella originale. La sessione corrente può essere mantenuta; il controllo finale deve stampare `CUDA nella venv` con la versione CUDA di Kaggle.
+
 Metodo e formule: [PROTOCOL.md](PROTOCOL.md). Modelli, revisioni, licenze e fonti: [MODELS.md](MODELS.md).
 
 ## Verifiche prima della consegna

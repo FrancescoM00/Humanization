@@ -23,6 +23,8 @@ I quattro protocolli da usare sono [SEMANTIC_EXPERIMENT.md](SEMANTIC_EXPERIMENT.
 
 Le metriche semantiche accettano ora `--device cuda`, con default CPU conservato. Su nuovi output chiamare gli stadi singoli: **non `--stage all`**, che preparerebbe le vecchie perturbazioni. Usare `requirements-kaggle.txt` preservando PyTorch CUDA, non i lockfile CPU. Schede manuali di naturalezza sono generate ma non annotate; nessun giudice LLM è stato eseguito. I risultati storici non sono modificati da questa fase.
 
+Il primo avvio Kaggle ha confermato Python 3.13, PyTorch `2.11.0+cu130`, due Tesla T4 e circa 967 GiB temporanei liberi. La creazione standard della venv è fallita su `ensurepip`: il notebook ora usa `venv --without-pip --system-site-packages` e bootstrap di pip nella venv tramite il pip dell'immagine (`--python`). La guida include una cella di riparazione per la sessione già aperta; l'inferenza Kaggle non è ancora confermata.
+
 ## Decisioni sperimentali
 
 - **Stile:** 300 umani e 300 macchine per ciascuno di Essay, WritingPrompts e Reuters; 105 feature. Il controllo successivo abbina esattamente le parole nei prefissi a fine frase. La shortlist `pos_num`, `pos_cconj`, `mattr_50`, `pos_propn` è esplorativa e richiede validazione indipendente.
