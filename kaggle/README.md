@@ -72,7 +72,7 @@ REPO = Path("/kaggle/temp/Humanization_pilot")
 
 Questo permette di scaricare il codice corretto senza sovrascrivere le patch del vecchio clone. Lascia `TMP` invariato. Esegui poi le celle dall'inizio; non occorre ripetere lo smoke. Il [report del primo smoke completo](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_smoke/report.md) documenta i risultati e i limiti emersi.
 
-Il [pilot su 42 fonti è ora completato](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_pilot/report.md). Prima di ampliare il campione, sono disponibili [schede di annotazione](https://github.com/FrancescoM00/Humanization/blob/main/exports/kaggle_pilot/README.md): 24 coppie per la semantica e 28 testi per la naturalezza. Il confronto successivo consigliato è con un secondo sistema sulle stesse fonti; la sezione DIPPER qui sotto permette di iniziare dal suo smoke separato.
+Il [pilot Qwen su 42 fonti](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_pilot/report.md) e il [pilot DIPPER sugli stessi input](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_dipper_pilot/report.md) sono ora completi. Sono disponibili [schede comuni da annotare](https://github.com/FrancescoM00/Humanization/blob/main/exports/kaggle_dipper_pilot/README.md): 45 coppie semantiche e 24 testi di naturalezza. Il confronto appaiato e i limiti dell'estensione sono riassunti nel [report cumulativo](https://github.com/FrancescoM00/Humanization/blob/main/REPORT_SPERIMENTALE.md). Le istruzioni seguenti permettono di riprodurre le condizioni eseguite.
 
 I testi sono i passaggi iniziali di 90–180 parole del precedente controllo a lunghezza esattamente abbinata. **Non sono documenti completi** e le lunghezze delle riscritture non vengono forzate a coincidere. Questo mantiene il primo esperimento contenuto e chiarisce a quali testi si riferiscono i risultati.
 
@@ -150,6 +150,8 @@ ACTIVE_SYSTEMS = ["identity", "dipper"]
 ```
 
 Rieseguire le sezioni 1–9: nella sezione 3 devono risultare 300 umani di calibrazione e 42 fonti test, nella sezione 4 sono attesi 84 esiti. Scaricare `humanization_pilot_dipper.zip`. Modelli e venv vengono riusati se presenti nella stessa sessione. Mantenere il preset fissato; lo smoke è incluso nei 42 e non è una validazione indipendente.
+
+Il [pilot DIPPER restituito](https://github.com/FrancescoM00/Humanization/blob/main/results_kaggle_dipper_pilot/report.md) ha completato tutti gli 84 esiti. ASR OpenAI 4/24, Fakespot 7/37, RADAR 3/28, maggioranza 2/31. Il confronto con Qwen cambia secondo il detector e mostra una forte compressione con DIPPER. Non occorre rilanciare i pilot per leggere i risultati: il lavoro successivo è annotare e fissare l'estensione comune. La proposta da 420 fonti richiede una nuova coorte con calibrazione esplicitamente conservata; non si ottiene cambiando soltanto `reserve_per_cell`.
 
 ## 8. Limiti e problemi pratici
 

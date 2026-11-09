@@ -1,6 +1,6 @@
 # Report cumulativo della sperimentazione
 
-Aggiornamento: **9 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. Il pilot DIPPER su 42 fonti è stato avviato dall'autore su Kaggle; il relativo archivio non è ancora stato ricevuto e non se ne anticipano i risultati.
+Aggiornamento: **9 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot Qwen e DIPPER sulle stesse 42 fonti sono stati ricevuti e analizzati; sono disponibili il confronto appaiato e le schede comuni da annotare.
 
 ## 1. Obiettivo e stato dei quattro assi
 
@@ -8,7 +8,7 @@ La suite valuta le riscritture rispetto a quattro domande distinte: eludono i de
 
 | Asse | Lavoro completato | Stato e limite principale |
 | --- | --- | --- |
-| Evasione | Tre detector reali, calibrazione umana, ASR condizionata, transizioni prima/dopo e voto di maggioranza | Qwen su 42 fonti e DIPPER su tre; pilot DIPPER in corso. Pool interamente RoBERTa |
+| Evasione | Tre detector reali, calibrazione umana, ASR condizionata, transizioni prima/dopo e voto di maggioranza | Qwen e DIPPER sulle stesse 42 fonti. Pool interamente RoBERTa, campione ancora pilota |
 | Conservazione | Perturbazioni controllate, positivi OpAI, confronti allineati, aggregatori, lunghezza, guardie e applicazione ai nuovi output | Metriche operative; sui nuovi humanizer manca un riferimento semantico umano indipendente |
 | Stile | Umano/macchina a lunghezza abbinata, regressione logistica, trasferimento, frasi OpAI toccate e distanze sulle riscritture | Differenze misurate; non equivalgono a qualità o naturalezza |
 | Naturalezza | Preparazione delle schede a testo singolo, separate dalle chiavi dei sistemi | Giudizi ancora assenti; nessun risultato di naturalezza o giudice LLM grande già eseguito |
@@ -118,15 +118,30 @@ La distanza RMS media è 0,8164; MATTR aumenta in 37/42 casi, ma il centroide um
 
 [Report Qwen](results_kaggle_pilot/report.md), [casi](results_kaggle_pilot/case_review.md), [archivio e moduli](exports/kaggle_pilot/README.md).
 
-### DIPPER: smoke completato, pilot in corso
+### DIPPER: smoke e pilot completati
 
 Lo smoke usa gli stessi tre input ChatGLM già esaminati per Qwen. Tutte le riscritture terminano con EOS; nessuna raggiunge il limite d'uscita. Ogni detector continua a riconoscerle AI: ASR 0/3. DIPPER accorcia i testi del 18–27%.
 
 Reuters perde il riferimento ai problemi legali dell'azienda: NLI forward medio 0,984, reverse 0,679, minimo reverse 0,000334 proprio sulla frase omessa. Essay mostra anche un allarme da fusione di due frasi; WritingPrompts cambia il meccanismo del potere del protagonista ed elimina la risposta finale di Sarah. Sono esempi leggibili, non una stima dell'accuratezza semantica o una classifica degli humanizer.
 
-Il pilot DIPPER sugli stessi 42 input è **avviato su Kaggle, con risultati ancora da ricevere**. Attesi 84 esiti fra identità e DIPPER e l'archivio `humanization_pilot_dipper.zip`. La configurazione resta quella dello smoke. Il confronto Qwen–DIPPER sarà appaiato per fonte.
+Il pilot DIPPER sugli stessi 42 input è **completo**: 42 riscritture e 42 identità, tutte con stato `ok`, nessun arresto al limite di generazione. L'archivio ricevuto è `humanization_pilotdipper.zip`; configurazione, dati, soglie e scale restano quelli precedenti. Il confronto Qwen–DIPPER è appaiato per fonte.
 
-[Report smoke DIPPER](results_kaggle_dipper_smoke/report.md), [testi](results_kaggle_dipper_smoke/text_review.md), [ZIP originale](exports/kaggle_dipper_smoke/README.md).
+| Detector | Qwen: successi / originali rilevati | DIPPER: successi / originali rilevati | Differenza ASR DIPPER−Qwen |
+| --- | ---: | ---: | ---: |
+| OpenAI | 17/24 | 4/24 | −54,2 punti percentuali |
+| Fakespot raw | 1/37 | 7/37 | +16,2 punti percentuali |
+| RADAR | 2/28 | 3/28 | +3,6 punti percentuali |
+| Maggioranza | 2/31 | 2/31 | 0 punti percentuali |
+
+L'ordine dipende dal detector. Il bootstrap appaiato esplorativo dà intervalli 95% della differenza di [−75,0; −29,2] punti per OpenAI, [+5,4; +27,0] per Fakespot, [−7,1; +17,9] per RADAR e [−12,9; +12,9] per maggioranza, mantenendo fissi modelli e calibrazione. I due successi di maggioranza riguardano fonti completamente diverse. Dopo DIPPER le rilevazioni complessive sono 25/42 OpenAI, 33/42 Fakespot, 33/42 RADAR e 32/42 maggioranza: alcune fonti prima non rilevate diventano AI, perciò ASR e TPR complessivo vanno letti separatamente.
+
+DIPPER accorcia 41/42 testi, con rapporto parole medio 0,739 e mediano 0,766; 23 output scendono sotto l'80% della lunghezza iniziale. Qwen ha rapporto mediano 0,915. MATTR aumenta in 13/42 DIPPER contro 37/42 Qwen; il centroide umano si avvicina in 13/42 contro 20/42. La RMS media è 0,7765 per DIPPER e 0,8164 per Qwen, mentre le mediane invertono l'ordine. Distanza e leggibilità non determinano la naturalezza.
+
+Coseno/BERTScore documentali medi DIPPER sono 0,9215/0,9478 e NLI forward/reverse 0,6840/0,5949. La lettura di 12 coppie mostra omissioni e variazioni puntuali, fra cui euro→franchi e 100→30 piedi, ma anche falsi allarmi del protocollo a premessa singola: nel racconto Maria/Sofia la fusione da 15 a cinque frasi accompagna forward 0,00262 pur mantenendo gran parte della trama. Le medie non diventano una classifica di fedeltà senza etichette indipendenti. Le due consegne StableLM già note restano nel risultato primario; l'analisi secondaria da 40 non risolve tutti i problemi di qualità degli input.
+
+Sono pronte [schede comuni](exports/kaggle_dipper_pilot/README.md) senza score: 45 coppie semantiche (i due sistemi sulle stesse 21 fonti, più tre identità) e 24 testi di naturalezza su sei fonti comuni con umani, originali e riscritture. Le chiavi sono separate; nessuna etichetta è stata compilata. Le precedenti 24 coppie Qwen/identità sono incluse e non vanno contate due volte se già giudicate.
+
+[Report pilot DIPPER e confronto](results_kaggle_dipper_pilot/report.md), [casi](results_kaggle_dipper_pilot/case_review.md), [confronto ASR appaiato](results_kaggle_dipper_pilot/paired_comparison.md), [ZIP e schede](exports/kaggle_dipper_pilot/README.md). Lo [smoke DIPPER](results_kaggle_dipper_smoke/report.md) rimane documentato separatamente.
 
 ## 7. Perché 3, 42 e 126 testi: significato e limiti della numerosità
 
@@ -135,7 +150,7 @@ La riduzione del campione riguarda la nuova fase humanizer, non tutti gli esperi
 | Pannello | Fonti macchina per humanizer | Ripartizione | Stato/scopo |
 | --- | ---: | --- | --- |
 | Smoke | 3 | Una per dominio, tutte ChatGLM | Collaudo di caricamento, generazione e suite |
-| Pilot | 42 | 2 × 3 domini × 7 generatori | Primo confronto bilanciato; Qwen concluso, DIPPER in corso |
+| Pilot | 42 | 2 × 3 domini × 7 generatori | Primo confronto bilanciato, completato per entrambi i sistemi |
 | Study | 126 | 6 × 3 × 7 | Già congelato, non ancora eseguito sui due sistemi |
 | Possibile estensione | 420 | 20 × 3 × 7 | Proposta tecnicamente fattibile; nuova coorte da definire, non già preparata o eseguita |
 
@@ -147,7 +162,7 @@ Una verifica dei metadati delle 900 fonti, escludendo i 300 gruppi di calibrazio
 
 Per estendere oltre il pannello previsto occorre conservare esplicitamente i 300 gruppi di calibrazione e creare una nuova coorte con criteri basati su metadati/ID, includendo gli input correnti. **Non basta aumentare `reserve_per_cell`**: il selettore attuale riserva prima i test e poi sceglie la calibrazione, che potrebbe così cambiare. La nuova coorte dovrà applicarsi a entrambi gli humanizer e mantenere tracciati versione e soglie.
 
-La dimensione finale va fissata in base alla precisione desiderata per il confronto complessivo e per gli eventuali sottogruppi, considerando i denominatori ASR e il budget. Aumentare le fonti migliora la precisione, ma non risolve mancanza di annotazioni, bias del corpus, limiti dei detector o errori delle metriche. Il run attivo continua invariato.
+La dimensione finale va fissata in base alla precisione desiderata per il confronto complessivo e per gli eventuali sottogruppi, considerando i denominatori ASR e il budget. Aumentare le fonti migliora la precisione, ma non risolve mancanza di annotazioni, bias del corpus, limiti dei detector o errori delle metriche. I pilot completati restano invariati e nessuna estensione è ancora eseguita.
 
 ## 8. Composizione del repository e riproducibilità
 
@@ -170,8 +185,8 @@ Coorti, configurazioni, revisioni dei checkpoint, hash delle coppie e metadati r
 
 ## 9. Attività successive e confini delle conclusioni
 
-1. Ricevere e analizzare il pilot DIPPER; confrontarlo con Qwen sulle stesse 42 fonti, con risultati distinti per detector, distribuzioni semantiche e stile.
-2. Raccogliere annotazioni indipendenti di conservazione e naturalezza. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani.
+1. Usare il confronto appaiato completato per documentare i comportamenti dei due preset e i limiti emersi, senza modificare a posteriori i risultati.
+2. Raccogliere annotazioni indipendenti di conservazione e naturalezza sulle schede comuni. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani; la fusione delle frasi è un caso prioritario per misurare i falsi allarmi dell'NLI.
 3. Fissare l'estensione comune del campione prima di esaminarne gli output, mantenendo la calibrazione attuale. Il pannello da 126 è già disponibile; un'estensione più ampia richiede la nuova coorte descritta sopra.
 4. Tenere espliciti i limiti: testi brevi e iniziali, generatori storici, pool RoBERTa, singolo preset per humanizer, input anomali e assenza di stima gold dell'accuratezza semantica sui nuovi output.
 5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens e un eventuale giudice LLM grande restano attività distinte, non ancora eseguite.
