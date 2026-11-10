@@ -2,7 +2,7 @@
 
 Data: 9 novembre 2026. I pilot da 42 fonti sono risultati esplorativi già osservati. Questo protocollo definisce l'estensione e i controlli; **non dichiara che le nuove inferenze GPU o Groq siano già eseguite**. Il pannello da 126 include i 42 pilot e non è una replica indipendente. L'estensione a 420 è rinviata.
 
-**Aggiornamento di esecuzione:** il successivo [smoke v2](results_kaggle_v2_smoke/report.md) ha completato le nuove condizioni GPU e Groq sulle tre fonti tecniche. Il pannello da 126 resta da eseguire. Le formulazioni di disponibilità nelle sezioni seguenti descrivono il momento in cui il protocollo è stato fissato; il report documenta gli esiti senza cambiare coorte o preset. La naturalezza risulta sensibile all'ordine: quattro dei nove confronti nuovi sono instabili AB/BA.
+**Aggiornamento di esecuzione:** il successivo [smoke v2](results_kaggle_v2_smoke/report.md) ha completato le nuove condizioni GPU e Groq sulle tre fonti tecniche. Il successivo [study da 126 è ricevuto](results_kaggle_v2_study/report.md): 626/630 esiti validi, scoring completo sui validi e tre confronti Groq parziali. Le formulazioni di disponibilità nelle sezioni seguenti descrivono il momento in cui il protocollo è stato fissato; il report documenta gli esiti senza cambiare coorte o preset. La naturalezza risulta sensibile all'ordine: quattro dei nove confronti nuovi sono instabili AB/BA.
 
 ## Domande principali e conclusioni candidate
 

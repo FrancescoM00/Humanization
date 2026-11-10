@@ -1,0 +1,7 @@
+comparison,source_id,domain,generator,system_a,system_b,status_a,status_b,invalid_outputs
+dipper__dipper_context3,WritingPrompts:184:b88567fa0a190a58,WritingPrompts,GPT4All,dipper,dipper_context3,truncated,truncated,"[{""humanizer"": ""dipper"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}, {""humanizer"": ""dipper_context3"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}]"
+qwen_humanize__dipper_context3,Essay:223:eceeae3f088c81ef,Essay,StableLM,qwen_humanize,dipper_context3,truncated,ok,"[{""humanizer"": ""qwen_humanize"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}]"
+qwen_humanize__dipper_context3,Reuters:992:d3932f02b4a9e76d,Reuters,StableLM,qwen_humanize,dipper_context3,truncated,ok,"[{""humanizer"": ""qwen_humanize"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}]"
+qwen_humanize__dipper_context3,WritingPrompts:184:b88567fa0a190a58,WritingPrompts,GPT4All,qwen_humanize,dipper_context3,ok,truncated,"[{""humanizer"": ""dipper_context3"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}]"
+qwen_humanize__qwen14b_humanize,Essay:223:eceeae3f088c81ef,Essay,StableLM,qwen_humanize,qwen14b_humanize,truncated,ok,"[{""humanizer"": ""qwen_humanize"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}]"
+qwen_humanize__qwen14b_humanize,Reuters:992:d3932f02b4a9e76d,Reuters,StableLM,qwen_humanize,qwen14b_humanize,truncated,ok,"[{""humanizer"": ""qwen_humanize"", ""status"": ""truncated"", ""reasons"": [""status_not_ok""]}]"

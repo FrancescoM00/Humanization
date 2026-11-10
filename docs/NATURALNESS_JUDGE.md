@@ -4,7 +4,7 @@ Il giudice confronta due riscritture della **stessa fonte**, presentate prima A/
 
 ## Modello e assenza di ragionamento
 
-Il modello richiesto è esattamente `qwen/qwen3.8-27b`. Il successivo [smoke v2](../results_kaggle_v2_smoke/report.md) ha confermato modello e `reasoning_effort=none` su Kaggle: trenta risposte valide includendo la prova iniziale. Quattro dei nove confronti nuovi sono però instabili all'ordine. Non è validazione umana e non sostiene una graduatoria generale. Lo script non sostituisce il modello con un altro.
+Il modello richiesto è esattamente `qwen/qwen3.8-27b`. Il successivo [smoke v2](../results_kaggle_v2_smoke/report.md) ha confermato modello e `reasoning_effort=none` su Kaggle: trenta risposte valide includendo la prova iniziale. Quattro dei nove confronti nuovi sono però instabili all'ordine. Il successivo [study sulle 126 fonti](../results_kaggle_v2_study/naturalness.md) contiene 364 risposte valide nuove, ma tutti i confronti sono parziali e 89 coppie complete discordano all’ordine. Non è validazione umana e non sostiene una graduatoria generale. Lo script non sostituisce il modello con un altro.
 
 Da Kaggle, con Internet attivo e `GROQ_API_KEY` configurata come secret, si può verificare il catalogo autenticato:
 

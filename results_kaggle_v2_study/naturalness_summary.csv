@@ -1,0 +1,10 @@
+comparison,scope,system_a,system_b,n_selected_sources,n_eligible_pairs,n_generation_failure_pairs,valid_orders,expected_orders,complete_pairs,stable_pairs,inconsistent_pairs,pending_eligible_pairs,stable_coverage_selected,stable_fraction_complete,system_a_wins,system_b_wins,ties,visible_A,visible_B,visible_tie,AA,BB,AB,BA,tie_tie,mixed_tie,status,blocked_reason,logged_post_attempts,total_tokens
+dipper__dipper_context3,all126,dipper,dipper_context3,126,125,1,100,250,50,15,35,75,0.11904761904761904,0.3,9,6,0,17,82,1,1,33,9,6,0,1,partial,provider_http_429,201,52365
+dipper__dipper_context3,pilot42,dipper,dipper_context3,42,42,0,32,84,16,6,10,26,0.14285714285714285,0.375,4,2,0,8,24,0,1,9,4,2,0,0,,,,
+dipper__dipper_context3,unseen84,dipper,dipper_context3,84,83,1,68,166,34,9,25,49,0.10714285714285714,0.2647058823529412,5,4,0,9,58,1,0,24,5,4,0,1,,,,
+qwen_humanize__dipper_context3,all126,qwen_humanize,dipper_context3,126,123,3,128,246,64,46,18,59,0.36507936507936506,0.71875,41,4,1,45,81,2,0,18,41,4,1,0,partial,request_budget_exhausted,256,73283
+qwen_humanize__dipper_context3,pilot42,qwen_humanize,dipper_context3,42,42,0,48,84,24,18,6,18,0.42857142857142855,0.75,17,1,0,18,30,0,0,6,17,1,0,0,,,,
+qwen_humanize__dipper_context3,unseen84,qwen_humanize,dipper_context3,84,81,3,80,162,40,28,12,41,0.3333333333333333,0.7,24,3,1,27,51,2,0,12,24,3,1,0,,,,
+qwen_humanize__qwen14b_humanize,all126,qwen_humanize,qwen14b_humanize,126,124,2,136,248,68,32,36,56,0.25396825396825395,0.47058823529411764,13,19,0,36,100,0,2,34,13,19,0,0,partial,request_budget_exhausted,256,77797
+qwen_humanize__qwen14b_humanize,pilot42,qwen_humanize,qwen14b_humanize,42,42,0,50,84,25,12,13,17,0.2857142857142857,0.48,5,7,0,14,36,0,1,12,5,7,0,0,,,,
+qwen_humanize__qwen14b_humanize,unseen84,qwen_humanize,qwen14b_humanize,84,82,2,86,164,43,20,23,39,0.23809523809523808,0.46511627906976744,8,12,0,22,64,0,1,22,8,12,0,0,,,,

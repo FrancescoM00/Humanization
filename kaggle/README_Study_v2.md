@@ -2,7 +2,9 @@
 
 Importare **Humanization_Study_v2.ipynb** dal [pacchetto ZIP](Humanization_Study_v2.zip). Il [protocollo](../STUDY_V2_PROTOCOL.md) fissa condizioni e coorte; il [report dello smoke v2](../results_kaggle_v2_smoke/report.md) descrive il collaudo completato. I notebook precedenti restano disponibili per riprodurre i pilot.
 
-## Ora: passare alle 126 fonti
+**Run ricevuto il 10 novembre 2026:** il [report delle 126 fonti](../results_kaggle_v2_study/report.md) contiene gli esiti di tutti i preset e lo scoring; i tre confronti Groq sono parziali. Non occorre rilanciare i modelli per leggere o annotare i risultati. Le istruzioni seguenti servono alla riproduzione.
+
+## Riprodurre il pannello da 126 fonti
 
 1. Nella sessione Kaggle che ha completato lo smoke, aggiornare il notebook con questo file. Conservare le cartelle e la cache esistenti: non arrestare o azzerare la sessione per liberare spazio.
 2. Confermare **T4 ×2**, Internet e il Secret **GROQ_API_KEY** abilitato per il notebook. Non incollare la chiave nelle celle.

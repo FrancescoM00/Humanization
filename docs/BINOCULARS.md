@@ -62,7 +62,7 @@ Gli output sono `zero_shot_scores.csv`, `zero_shot_thresholds.json`, `zero_shot_
 
 ## Verifiche e limite attuale
 
-I test locali verificano formula e orientamento, maschere, copertura delle finestre, quantile con pareggi e denominatore ASR con generazioni fallite. Lo [smoke v2 ricevuto](../results_kaggle_v2_smoke/report.md) documenta inoltre la prova reale su due T4: 348 record completati. Il run sulle 126 fonti è avviato ma non ancora completato o ricevuto.
+I test locali verificano formula e orientamento, maschere, copertura delle finestre, quantile con pareggi e denominatore ASR con generazioni fallite. Lo [smoke v2 ricevuto](../results_kaggle_v2_smoke/report.md) documenta inoltre la prova reale su due T4: 348 record completati. Il successivo [study su 126 fonti](../results_kaggle_v2_study/report.md) è ricevuto con 2.304 record Binoculars e risultati completi di scoring.
 
 Fast-DetectGPT è un'altra opzione zero-shot, con statistica e checkpoint propri. Aggiungerlo richiede una condizione separata, calibrazione e verifica numerica; non è implementato in questo blocco. La priorità operativa è completare e verificare Binoculars prima dello studio esteso.
 

@@ -1,0 +1,7 @@
+source_id,completed_orders,order_consistent,preference,AB_visible_preference,BA_visible_preference
+Essay:196:4ec0780c728f72c3,2,True,system_a,A,B
+Essay:745:d6def8558de2ce4f,2,True,system_a,A,B
+Reuters:432:ad8ebf2ed590432b,2,False,,A,A
+Reuters:99:72f0d777c8384b92,2,True,system_a,A,B
+WritingPrompts:440:e85378f4f9e16583,2,True,system_a,A,B
+WritingPrompts:559:653bf94a80f68f73,2,False,,B,B

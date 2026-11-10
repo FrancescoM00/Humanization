@@ -1,6 +1,6 @@
 # Report cumulativo della sperimentazione
 
-Aggiornamento: **10 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti e lo smoke v2 sono stati ricevuti e analizzati; lo study da 126 è in corso e non è ancora disponibile come archivio completo.
+Aggiornamento: **10 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti e lo smoke v2 sono stati ricevuti e analizzati; lo study da 126 è stato ricevuto: 626 esiti validi su 630, detector/semantica/stile disponibili e naturalezza parziale per limiti API.
 
 ## 1. Obiettivo e stato dei quattro assi
 
@@ -8,10 +8,10 @@ La suite valuta le riscritture rispetto a quattro domande distinte: eludono i de
 
 | Asse | Lavoro completato | Stato e limite principale |
 | --- | --- | --- |
-| Evasione | Tre classificatori, Binoculars zero-shot, calibrazione umana, ASR condizionata, transizioni prima/dopo e controlli nulli | Baseline 3B e DIPPER sulle stesse 42 fonti; nuovi sistemi e Binoculars nello smoke v2 su tre fonti. Campione esteso in corso |
+| Evasione | Tre classificatori, Binoculars zero-shot, calibrazione umana, ASR condizionata, transizioni prima/dopo e controlli nulli | Quattro riscrittori sulle stesse 126 fonti, con analisi separata delle 84 nuove; evasione dipendente dal detector |
 | Conservazione | Perturbazioni controllate, positivi OpAI, confronti allineati, aggregatori, lunghezza, guardie e applicazione ai nuovi output | Metriche operative; sui nuovi humanizer manca un riferimento semantico umano indipendente |
 | Stile | Umano/macchina a lunghezza abbinata, regressione logistica, trasferimento, frasi OpAI toccate e distanze sulle riscritture | Differenze misurate; non equivalgono a qualità o naturalezza |
-| Naturalezza | Schede a testo singolo e giudice Groq AB/BA realmente eseguito nello smoke v2 | Quattro dei nove confronti nuovi instabili all'ordine; nessuna validazione umana. Copertura e fallimenti espliciti nello study |
+| Naturalezza | Schede a testo singolo e giudice Groq AB/BA realmente eseguito nello smoke v2 | Study: 364/744 risposte nuove valide, tre confronti parziali e molte preferenze instabili all'ordine; nessuna validazione umana |
 
 La validazione iniziale degli strumenti e la loro applicazione agli humanizer sono esperimenti differenti. Una metrica efficace sulle corruzioni artificiali può avere falsi allarmi o mancare errori nelle riscritture reali.
 
@@ -114,7 +114,7 @@ Coseno documentale medio 0,9282 e BERTScore 0,9445 coesistono con NLI forward/re
 
 Due input StableLM sono consegne: baseline 3B risponde invece di riscriverle, espandendo 133→381 e 164→274 parole. Restano nell'analisi primaria; l'esclusione esplorativa dei due non sostituisce il campione congelato. Le review dell'assistente non sono annotazioni umane.
 
-La distanza RMS media è 0,8164; MATTR aumenta in 37/42 casi, ma il centroide umano si avvicina solo in 20/42. Lo stile cambia senza una direzione universalmente più umana. Sono disponibili le [schede da annotare](exports/kaggle_pilot/README.md); la naturalezza non è ancora misurata.
+La distanza RMS media è 0,8164; MATTR aumenta in 37/42 casi, ma il centroide umano si avvicina solo in 20/42. Lo stile cambia senza una direzione universalmente più umana. Sono disponibili le [schede da annotare](exports/kaggle_pilot/README.md); la naturalezza non era misurata nel pilot originario; i successivi giudizi Groq sono descritti nelle sezioni 9 e 10.
 
 [Report baseline 3B](results_kaggle_pilot/report.md), [casi](results_kaggle_pilot/case_review.md), [archivio e moduli](exports/kaggle_pilot/README.md).
 
@@ -151,18 +151,18 @@ La riduzione del campione riguarda la nuova fase humanizer, non tutti gli esperi
 | --- | ---: | --- | --- |
 | Smoke | 3 | Una per dominio, tutte ChatGLM | Collaudo di caricamento, generazione e suite |
 | Pilot | 42 | 2 × 3 domini × 7 generatori | Primo confronto bilanciato, completato per entrambi i sistemi |
-| Study | 126 | 6 × 3 × 7 | Già congelato, non ancora eseguito sui due sistemi |
+| Study | 126 | 6 × 3 × 7 | Ricevuto: quattro riscrittori più identità, 626/630 esiti validi; naturalezza parziale |
 | Estensione rinviata | 420 | 20 × 3 × 7 | Tecnicamente fattibile, rinviata fino alla verifica del protocollo v2 su 126 fonti |
 
 I 300 umani di calibrazione servono a fissare soglie e scale. Non aggiungono 300 casi al denominatore dell'evasione. Due sistemi sugli stessi 42 input danno 84 riscritture ma mantengono **42 fonti nel confronto appaiato**. Identità e tre detector non moltiplicano le fonti indipendenti. Smoke, pilot e study sono annidati: non si sommano 3+42+126 come campioni distinti.
 
-Nel pilot, un caso su 42 vale circa 2,38 punti percentuali. Nell'ASR i denominatori sono ancora più piccoli: per OpenAI un successo su 24 vale 4,17 punti. L'intervallo bootstrap già osservato per l'ASR OpenAI va circa dal 52,0% all'87,5%. In ogni cella dominio/generatore ci sono due fonti: un solo caso può cambiare il tasso di 50 punti, o più se il denominatore condizionato è uno. I risultati per cella sono quindi esplorativi. Anche 126 fonti lascerebbero solo sei elementi per cella.
+Nel pilot, un caso su 42 vale circa 2,38 punti percentuali. Nell'ASR i denominatori sono ancora più piccoli: per OpenAI un successo su 24 vale 4,17 punti. L'intervallo bootstrap già osservato per l'ASR OpenAI va circa dal 52,0% all'87,5%. In ogni cella dominio/generatore ci sono due fonti: un solo caso può cambiare il tasso di 50 punti, o più se il denominatore condizionato è uno. I risultati per cella sono quindi esplorativi. Le 126 fonti lasciano soltanto sei elementi per cella: i sottogruppi restano esplorativi.
 
 Una verifica dei metadati delle 900 fonti, escludendo i 300 gruppi di calibrazione attuali, lascia **600 fonti macchina utilizzabili**, comprese le 126 riservate. Ogni cella ha almeno 23 fonti residue: un campione bilanciato da 420 fonti è fattibile, e il massimo perfettamente bilanciato con questa separazione è 483 = 23×21. Questi limiti di disponibilità non sono una dimostrazione di potenza statistica né un controllo semantico della qualità degli input.
 
 Per estendere oltre il pannello previsto occorre conservare esplicitamente i 300 gruppi di calibrazione e creare una nuova coorte con criteri basati su metadati/ID, includendo gli input correnti. **Non basta aumentare `reserve_per_cell`**: il selettore attuale riserva prima i test e poi sceglie la calibrazione, che potrebbe così cambiare. La nuova coorte dovrà applicarsi a entrambi gli humanizer e mantenere tracciati versione e soglie.
 
-La dimensione finale va fissata in base alla precisione desiderata per il confronto complessivo e per gli eventuali sottogruppi, considerando i denominatori ASR e il budget. Aumentare le fonti migliora la precisione, ma non risolve mancanza di annotazioni, bias del corpus, limiti dei detector o errori delle metriche. I pilot completati restano invariati e nessuna estensione è ancora eseguita.
+La dimensione finale va fissata in base alla precisione desiderata per il confronto complessivo e per gli eventuali sottogruppi, considerando i denominatori ASR e il budget. Aumentare le fonti migliora la precisione, ma non risolve mancanza di annotazioni, bias del corpus, limiti dei detector o errori delle metriche. I pilot restano invariati; il pannello da 126 è ora eseguito e ricevuto, mentre le 420 fonti restano rinviate.
 
 ## 8. Composizione del repository e riproducibilità
 
@@ -230,16 +230,80 @@ Il [sampler di annotazione v2](docs/ANNOTATION_V2.md) separa un reference scelto
 
 Il [notebook aggiornato](kaggle/README_Study_v2.md) prepara l'avvio sulle 126 senza ripetere lo smoke e senza cambiare i preset. Riusa venv e cache complete leggibili della sessione, colloca checkout e file temporanei sotto `/kaggle/working` e mantiene i pesi fuori dai risultati. Le modifiche di storage sono verificate localmente; al momento dell’analisi dello smoke il run sulle 126 non era ancora avviato. L'archivio ricevuto documenta anche le correzioni operative applicate durante il run, tramite hash di codice e sorgenti inclusi, oltre al commit iniziale.
 
-Aggiornamento operativo successivo: lo study è stato avviato. La sezione 7 completa il download e caricamento del primo Falcon, ma il secondo fallisce nella scrittura HTTP della cache temporanea con filesystem di sola lettura, nonostante il controllo iniziale riuscito. La ripresa forza una destinazione scrivibile sotto `/kaggle/working` per il solo modello mancante, senza ripetere gli stadi completati o modificare il protocollo. Non sono ancora disponibili risultati completi sulle 126 fonti.
+Le riprese operative hanno permesso di completare lo scoring sulle 126 fonti: i nuovi download Falcon usano una cache scrivibile e il giudice mantiene le generazioni fallite come non valutabili, senza sostituirle. L'archivio è ora ricevuto e analizzato nella sezione seguente; le tre comparazioni Groq rimangono parziali per budget di richieste e limite giornaliero di token.
 
-Il 10 novembre il run è arrivato alla sezione 12, bloccata prima delle chiamate del confronto 3B/14B perché almeno una generazione ha stato non valido o testo vuoto. La ripresa registra esplicitamente questi casi senza giudicarli, senza rimpiazzare fonti e senza rigenerare output. La naturalezza sarà riportata condizionatamente alla riuscita di entrambi i sistemi, insieme ai fallimenti e alla copertura sul campione selezionato; i mancanti non diventano pareggi o bassi punteggi. La correzione non cambia modello, rubrica, ordini AB/BA o budget. Il traceback non fornisce conteggi o cause dei fallimenti e non sostituisce lo ZIP completo dei risultati.
+## 10. Study v2 ricevuto: quattro riscrittori su 126 fonti
 
-## 10. Attività successive e confini delle conclusioni
+[Report completo](results_kaggle_v2_study/report.md), [detector e controlli](results_kaggle_v2_study/detection_analysis.md), [semantica/stile](results_kaggle_v2_study/semantic_style.md), [naturalezza](results_kaggle_v2_study/naturalness.md), [casi letti](results_kaggle_v2_study/case_review.md), [audit](results_kaggle_v2_study/integrity.md), [archivio e annotazioni](exports/kaggle_v2_study/README.md).
+
+### 10.1. Completezza e fallimenti
+
+Lo ZIP contiene **630 esiti: 126 identità e 504 tentativi dei quattro riscrittori**. Sono validi 626 esiti, cioè 500 riscritture e tutte le identità. Le quattro generazioni troncate appartengono a tre fonti delle 84 nuove: la baseline 3B su Essay 223 e Reuters 992, StableLM, esegue la consegna interna e raggiunge 512 token senza EOS; entrambi i DIPPER su WritingPrompts 184, GPT4All, entrano in ripetizioni, con fallimento già nella prima finestra del contestuale. Non sono errori CUDA dimostrati e non sono stati rigenerati.
+
+Coorti, 300 gruppi di calibrazione, scale e soglie coincidono con quelli congelati. I 42 output condivisi per baseline 3B e DIPPER passaggio sono identici ai pilot. Gli input-consegna restano nel risultato primario; nuove letture mostrano che il problema non si limita ai due input StableLM già noti. Un'analisi sulla sola prosa richiede etichette sugli originali e criteri espliciti, non esclusioni dopo aver visto gli output.
+
+### 10.2. L'evasione cambia con il detector
+
+| Preset | OpenAI RoBERTa | Fakespot | RADAR | Binoculars | Maggioranza RoBERTa |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline 3B | 45/73 = 61,6% | 1/109 = 0,9% | 8/90 = 8,9% | 17/120 = 14,2% | 4/94 = 4,3% |
+| 14B NF4 | 60/73 = 82,2% | 1/109 = 0,9% | 8/90 = 8,9% | 29/120 = 24,2% | 6/94 = 6,4% |
+| DIPPER passaggio | 10/73 = 13,7% | 11/109 = 10,1% | 7/90 = 7,8% | 0/120 = 0,0% | 7/94 = 7,4% |
+| DIPPER tre frasi | 6/73 = 8,2% | 8/109 = 7,3% | 11/90 = 12,2% | 1/120 = 0,8% | 6/94 = 6,4% |
+
+Le frazioni sono ASR sugli originali già rilevati e mantengono i fallimenti come mancati successi. OpenAI rileva soltanto 73/126 originali: il risultato storico non è il titolo del successo generale. Binoculars rileva 120/126 originali e mostra evasioni non osservate nello smoke. La maggioranza rimane quella correlata dei soli tre RoBERTa.
+
+Sulle **84 fonti non viste nei pilot**, baseline 3B e 14B evadono OpenAI in 28/49 e 41/49 casi, Binoculars in 9/80 e 21/80; nessuno evade Fakespot. Il vantaggio ASR 14B−3B su Binoculars è **+15 punti percentuali, IC bootstrap appaiato 95% [6,3; 23,8]**. I confronti mantengono fissi checkpoint e calibrazione; non isolano causalmente la dimensione del modello, perché cambiano anche i pesi e la quantizzazione.
+
+La candidata a risultato nata dai pilot si precisa: **Fakespot diventa più efficace sulle riscritture a prompt**. Sulle 84 nuove fonti passa da 70/82 a 82/82 rilevazioni per 3B e da 72/84 a 84/84 per 14B, con aumenti appaiati di +14,6 [7,3; 23,2] e +14,3 [7,1; 22,6] punti. Su RADAR gli aumenti sulle 84 hanno intervalli che includono zero. Non si conclude che tutti i detector recenti migliorino: con Binoculars il verso è opposto. I TPR appaiati usano gli stessi output validi prima/dopo, senza confondere il denominatore con l'ASR.
+
+### 10.3. Quanto conta accorciare
+
+Sulle nuove fonti baseline-AI eleggibili, OpenAI viene evaso dalla baseline 3B in 24/41 casi contro 1/41 prefissi alla stessa lunghezza, e dal 14B in 36/42 contro 4/42. Binoculars: 3B 5/62 contro 0/62; 14B 19/68 contro 0/68. Il vantaggio non è riprodotto dal solo prefisso, sul sottoinsieme abbinato osservato; gli output allungati rimangono non eleggibili e non si assume un effetto causale completamente identificato.
+
+Per DIPPER su OpenAI non emerge un vantaggio aggregato chiaro sul taglio: sulle 126 fonti eleggibili passaggio e prefisso hanno entrambi 10/72 evasioni, contestuale e prefisso entrambi 5/64. **Le evasioni sono però spesso su casi diversi**, quindi non si afferma che la stessa evasione sia spiegata dalla lunghezza. Sul passaggio ci sono otto successi soltanto del controllo e otto soltanto dello humanizer; nel contestuale cinque e cinque, disgiunti. Rumore minimo, combinazioni e intervalli sono nel report dedicato.
+
+### 10.4. Stile e semantica sui veri output
+
+| Preset | Output validi | Rapporto parole medio | RMS stilometrico medio | Coseno documento | BERTScore grezzo | NLI storico medio forward/reverse |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Baseline 3B | 124 | 0,962 | 0,831 | 0,937 | 0,946 | 0,785 / 0,696 |
+| 14B | 126 | 0,871 | 1,047 | 0,903 | 0,927 | 0,714 / 0,645 |
+| DIPPER passaggio | 125 | 0,758 | 0,796 | 0,925 | 0,948 | 0,693 / 0,602 |
+| DIPPER tre frasi | 125 | 0,920 | 0,651 | 0,951 | 0,964 | 0,863 / 0,731 |
+
+RMS usa 91 feature retained delle 105 estratte, standardizzate sui 300 umani di calibrazione, non solo la shortlist iniziale. MATTR aumenta mediamente di 0,0616 per 3B e 0,0813 per 14B; diminuisce di 0,0286 e 0,0262 per i due DIPPER. Il centroide umano si avvicina in 60/124, 61/126, 29/125 e 45/125 casi: non c'è un miglioramento stilistico o di naturalezza automaticamente dimostrato. Le tendenze rimangono nelle 84 fonti nuove e sulle 123 con successo comune a tutti i sistemi.
+
+DIPPER a tre frasi comprime meno del passaggio e ha un profilo semantico medio più favorevole. La review delle fonti nuove trova però sia omissioni recuperate sia errori: dollari/euro e importi alterati con coseno circa 0,939; anno 2019 trasformato nell'anno corrente e possibilità rafforzata nonostante NLI circa 0,99. Anche un supporto alto può mancare una deriva. Le letture sono dell'assistente e non stimano la frequenza degli errori.
+
+NLI contestuale completa **199.126 confronti** con DeBERTa-v3 base float32. Le finestre e le singole esaustive sono complete; quattro aggregati reverse del documento restano mancanti per budget. Il documento penalizza anche identità (supporto medio circa 0,896 contro 0,992 con singole esaustive). Il retrieval storico differisce dalla ricerca esaustiva nuova; le finestre annidate prendono un massimo e crescono per costruzione. Non si sceglie l'aggregatore più favorevole dopo aver visto i testi. Restano disponibili minimi allineati di coseno e BERTScore riscalato; non si trasferiscono soglia OpAI 0,04075 o AUC 0,958 agli humanizer.
+
+### 10.5. Naturalezza parziale e sensibile alla posizione
+
+| Confronto | Risposte valide / attese | Tentativi POST | Coppie complete AB/BA | Preferenze stabili / 126 |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline 3B / 14B | 136/248 | 256 | 68 | 32/126 |
+| Baseline 3B / DIPPER tre frasi | 128/246 | 256 | 64 | 46/126 |
+| DIPPER passaggio / tre frasi | 100/250 | 201 | 50 | 15/126 |
+
+I primi due confronti esauriscono il budget; il terzo si ferma per HTTP 429 sul limite giornaliero di token. Le nuove comparazioni producono 364 risposte valide su 713 tentativi. Il preflight sui sei casi dei pilot registra altri 12 eventi API con timestamp diversi dallo smoke; non sono nuove fonti o annotazioni umane. Totale nell'archivio: 725 tentativi, 376 risposte valide e 209.610 token registrati. Non si attribuisce automaticamente ogni tentativo senza risposta a un particolare errore né si ricostruisce da questi numeri l'intera quota dell'account.
+
+Delle 182 coppie con entrambi gli ordini, **89 sono discordanti e 85 di queste scelgono B in entrambi gli ordini**. B è preferito in 263/364 risposte. I vincitori fra i soli casi stabili non sono una graduatoria delle 126 fonti: il blocco API lascia un prefisso degli ID ordinati per hash e la consistenza all'ordine seleziona ulteriormente il campione. Anche sulle 84 nuove le preferenze stabili sono soltanto 20, 28 e nove. Il modello e l'opzione senza ragionamento sono confermati, ma manca validazione umana e la sensibilità alla posizione resta un limite forte.
+
+Non sono state effettuate altre chiamate nell'analisi dello ZIP. Un'eventuale ripresa richiederebbe continuare gli ID mancanti, conservare i log e dichiarare esplicitamente l'aumento dei budget già esauriti; il solo reset giornaliero non basta a completare i primi due confronti. Prima di spendere altra quota conviene valutare il giudice con riferimenti indipendenti.
+
+### 10.6. Schede pronte e limiti ancora aperti
+
+Lo [ZIP cieco da annotare](exports/kaggle_v2_study/annotation_forms.zip) comprende due copie indipendenti delle stesse **183 coppie**, senza sistemi o score: 84 reference da 21 fonti e 99 diagnostiche da ulteriori 25. La selezione a gruppi completi porta il diagnostico a 99 pur avendo capacità maggiore; non è corretto dichiarare cento, duplicare esempi o presentare l'arricchimento per score come campione casuale. Le chiavi sono separate. Le schede sono vuote e i giudizi di due annotatori non aumentano le fonti indipendenti.
+
+Il reference permette una revisione meno condizionata dagli score; il diagnostico concentra l'attenzione sui disaccordi informativi. La valutazione manuale deve distinguere significato, naturalezza e tipo di input. Non è ancora disponibile un'accuratezza gold delle metriche sui veri humanizer. I file compilati della tesi precedono questa fase: il report è aggiornato, non si dichiara una revisione LaTeX/PDF già avvenuta.
+
+## 11. Attività successive e confini delle conclusioni
 
 1. Usare il confronto appaiato completato per documentare i comportamenti dei due preset e i limiti emersi, senza modificare a posteriori i risultati.
 2. Raccogliere annotazioni indipendenti di conservazione e naturalezza sulle schede comuni. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani; la fusione delle frasi è un caso prioritario per misurare i falsi allarmi dell'NLI.
-3. Passare dallo smoke v2 completato al pannello da 126 su Kaggle, con gli stessi preset, Binoculars e controlli nulli, mantenendo la calibrazione attuale. Il passaggio a 420 è rinviato.
+3. Usare il pannello da 126 ricevuto e le 84 fonti nuove per i confronti fissati, senza ripetere le inferenze. Valutare eventuale completamento Groq solo con budget espliciti e dopo aver considerato la fragilità all’ordine. Il passaggio a 420 resta rinviato.
 4. Tenere espliciti i limiti: testi brevi e iniziali, generatori storici, pool RoBERTa, singolo preset per humanizer, input anomali e assenza di stima gold dell'accuratezza semantica sui nuovi output.
-5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens rimane rinviato; il giudice LLM è eseguito nello smoke, ma manca una validazione umana indipendente.
+5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens rimane rinviato; il giudice LLM è eseguito nello smoke e parzialmente sulle 126, ma manca una validazione umana indipendente.
 
-Il risultato attuale è una suite implementata e sottoposta a controlli, con due pilot da 42 fonti e uno smoke v2 completo dei quattro riscrittori, dei controlli e di Binoculars. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.
+Il risultato attuale è una suite implementata e sottoposta a controlli, con due pilot da 42 fonti, lo smoke v2 e l’applicazione ai quattro riscrittori sulle 126 fonti; la naturalezza estesa resta parziale. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.
