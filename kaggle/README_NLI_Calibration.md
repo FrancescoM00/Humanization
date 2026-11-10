@@ -16,7 +16,7 @@ urllib.request.urlretrieve(
     "main/kaggle/run_nli_calibration.py",
     launcher,
 )
-runpy.run_path(str(launcher), run_name="__main__")
+_ = runpy.run_path(str(launcher), run_name="__main__")
 ```
 
 Il launcher scarica il pacchetto congelato, usa una cartella nuova `/kaggle/working/nli_calibration_v1` e riusa la venv e DeBERTa-v3 base della sessione se disponibili. Non modifica la vecchia venv leggibile. Se la sessione precedente non è più disponibile, prepara un ambiente minimo che riusa PyTorch CUDA e scarica il solo checkpoint NLI fissato. Serve una GPU; non passa silenziosamente alla CPU.
