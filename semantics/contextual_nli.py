@@ -35,12 +35,14 @@ def pair_length(tokenizer, premise, hypothesis):
                                 truncation=False))
 
 
-def build_plan(pair, alignment, tokenizer, *, max_pair_tokens=384, modes=MODES):
+def build_plan(pair, alignment, tokenizer, *, max_pair_tokens=384, modes=MODES,
+               length_cache=None):
     """Plan exact tokenizer-checked comparisons, recording missing coverage.
 
     Existing alignment units are reused verbatim when supplied. Their original
     hashes are checked. Missing alignments use the same sentence/chunk helper as
-    the existing scorer, at 160 tokens per hypothesis unit.
+    the existing scorer, at 160 tokens per hypothesis unit. An optional shared
+    cache stores exact pair lengths for this tokenizer, never approximations.
     """
     from .metrics import sentence_chunks
 
@@ -57,6 +59,13 @@ def build_plan(pair, alignment, tokenizer, *, max_pair_tokens=384, modes=MODES):
         budget = min(160, (max_pair_tokens-tokenizer.num_special_tokens_to_add(pair=True))//2)
         original, modified = [sentence_chunks(pair[k], tokenizer, budget) for k in ('original', 'modified')]
     plan = []
+    def length(premise, hypothesis):
+        if length_cache is None:
+            return pair_length(tokenizer, premise, hypothesis)
+        key = (id(tokenizer), premise, hypothesis)
+        if key not in length_cache:
+            length_cache[key] = pair_length(tokenizer, premise, hypothesis)
+        return length_cache[key]
     for direction, premise_units, hypotheses, document in (
             ('forward', original, modified, pair['original']),
             ('reverse', modified, original, pair['modified'])):
@@ -64,7 +73,7 @@ def build_plan(pair, alignment, tokenizer, *, max_pair_tokens=384, modes=MODES):
             contexts = [document] if mode == 'document' else contiguous_contexts(
                 premise_units, {'single_all': 1, 'window2': 2, 'window3': 3}[mode])
             for index, hypothesis in enumerate(hypotheses):
-                eligible = [p for p in contexts if pair_length(tokenizer, p, hypothesis) <= max_pair_tokens]
+                eligible = [p for p in contexts if length(p, hypothesis) <= max_pair_tokens]
                 plan.append({'id': pair['id'], 'direction': direction, 'mode': mode,
                              'hypothesis_index': index, 'hypothesis': hypothesis,
                              'premises': eligible, 'n_candidates_total': len(contexts),

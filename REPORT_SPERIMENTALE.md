@@ -298,7 +298,19 @@ Lo [ZIP cieco da annotare](exports/kaggle_v2_study/annotation_forms.zip) compren
 
 Il reference permette una revisione meno condizionata dagli score; il diagnostico concentra l'attenzione sui disaccordi informativi. La valutazione manuale deve distinguere significato, naturalezza e tipo di input. Non è ancora disponibile un'accuratezza gold delle metriche sui veri humanizer. I file compilati della tesi precedono questa fase: il report è aggiornato, non si dichiara una revisione LaTeX/PDF già avvenuta.
 
-## 11. Attività successive e confini delle conclusioni
+## 11. Taratura NLI avviata dopo lo study
+
+La discussione successiva al run distingue taratura degli strumenti e confronto fra riscrittori. Il [piano NLI del 10 novembre](NLI_CALIBRATION.md) è scritto dopo aver osservato lo study, prima delle nuove inferenze contestuali di calibrazione e della ricezione dei giudizi reference: non è una preregistrazione retroattiva delle 126 fonti.
+
+Sono preparate **139 coppie positive presunte e 297 alterazioni su 46 fonti**, selezionate dal solo split di calibrazione del confronto OpAI appaiato, più **137 identità** ricavate dai rispettivi originali distinti: 573 coppie. Le 141 positive e 265 alterate del test storico restano escluse. Le etichette sono proxy operative, non gold umana. Quattro modalità di premessa e quattro aggregatori producono 16 candidati, con direzioni combinate in modo conservativo.
+
+La [policy congelata](exports/nli_context_calibration/policy.json) richiede copertura completa, media degli score documentali di identità almeno 0,95 e decimo percentile almeno 0,90; sono soglie operative, non universali. Fra gli ammissibili si sceglie la massima AUC di calibrazione, con spareggi predefiniti; se nessuno soddisfa i criteri non si forza un primario. Si mantengono AUC per famiglia e intervalli per fonte, senza interpretarli come validazione indipendente della selezione.
+
+Il piano di tokenizer contiene 323.336 evidenze uniche. Singole e finestre coprono tutte le ipotesi; il documento non soddisfa già il requisito di copertura. **Le nuove probabilità e il candidato primario non sono ancora disponibili.** La GPU locale non è disponibile; il [pacchetto Kaggle](kaggle/README_NLI_Calibration.md) riusa il medesimo DeBERTa-v3 base float32 e prevede circa 45–90 minuti. La pianificazione riusa soltanto le lunghezze esatte delle coppie ripetute per ridurre la tokenizzazione, senza modificare input o criteri di ammissibilità.
+
+Sono state inoltre esportate le **[sole 84 coppie reference](exports/kaggle_v2_study/reference/README.md)**: 21 fonti, quattro riscrittori per fonte, 28 coppie per dominio. Non è un nuovo campionamento; ID e testi delle schede originali sono conservati. Il pacchetto cieco contiene i moduli A/B senza chiavi o score. Un solo annotatore compila A; B è destinato a un lettore indipendente. Le 99 diagnostiche restano separate. Non sono ancora ricevute nuove etichette e la scelta NLI dovrà essere congelata prima di consultarle.
+
+## 12. Attività successive e confini delle conclusioni
 
 1. Usare il confronto appaiato completato per documentare i comportamenti dei due preset e i limiti emersi, senza modificare a posteriori i risultati.
 2. Raccogliere annotazioni indipendenti di conservazione e naturalezza sulle schede comuni. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani; la fusione delle frasi è un caso prioritario per misurare i falsi allarmi dell'NLI.

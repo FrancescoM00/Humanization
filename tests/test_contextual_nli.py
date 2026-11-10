@@ -46,6 +46,32 @@ def test_alignment_hash_mismatch_is_rejected():
         build_plan(pair,alignment,Tokenizer())
 
 
+def test_exact_length_cache_preserves_plan_and_budget_across_pairs():
+    class CountingTokenizer(Tokenizer):
+        def __init__(self):
+            self.calls = 0
+
+        def encode(self, *args, **kwargs):
+            self.calls += 1
+            return super().encode(*args, **kwargs)
+
+    pair, alignment = aligned_pair()
+    tokenizer = CountingTokenizer()
+    baseline = build_plan(pair, alignment, tokenizer, max_pair_tokens=11)
+    baseline_calls = tokenizer.calls
+    tokenizer.calls = 0
+    cache = {}
+    cached = build_plan(pair, alignment, tokenizer, max_pair_tokens=11, length_cache=cache)
+    assert cached == baseline
+    assert 0 < tokenizer.calls < baseline_calls
+    first_calls = tokenizer.calls
+    assert build_plan(pair, alignment, tokenizer, max_pair_tokens=11, length_cache=cache) == baseline
+    assert tokenizer.calls == first_calls
+    # The cache stores lengths, not a decision at one particular token budget.
+    larger = build_plan(pair, alignment, tokenizer, max_pair_tokens=30, length_cache=cache)
+    assert larger == build_plan(pair, alignment, Tokenizer(), max_pair_tokens=30)
+
+
 def test_incomplete_coverage_does_not_selectively_average_easy_hypotheses():
     units=[dict(id='x',direction='forward',mode='document',eligible=True,entailment=.9,
                 n_candidates_eligible=1,n_candidates_over_budget=0),

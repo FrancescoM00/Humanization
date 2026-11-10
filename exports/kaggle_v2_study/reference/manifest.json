@@ -1,0 +1,27 @@
+{
+  "purpose": "Reference-only blind semantic annotation; exact subset of existing study forms, no resampling or labels created.",
+  "selection_arm": "reference",
+  "n_unique_pairs": 84,
+  "n_unique_sources": 21,
+  "n_domains": 3,
+  "n_generators": 7,
+  "pairs_per_source": 4,
+  "annotators": 2,
+  "filled_labels_present": false,
+  "human_labels_created": false,
+  "source_files_sha256": {
+    "keys/selection_key.csv": "ae39124305b85e736afe784a91237ae8fafd6f560890dc5606bfdb7c7e741293",
+    "semantic_audit_annotator_A.csv": "d842a52ccc0e69871afa34c867a459011f50066ec85314c51077ce0c74e35d83",
+    "semantic_audit_annotator_B.csv": "dbebcdb14fbf659f7f27f2660010e1d239b29447ec85f043556e1195db764c5f"
+  },
+  "preserved_existing_review_ids": true,
+  "preserved_exact_original_and_modified_texts": true,
+  "zip_members": [
+    "semantic_reference_annotator_A.csv",
+    "semantic_reference_annotator_B.csv",
+    "ISTRUZIONI.md"
+  ],
+  "key_in_blind_zip": false,
+  "analyst_key": "keys/reference_key.csv",
+  "note": "A and B contain the same pairs in different orders; a single annotator fills only one copy."
+}

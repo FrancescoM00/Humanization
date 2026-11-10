@@ -127,8 +127,15 @@ def main():
         path.write_text(text)
     from transformers import AutoTokenizer
     tokenizer=AutoTokenizer.from_pretrained(str(args.model),local_files_only=True)
-    plan=[x for pair in pairs for x in build_plan(pair,alignment,tokenizer,
-          max_pair_tokens=args.max_pair_tokens,modes=args.modes)]
+    length_cache={}
+    print('Planning exact tokenizer pairs; repeated lengths are reused.',flush=True)
+    plan=[]
+    for index,pair in enumerate(pairs,1):
+        plan.extend(build_plan(pair,alignment,tokenizer,
+            max_pair_tokens=args.max_pair_tokens,modes=args.modes,length_cache=length_cache))
+        if index%25==0 or index==len(pairs):
+            print(f'Planning pair {index}/{len(pairs)}; exact lengths cached: {len(length_cache)}',flush=True)
+    length_cache.clear()
     unique={(p,row['hypothesis']) for row in plan for p in row['premises']}
     info={'protocol':PROTOCOL,'status':'planned','n_pairs':len(pairs),'n_comparisons':len(unique),
           'modes':args.modes,'device':args.device,'precision':'float32','max_pair_tokens':args.max_pair_tokens,
