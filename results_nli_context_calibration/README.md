@@ -1,7 +1,7 @@
-# Calibrazione NLI: input pronti, scoring GPU da eseguire
+# Calibrazione NLI completata: window2 + minimo
 
-Stato del 10 novembre 2026: preparati il [pannello di calibrazione](../exports/nli_context_calibration/README.md), la [regola di scelta](../NLI_CALIBRATION.md) e il [pacchetto Kaggle](../kaggle/README_NLI_Calibration.md). Sono 139 positivi presunti, 297 alterazioni e 137 identità su 46 fonti; il test storico 141/265 resta escluso.
+Il run ricevuto il 10 novembre 2026 completa 323.336 evidenze su 139 positivi presunti, 297 alterazioni e 137 identità, su 46 fonti. La policy congelata seleziona **window2 + minimo**: AUC di calibrazione 0,9735, media delle identità 0,9710 e q10 0,9509. Il test storico 141/265 resta escluso.
 
-Il piano costruito con il tokenizer richiede 323.336 evidenze uniche. **Non sono state eseguite le nuove inferenze**, non è stata selezionata una modalità primaria e non sono state create etichette umane. Il documento ha copertura insufficiente già nel piano; singole e finestre sono complete.
+[Report](report.md), [interpretazione](interpretazione.md), [audit](integrity.md), [selezione](selection.json), [provenienza](provenance.json), [policy e protocollo](../NLI_CALIBRATION.md). Il documento è escluso per copertura; la piccola differenza rispetto a window3 non dimostra superiorità statistica. Non si tratta di accuratezza 97,35% o validazione umana.
 
-Il run Kaggle produrrà il confronto dei 16 candidati, distribuzioni sulle identità, AUC per famiglia, intervalli per fonte e la scelta secondo la policy congelata. Dopo aver ricevuto lo ZIP si aggiornerà questa directory con i risultati effettivi, mantenendo separata la verifica sulle 84 reference umane.
+La configurazione è applicata ai [risultati dello study già calcolati](../results_kaggle_v2_study/nli_primary_scores.csv), senza nuove inferenze. Il passo successivo è la verifica sulle [84 reference cieche](../exports/kaggle_v2_study/reference/README.md), le cui nuove annotazioni non sono ancora ricevute. Nessuna nuova soglia di classificazione viene introdotta.

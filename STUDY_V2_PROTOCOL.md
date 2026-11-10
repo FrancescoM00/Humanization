@@ -77,6 +77,8 @@ Precisazione operativa del 10 novembre, dopo il blocco della sezione 12: le gene
 
 ## Ordine operativo
 
+**Configurazione NLI fissata dopo lo study:** il [confronto di calibrazione del 10 novembre](results_nli_context_calibration/report.md), con 139 positivi presunti, 297 alterazioni e 137 identità, seleziona **window2 + minimo bidirezionale** secondo la [regola già congelata](NLI_CALIBRATION.md). Le altre modalità restano secondarie. La scelta è successiva alla lettura delle 126 fonti e precedente alla ricezione delle nuove etichette reference; non è una preregistrazione retroattiva né una validazione umana. Nessuna nuova soglia viene trasferita agli humanizer e gli score primari sono ricavati dai risultati contestuali già disponibili.
+
 1. Nuovo notebook `Humanization_Study_v2.ipynb`, `MODE="smoke"`, T4 ×2 e Internet; attach del Secret Groq.
 2. Verifica catalogo/opzioni Groq e concordanza preliminare; caricamento dei nuovi modelli e Binoculars sui tre input tecnici, controlli nulli e tutti gli stadi.
 3. Dopo il collaudo, `MODE="study"` con la stessa configurazione. Nessun tuning dopo aver visto i 126 risultati.

@@ -10,7 +10,7 @@ La revisione prima dell'estensione è nel **[protocollo v2 su 126 fonti](STUDY_V
 
 La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: sono completi il **[pilot Qwen](results_kaggle_pilot/report.md)** e il **[pilot DIPPER sugli stessi 42 input](results_kaggle_dipper_pilot/report.md)**. ASR Qwen/DIPPER: OpenAI 17/24 contro 4/24, Fakespot 1/37 contro 7/37, RADAR 2/28 contro 3/28 e maggioranza 2/31 per entrambi, su fonti differenti. L'ordine dipende dal detector. DIPPER comprime più spesso; i casi mostrano errori reali e limiti NLI sulla fusione delle frasi. Il passo successivo è [l'annotazione comune](exports/kaggle_dipper_pilot/README.md) e l'estensione del campione. La naturalezza ha ora una prima misura LLM nello smoke v2, con stabilità limitata e senza validazione umana.
 
-La fase attuale è la **[taratura della configurazione NLI](NLI_CALIBRATION.md)** sul solo split di calibrazione: input e regola pronti, scoring GPU ancora da eseguire con la [cella Kaggle dedicata](kaggle/README_NLI_Calibration.md). Per la revisione manuale iniziare dalle [sole 84 reference cieche](exports/kaggle_v2_study/reference/README.md), mantenendo separate le 99 diagnostiche.
+La **[taratura della configurazione NLI](NLI_CALIBRATION.md)** sul solo split di calibrazione è [completata](results_nli_context_calibration/report.md): **window2 + minimo**, AUC di calibrazione 0,9735 e identità medie 0,9710. La scelta precede le nuove annotazioni umane; non serve ripetere lo scoring. Per la revisione manuale iniziare dalle [sole 84 reference cieche](exports/kaggle_v2_study/reference/README.md), mantenendo separate le 99 diagnostiche.
 
 ## Risultati e protocolli
 

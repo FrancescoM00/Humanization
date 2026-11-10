@@ -298,17 +298,30 @@ Lo [ZIP cieco da annotare](exports/kaggle_v2_study/annotation_forms.zip) compren
 
 Il reference permette una revisione meno condizionata dagli score; il diagnostico concentra l'attenzione sui disaccordi informativi. La valutazione manuale deve distinguere significato, naturalezza e tipo di input. Non è ancora disponibile un'accuratezza gold delle metriche sui veri humanizer. I file compilati della tesi precedono questa fase: il report è aggiornato, non si dichiara una revisione LaTeX/PDF già avvenuta.
 
-## 11. Taratura NLI avviata dopo lo study
+## 11. Calibrazione NLI completata e configurazione primaria fissata
 
-La discussione successiva al run distingue taratura degli strumenti e confronto fra riscrittori. Il [piano NLI del 10 novembre](NLI_CALIBRATION.md) è scritto dopo aver osservato lo study, prima delle nuove inferenze contestuali di calibrazione e della ricezione dei giudizi reference: non è una preregistrazione retroattiva delle 126 fonti.
+Il [run di calibrazione ricevuto il 10 novembre](results_nli_context_calibration/report.md) completa tutte le **323.336 evidenze**, con DeBERTa-v3 base float32 su GPU e circa **53,7 minuti** di inferenza. Coppie, allineamenti e policy coincidono con gli input pubblicati prima del calcolo. [Audit](results_nli_context_calibration/integrity.md) e [interpretazione](results_nli_context_calibration/interpretazione.md) distinguono scelta operativa e validazione umana.
 
-Sono preparate **139 coppie positive presunte e 297 alterazioni su 46 fonti**, selezionate dal solo split di calibrazione del confronto OpAI appaiato, più **137 identità** ricavate dai rispettivi originali distinti: 573 coppie. Le 141 positive e 265 alterate del test storico restano escluse. Le etichette sono proxy operative, non gold umana. Quattro modalità di premessa e quattro aggregatori producono 16 candidati, con direzioni combinate in modo conservativo.
+Sono incluse **139 coppie positive presunte, 297 alterazioni e 137 identità su 46 fonti**, totale 573 coppie. Il test storico con 141 positive e 265 alterate è escluso dalla selezione. Le etichette sono proxy operative, non gold umana. Le identità non aggiungono fonti indipendenti e non entrano nell'AUC.
 
-La [policy congelata](exports/nli_context_calibration/policy.json) richiede copertura completa, media degli score documentali di identità almeno 0,95 e decimo percentile almeno 0,90; sono soglie operative, non universali. Fra gli ammissibili si sceglie la massima AUC di calibrazione, con spareggi predefiniti; se nessuno soddisfa i criteri non si forza un primario. Si mantengono AUC per famiglia e intervalli per fonte, senza interpretarli come validazione indipendente della selezione.
+La policy precedente al run richiedeva copertura completa, media degli score documentali delle identità almeno 0,95 e decimo percentile almeno 0,90. Fra gli ammissibili si massimizza l'AUC di calibrazione, con spareggi già fissati. L'esito è **window2 + minimo bidirezionale**: massima evidenza da una o due unità contigue per ipotesi, poi minimo fra le ipotesi e fra forward/reverse. È uno score continuo, non una nuova soglia.
 
-Il piano di tokenizer contiene 323.336 evidenze uniche. Singole e finestre coprono tutte le ipotesi; il documento non soddisfa già il requisito di copertura. **Le nuove probabilità e il candidato primario non sono ancora disponibili.** La GPU locale non è disponibile; il [pacchetto Kaggle](kaggle/README_NLI_Calibration.md) riusa il medesimo DeBERTa-v3 base float32 e prevede circa 45–90 minuti. La pianificazione riusa soltanto le lunghezze esatte delle coppie ripetute per ridurre la tokenizzazione, senza modificare input o criteri di ammissibilità.
+| Modalità, aggregatore minimo | AUC calibrazione | Media identità | q10 identità | Ammissibile |
+| --- | ---: | ---: | ---: | --- |
+| Singole esaustive |0,9470|0,9668|0,9420|Sì|
+| Fino a due unità |**0,9735**|**0,9710**|**0,9509**|**Sì, selezionata**|
+| Fino a tre unità |0,9712|0,9726|0,9597|Sì|
+| Documento |Non calcolabile sul campione completo|Non completa|Non completo|No, copertura insufficiente|
 
-Sono state inoltre esportate le **[sole 84 coppie reference](exports/kaggle_v2_study/reference/README.md)**: 21 fonti, quattro riscrittori per fonte, 28 coppie per dominio. Non è un nuovo campionamento; ID e testi delle schede originali sono conservati. Il pacchetto cieco contiene i moduli A/B senza chiavi o score. Un solo annotatore compila A; B è destinato a un lettore indipendente. Le 99 diagnostiche restano separate. Non sono ancora ricevute nuove etichette e la scelta NLI dovrà essere congelata prima di consultarle.
+L'intervallo bootstrap 95% per l'AUC selezionata è **[0,9566; 0,9874]**, con ricampionamento dei 46 gruppi di fonte. La differenza puntuale rispetto a tre unità è appena 0,00225; un confronto appaiato descrittivo dà intervallo **[−0,00524; 0,00944]**. La scelta segue la regola del massimo già fissata, senza proclamare una superiorità fuori campione. Lo storico 0,958 era sul test 141/265, quindi non è un confronto diretto di miglioramento con questo risultato di calibrazione.
+
+Le identità soddisfano i criteri globali, ma il minimo individuale è 0,8666 e tre casi sono sotto 0,90. Non si dichiara che ogni testo identico riceva score quasi unitario. Il documento ha entrambe le direzioni complete soltanto per **77/436 coppie etichettate e 36/137 identità**: è escluso per copertura, non per un'AUC globale bassa ottenuta eliminando i casi difficili.
+
+Per famiglia, window2+min ha AUC 0,9884 sulle entità (129 alterazioni), 0,9583 sulle negazioni (95), 0,9571 sui numeri (26), 0,9675 sui quantificatori (28), 0,8911 sulle cautele (15) e 1,0 sui dettagli aggiunti (quattro). Le famiglie sono sbilanciate e i dettagli aggiunti troppo pochi per una conclusione generale. Il risultato sulle cautele non risolve automaticamente il limite emerso in altri split. Finestre più ampie possono aiutare alcune famiglie e danneggiarne altre; il minimo resta sensibile a errori localizzati e lunghezza.
+
+La [configurazione primaria](results_nli_context_calibration/selection.json) è ora congelata prima di ricevere le nuove annotazioni reference. È stata applicata senza nuove inferenze agli score contestuali dello study già disponibili: [630 righe, 626 score validi e quattro fallimenti](results_kaggle_v2_study/nli_primary_scores.csv). Tutte le 84 reference hanno lo score. È una rielaborazione descrittiva successiva allo studio sulle 126 fonti, non una preregistrazione retroattiva; le altre modalità e i risultati originari rimangono secondari e conservati.
+
+Il passo successivo è compilare il [modulo A delle 84 reference](exports/kaggle_v2_study/reference/semantic_reference_annotator_A.csv), con 21 fonti e quattro riscrittori per fonte. Il modulo B serve a un secondo lettore indipendente; chiavi e score individuali non vanno consultati prima dell'annotazione. Le 99 diagnostiche restano separate. Nessuna nuova etichetta umana è ancora ricevuta: servirà a verificare la scelta già fissata, senza ritoccarla per massimizzare l'accordo sullo stesso campione. Non occorre un nuovo run Kaggle per iniziare questa verifica.
 
 ## 12. Attività successive e confini delle conclusioni
 

@@ -2,6 +2,8 @@
 
 Questo passaggio usa **139 positivi presunti, 297 alterazioni e 137 identità**, non il test storico. [Specifica e regola di scelta](../NLI_CALIBRATION.md). Nessuna riscrittura o chiamata Groq viene eseguita.
 
+**Run ricevuto il 10 novembre 2026:** la [calibrazione è completata](../results_nli_context_calibration/report.md) e seleziona window2 + minimo. Non occorre ripetere il run per procedere alle 84 annotazioni reference. Le istruzioni seguenti restano disponibili per riproduzione o ripresa.
+
 ## Nella sessione Kaggle
 
 Usare il notebook corrente con GPU e Internet attivi. **Aggiungere una nuova cella alla fine**, senza importare un altro notebook o ripetere lo study, e incollare:

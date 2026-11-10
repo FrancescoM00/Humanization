@@ -46,16 +46,30 @@ Fra gli ammissibili si sceglie la massima **AUC aggregata sul solo split di cali
 
 Si riportano tutti i candidati, ragioni di esclusione, distribuzione delle identità e AUC per famiglia di alterazione con i rispettivi positivi collegati. Gli intervalli AUC ricampionano **i 46 gruppi di fonte**, con 2.000 repliche e seed 42. Descrivono l'incertezza di sviluppo, senza correggere l'ottimismo della selezione. Non si calcola l'AUC globale eliminando solo i casi privi di copertura.
 
-## Esecuzione e risultati ancora mancanti
+## Esecuzione e risultati ricevuti
 
-La preparazione locale e il piano con tokenizer sono eseguiti; **le nuove probabilità NLI e la scelta primaria non sono ancora disponibili**. Il piano contiene 323.336 evidenze uniche deduplicate fra modalità. Le singole e finestre coprono tutte le unità. Il documento non raggiunge la copertura richiesta già nella pianificazione: rimane secondario e non viene salvato tramite troncamento.
+La preparazione locale e il piano con tokenizer sono eseguiti. Il successivo ZIP di calibrazione è stato ricevuto il **10 novembre 2026**: tutte le 323.336 evidenze sono completate su GPU, con DeBERTa-v3 base float32 e circa 53,7 minuti di inferenza. Input e policy corrispondono a quelli congelati. [Risultati](results_nli_context_calibration/report.md), [audit](results_nli_context_calibration/integrity.md), [interpretazione](results_nli_context_calibration/interpretazione.md).
 
-Nel cloud corrente PyTorch è CPU e CUDA non è disponibile. Dal precedente run GPU, la previsione è circa **45–90 minuti**, con incertezza legata a lunghezza e numero dei confronti. Le vecchie cache coprono circa il 3% del piano: non si mescolano probabilità di runtime CPU/GPU per quel piccolo risparmio.
+La regola seleziona **`window2` + `min`**, registrati in [selection.json](results_nli_context_calibration/selection.json). AUC di calibrazione **0,9734879**, intervallo bootstrap per fonte 95% **[0,9566194; 0,9873532]**. La media degli score delle 137 identità è **0,9710096** e il decimo percentile **0,9509247**: i criteri sono soddisfatti. Il minimo individuale è però 0,8666 e tre identità sono sotto 0,90; non si dichiara che tutte le identità abbiano score quasi unitario.
+
+Sul medesimo pannello, `single_all + min` ha AUC 0,9470 e `window3 + min` 0,9712. La differenza fra due e tre unità è piccola e non dimostra superiorità fuori campione: la selezione segue il massimo puntuale già stabilito, non una nuova regola aggiunta dopo i risultati. Il confronto con lo storico 0,958 sul test 141/265 non misura un miglioramento diretto, perché split e percorso di scoring sono diversi.
+
+Le singole e finestre hanno copertura completa. Il documento ha entrambe le direzioni complete soltanto per **77/436 coppie etichettate e 36/137 identità**: resta secondario ed escluso dalla scelta per copertura, non per un'AUC globale bassa calcolata su un sottoinsieme favorevole. Non si ricorre a troncamento.
+
+Nel cloud corrente PyTorch è CPU e CUDA non è disponibile; lo scoring effettivo è quindi stato eseguito su Kaggle. Le vecchie cache coprivano circa il 3% del piano: non sono state mescolate probabilità di runtime CPU/GPU per quel piccolo risparmio.
 
 La [guida Kaggle](kaggle/README_NLI_Calibration.md) riusa pesi e venv quando disponibili ed esegue il vecchio scorer, seguito dall'analizzatore nuovo. Il pacchetto di ritorno comprende input, policy, metadati, CSV e selezione; le cache di probabilità e le evidenze estese rimangono sulla macchina per riprendere, fuori dallo ZIP leggero. Non si eseguono humanizer, detector o chiamate Groq.
+
+## Modalità primaria per la verifica umana
+
+La scelta è fissata prima di ricevere le nuove annotazioni reference. Per ciascuna ipotesi si prende il massimo entailment fra una o due unità contigue ammissibili; il minimo fra tutte le ipotesi viene calcolato separatamente forward e reverse; lo score primario è il minimo delle due direzioni. Le unità sono frasi/chunk già fissati, non sempre frasi intere.
+
+Gli aggregati `window2` erano già presenti nello study: la [tabella primaria](results_kaggle_v2_study/nli_primary_scores.csv) è stata ricavata senza nuove inferenze, con 626 score validi e quattro fallimenti espliciti. Tutte le 84 reference hanno lo score. L'applicazione è descrittiva e successiva allo studio; i risultati originari delle altre modalità sono conservati come secondari. Non si cambia a posteriori la modalità per accordarla alle etichette umane e non si introduce una soglia automatica.
 
 ## Annotazione successiva
 
 Sono pronte le [84 coppie reference cieche](exports/kaggle_v2_study/reference/README.md), già selezionate senza score nello study. Conservano ID e testi, con chiavi separate. La scelta NLI va congelata prima di consultare le nuove etichette umane; i giudizi non verranno usati per scegliere il candidato più favorevole sullo stesso campione.
+
+Prima di ricevere i giudizi, si fissa anche la lettura principale delle etichette: **yes = conservazione integrale, partial/no = alterazione** per l'AUC del punteggio continuo. Le tre classi rimangono distinte nelle distribuzioni; un confronto yes/no che escluda partial sarà soltanto secondario, con denominatore esplicito. Mancanti non diventano yes e, se manca una delle due classi, l'AUC resta non calcolabile. Gli intervalli ricampionano le 21 fonti, non trattano le 84 riscritture come fonti indipendenti. Un solo annotatore viene dichiarato come tale; se ne partecipano due, si conservano i giudizi separati e l'eventuale conciliazione avviene senza consultare gli score, senza scegliere il lettore più favorevole.
 
 Le 99 diagnostiche restano un approfondimento separato. Non si trasferiscono allo study l'AUC di calibrazione o la soglia storica OpAI 0,04075. Anche dopo la scelta, gli score rimangono continui e le modalità secondarie rimangono disponibili. La taratura del giudice di naturalezza e la revisione statistica dei detector sono attività successive, non già eseguite da questo pacchetto.
