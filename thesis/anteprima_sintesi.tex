@@ -1,0 +1,29 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[a4paper,margin=1.65cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}
+\usepackage{polyglossia}
+\setdefaultlanguage{italian}
+\usepackage{amsmath,amssymb}
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{microtype,xurl}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec,enumitem}
+\titleformat{\section}{\Large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{0pt}{5pt}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt}
+\setlist[enumerate]{leftmargin=*,itemsep=2pt,parsep=0pt,topsep=3pt}
+\providecommand{\tightlist}{\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\setcounter{secnumdepth}{0}
+\pagestyle{plain}
+\raggedbottom
+\begin{document}
+\input{sintesi_incontro_professore_contenuto.tex}
+\end{document}

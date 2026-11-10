@@ -2,7 +2,7 @@
 
 Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I risultati sono già disponibili: per consultarli non occorre rilanciare i modelli. Il PDF della tesi è materiale scientifico, non istruzioni operative. Versioni precedenti e strumenti rimossi durante la pulizia sono recuperabili dalla cronologia Git.
 
-La **[sezione sperimentale della tesi](thesis/README.md)** raccoglie metodi, risultati, discussione e architettura del codice: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md).
+La **[sezione sperimentale della tesi](thesis/README.md)** è aggiornata al 10 novembre 2026, compresi lo studio su 126 fonti e la calibrazione NLI: [PDF](thesis/sezione_sperimentale.pdf), [LaTeX completo](thesis/sezione_sperimentale_completa.tex), [frammento integrabile](thesis/sezione_sperimentale.tex) e [Markdown](thesis/sezione_sperimentale.md). Per l'incontro con il professore è disponibile una [sintesi di due pagine in PDF](thesis/sintesi_incontro_professore.pdf), con risultati, attività ancora aperte e domande da discutere. [Archivio dei documenti](thesis/sezione_sperimentale.zip).
 
 Il **[report cumulativo aggiornato](REPORT_SPERIMENTALE.md)** collega tutte le fasi, include i risultati Kaggle e spiega numerosità e limiti di smoke, pilot e futura estensione. I due pilot da 42 fonti sono completi; sono disponibili confronto appaiato e schede comuni da annotare.
 
@@ -10,7 +10,7 @@ La revisione prima dell'estensione è nel **[protocollo v2 su 126 fonti](STUDY_V
 
 La nuova fase è nel **[notebook Kaggle](kaggle/README.md)**: sono completi il **[pilot Qwen](results_kaggle_pilot/report.md)** e il **[pilot DIPPER sugli stessi 42 input](results_kaggle_dipper_pilot/report.md)**. ASR Qwen/DIPPER: OpenAI 17/24 contro 4/24, Fakespot 1/37 contro 7/37, RADAR 2/28 contro 3/28 e maggioranza 2/31 per entrambi, su fonti differenti. L'ordine dipende dal detector. DIPPER comprime più spesso; i casi mostrano errori reali e limiti NLI sulla fusione delle frasi. Il passo successivo è [l'annotazione comune](exports/kaggle_dipper_pilot/README.md) e l'estensione del campione. La naturalezza ha ora una prima misura LLM nello smoke v2, con stabilità limitata e senza validazione umana.
 
-La **[taratura della configurazione NLI](NLI_CALIBRATION.md)** sul solo split di calibrazione è [completata](results_nli_context_calibration/report.md): **window2 + minimo**, AUC di calibrazione 0,9735 e identità medie 0,9710. La scelta precede le nuove annotazioni umane; non serve ripetere lo scoring. Per la revisione manuale iniziare dalle [sole 84 reference cieche](exports/kaggle_v2_study/reference/README.md), mantenendo separate le 99 diagnostiche.
+La **[taratura della configurazione NLI](NLI_CALIBRATION.md)** sul solo split di calibrazione è [completata](results_nli_context_calibration/report.md): **window2 + minimo**, AUC di calibrazione 0,9735 e identità medie 0,9710. La scelta precede le nuove annotazioni umane; non serve ripetere lo scoring. Le [84 reference cieche](exports/kaggle_v2_study/reference/README.md) sono state inviate ai colleghi: le annotazioni sono in raccolta e non sono ancora disponibili esiti. Le 99 diagnostiche rimangono separate.
 
 ## Risultati e protocolli
 

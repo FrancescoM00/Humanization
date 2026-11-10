@@ -1,0 +1,123 @@
+% !TeX program = xelatex
+% Documento autonomo; compilare con XeLaTeX.
+\documentclass[10pt,a4paper]{article}
+\usepackage[a4paper,margin=1.65cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}
+\usepackage{polyglossia}
+\setdefaultlanguage{italian}
+\usepackage{amsmath,amssymb}
+\usepackage{longtable,booktabs,array,calc}
+\usepackage{microtype,xurl}
+\usepackage[hidelinks]{hyperref}
+\usepackage{titlesec,enumitem}
+\titleformat{\section}{\Large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{0pt}{5pt}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt}
+\setlist[enumerate]{leftmargin=*,itemsep=2pt,parsep=0pt,topsep=3pt}
+\providecommand{\tightlist}{\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}}
+\providecommand{\passthrough}[1]{#1}
+\setlength{\emergencystretch}{3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2pt}
+\setcounter{secnumdepth}{0}
+\pagestyle{plain}
+\raggedbottom
+\begin{document}
+\section{Valutazione delle riscritture: sintesi per l'incontro}\label{valutazione-delle-riscritture-sintesi-per-lincontro}
+
+\textbf{Stato del lavoro: 10 novembre 2026 --- annotazioni umane in raccolta.}
+
+\subsection{Obiettivo e approccio}\label{obiettivo-e-approccio}
+
+Valutare se una riscrittura riesce a ridurre la rilevazione automatica mantenendo significato e qualità della prosa. Si osservano separatamente \textbf{evasione, conservazione del significato, cambiamento di stile e naturalezza}: un risultato favorevole su un asse non garantisce gli altri. Il perimetro attuale è la \textbf{parafrasi mediante modelli linguistici con configurazioni fissate}, senza servizi commerciali.
+
+Il lavoro segue due passaggi: prima verificare gli strumenti su confronti umano/macchina e modifiche controllate; poi applicarli alle riscritture reali. Il repository conserva codice, configurazioni, testi, score e report. Le inferenze principali sono già eseguite.
+
+\subsection{Dati e strumenti utilizzati}\label{dati-e-strumenti-utilizzati}
+
+Lo studio stilometrico comprende \textbf{1.800 testi, cioè 900 coppie umano/macchina}, nei domini Essay, Reuters e WritingPrompts di MGTBench. Il confronto è stato ripetuto pareggiando la lunghezza. OpAI-Bench e perturbazioni costruite a regole servono a verificare le metriche semantiche.
+
+Lo studio sulle riscritture comprende \textbf{126 fonti}, sei per ciascuna combinazione di tre domini e sette generatori storici. Include i 42 pilot: le \textbf{84 fonti aggiuntive} sono riportate separatamente. Le soglie dei detector usano 300 gruppi umani di calibrazione, separati dal test. Quattro riscrittori e identità producono \textbf{630 esiti: 500 riscritture valide, quattro troncate e 126 identità}. I fallimenti restano registrati.
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Componente
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Modelli o strumenti
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Riscrittori & Qwen2.5-3B FP16; Qwen2.5-14B NF4, stesso prompt; DIPPER XXL NF4 sul passaggio intero e a finestre di tre frasi con contesto \\
+Detector & OpenAI RoBERTa-base, Fakespot, RADAR; Binoculars con due Falcon 7B, base/instruct \\
+Significato & ROUGE-L, BLEU; MiniLM \texttt{all-MiniLM-L6-v2}; BERTScore RoBERTa-base; DeBERTa-v3 \textbf{base float32} per l'entailment \\
+Stile e naturalezza & spaCy piccolo, textstat, MATTR; giudice Groq \nolinkurl{qwen/qwen3.8-27b}, senza ragionamento \\
+\end{longtable}
+\endgroup
+
+FP16 e NF4 indicano precisioni numeriche diverse: il confronto 3B/14B non isola la sola dimensione del modello. Per lo stile si estraggono 105 feature; la distanza RMS usa 91 feature standardizzate sugli umani. Tale distanza misura cambiamento, non naturalezza.
+
+\subsection{Risultato centrale: l'evasione dipende dal detector}\label{risultato-centrale-levasione-dipende-dal-detector}
+
+Sulle \textbf{84 fonti aggiuntive}, ASR indica evasioni fra gli originali già rilevati:
+
+\begingroup\small\setlength{\tabcolsep}{3pt}
+\begin{longtable}[]{@{}lrrr@{}}
+\toprule\noalign{}
+Riscrittore & OpenAI & Binoculars & Fakespot \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Baseline 3B & 28/49 & 9/80 & 0/72 \\
+14B NF4 & 41/49 & 21/80 & 0/72 \\
+\end{longtable}
+\endgroup
+
+Fakespot passa da \textbf{70 a 82 rilevazioni su 82 output validi} per 3B e da \textbf{72 a 84 su 84} per 14B. Su RADAR l'aumento nelle fonti nuove è meno preciso. Binoculars ha invece evasioni reali; il suo falso positivo sugli umani test è \textbf{6/126 = 4,76\%} (IC 95\% circa 2,2--10,0\%).
+
+Il vantaggio del 14B non è riprodotto dal solo accorciamento: su Binoculars, nello stesso sottoinsieme eleggibile, \textbf{19/68 evasioni della riscrittura contro 0/68 dei prefissi}. Per DIPPER sul detector storico non emerge un vantaggio aggregato chiaro sul taglio. Gli intervalli disponibili sono esplorativi; non è ancora eseguita una revisione complessiva con correzione multipla.
+
+\newpage
+
+\subsection{Significato, stile e naturalezza: cosa possiamo concludere}\label{significato-stile-e-naturalezza-cosa-possiamo-concludere}
+
+\textbf{Significato.} Coseno e BERTScore possono restare elevati davanti a cambiamenti verificabili. L'NLI controlla se un testo sostiene le affermazioni dell'altro, nelle due direzioni; può però sbagliare su numeri, cautele e riorganizzazioni. I punteggi di metriche diverse non sono direttamente confrontabili come percentuali di fedeltà.
+
+La calibrazione separata usa \textbf{139 positivi presunti, 297 alterazioni e 137 identità, su 46 fonti}; il test storico è escluso. La regola fissata seleziona \textbf{premesse fino a due frasi/chunk e minimo bidirezionale}: AUC \textbf{0,9735}, IC 95\% \textbf{{[}0,9566; 0,9874{]}}, media identità \textbf{0,9710}. AUC misura separazione, non accuratezza del 97\%. Tre unità danno 0,9712, molto vicino; il documento intero fallisce il requisito di copertura. La verifica umana resta necessaria.
+
+\textbf{Stile.} DIPPER a tre frasi accorcia meno: rapporto parole medio \textbf{0,920}, contro \textbf{0,758} del passaggio intero. Cambia meno anche le feature. Recupera contenuto in alcuni casi, ma conserva errori: non è ancora dimostrata una maggiore fedeltà secondo annotazioni umane.
+
+\textbf{Naturalezza.} Groq completa \textbf{364/744 risposte nuove}: tutti i confronti sono parziali per budget o quota. Fra 89 coppie discordanti invertendo l'ordine, \textbf{85 scelgono B in entrambi gli ordini}. Il giudice non sostiene attualmente una classifica affidabile.
+
+\subsection{Attività in corso e decisioni da discutere}\label{attivituxe0-in-corso-e-decisioni-da-discutere}
+
+Le \textbf{84 coppie reference}, da 21 fonti e quattro riscrittori, sono state inviate ai colleghi; \textbf{etichette ancora in attesa}. Serviranno a verificare l'NLI già fissato. Le 99 coppie diagnostiche rimangono un approfondimento separato. Seguiranno valutazione del giudice e revisione statistica; non è necessario ripetere adesso gli humanizer.
+
+Domande per il professore:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{Perimetro:} è sufficiente studiare questi parafrasatori, dichiarando esplicitamente l'assenza di servizi commerciali?
+\item
+  \textbf{Naturalezza:} privilegiare giudizi umani oppure tarare il giudice su preferenze umane esterne, con un piccolo controllo di altra famiglia?
+\item
+  \textbf{Fedeltà:} confermare ``yes'' contro ``partial/no'' come verifica principale, conservando anche le tre classi e la gravità degli errori?
+\item
+  \textbf{Statistica:} adottare variazione del TPR come endpoint principale, 16 confronti complessivi con Holm e una regola esplicita per i quattro fallimenti? La specifica nuova va dichiarata successiva ai risultati, senza retrodatazione.
+\item
+  \textbf{Dimensione:} completare l'analisi delle 126 fonti e delle annotazioni oppure riservare un piccolo campione realmente non esaminato? L'estensione a 420 non è automatica.
+\end{enumerate}
+
+\end{document}

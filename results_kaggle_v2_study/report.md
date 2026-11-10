@@ -151,7 +151,7 @@ Sono pronti due moduli indipendenti per gli annotatori, con **183 coppie**: 84 r
 
 Lo [ZIP cieco delle schede](../exports/kaggle_v2_study/annotation_forms.zip) contiene soltanto moduli A/B e istruzioni; le chiavi restano separate. Gli annotatori lavorano indipendentemente. Il reference è selezionato senza score; il diagnostico è arricchito per disaccordi fra metriche e non consente un'AUC ingenua di popolazione. I giudizi di due annotatori non raddoppiano le fonti indipendenti.
 
-Il passo successivo utile è la revisione manuale, distinguendo fedeltà, tipo di input e naturalezza, poi il confronto con gli score e i casi di disaccordo. Non è necessario rifare i modelli per leggere questi risultati. L'estensione a 420 fonti, EditLens, Fast-DetectGPT e servizi commerciali restano rinviati. La sezione sperimentale compilata della tesi precede questa fase: il report cumulativo è aggiornato, i file LaTeX/PDF non vengono dichiarati aggiornati senza una revisione specifica.
+Le 84 reference sono state inviate ai colleghi: le annotazioni sono in raccolta, senza esiti ancora ricevuti. Il passo successivo utile è confrontare tali giudizi con gli score e i casi di disaccordo, distinguendo fedeltà, tipo di input e naturalezza. Non è necessario rifare i modelli per leggere questi risultati. L'estensione a 420 fonti, EditLens, Fast-DetectGPT e servizi commerciali restano rinviati. La [sezione sperimentale della tesi](../thesis/README.md), in LaTeX e PDF, è aggiornata al 10 novembre 2026 e comprende questo studio e la calibrazione NLI. È disponibile anche una [sintesi di due pagine per il professore](../thesis/sintesi_incontro_professore.pdf).
 
 ## Configurazione NLI primaria fissata successivamente
 

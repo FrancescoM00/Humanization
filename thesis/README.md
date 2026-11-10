@@ -1,35 +1,44 @@
-# Sezione sperimentale della tesi
+# Sezione sperimentale e sintesi per il professore
 
-- **[PDF da leggere](sezione_sperimentale.pdf)**: anteprima autonoma con indice, formule e tabelle.
-- **[LaTeX completo](sezione_sperimentale_completa.tex)**: un solo file autonomo, da compilare con **XeLaTeX**; in Overleaf selezionare questo compilatore nelle impostazioni del progetto.
-- **[Sorgente LaTeX integrabile](sezione_sperimentale.tex)**: frammento da inserire nel documento della tesi.
-- **[Testo Markdown](sezione_sperimentale.md)**: sorgente editoriale leggibile anche su GitHub.
-- **[Scarica tutto in ZIP](sezione_sperimentale.zip)**: PDF, sorgenti e istruzioni in un unico archivio.
+Aggiornamento: **10 novembre 2026**. I documenti distinguono esperimenti conclusi, limiti e attività in corso. Le **84 coppie reference sono state inviate ai colleghi**; le annotazioni umane sono ancora in raccolta e non vengono anticipati risultati.
 
-Il testo riprende tono, notazione e struttura del PDF teorico fornito, senza ripubblicarlo. Descrive gli esperimenti effettivamente svolti fino al controllo delle 34 coppie numeriche e lo stato del codice dopo il riordino della repository. I dati sono quelli dei report e dei CSV conservati nel progetto; per questa stesura non sono state eseguite nuove inferenze.
+## Documenti da scaricare
 
-La provenienza è stata aggiornata dopo il [confronto dei tre CSV forniti dall'autore come scaricati da Google Drive](https://github.com/FrancescoM00/Humanization/blob/main/provenance/mgtbench_drive_comparison.md): sono identici byte per byte a quelli già usati. Il PDF, il Markdown e i sorgenti LaTeX riportano ora questa verifica; i risultati numerici restano gli stessi.
+| Documento | PDF | LaTeX autonomo | Testo modificabile |
+|---|---|---|---|
+| Capitolo sperimentale | [PDF](sezione_sperimentale.pdf) | [LaTeX completo](sezione_sperimentale_completa.tex) | [Markdown](sezione_sperimentale.md) |
+| Sintesi per l'incontro | [PDF di due pagine](sintesi_incontro_professore.pdf) | [LaTeX](sintesi_incontro_professore.tex) | [Markdown](sintesi_incontro_professore.md) |
 
-## Inserimento nel documento originale
+**[Archivio con entrambi i documenti e i sorgenti](sezione_sperimentale.zip)**. È disponibile anche lo [ZIP della sola sintesi](sintesi_incontro_professore.zip).
 
-Il PDF teorico termina la discussione con la sezione 12 e contiene poi la sezione 13 Bibliografia. Inserire il frammento **dopo la sezione 12 e prima della bibliografia**:
+I file LaTeX autonomi contengono già il loro preambolo: si compilano con **XeLaTeX**, anche su Overleaf scegliendo questo compilatore nelle impostazioni. Per scaricare da GitHub, aprire il file e usare **Download raw file**, oppure il collegamento `raw.githubusercontent.com`.
+
+## Contenuto
+
+Il capitolo parte dall'obiettivo e dalle quattro dimensioni di valutazione. Spiega dati, controllo della lunghezza, feature e classificatore stilometrico; perturbazioni semantiche, controlli positivi, allineamento e aggregatori; pilot e studio Kaggle sulle 126 fonti; detector e controlli nulli; calibrazione della modalità NLI; limiti del giudice di naturalezza; organizzazione del codice e attività ancora da completare.
+
+La sintesi riporta obiettivo, dati, modelli, risultati centrali e domande per il professore. Non sostituisce il capitolo né i report numerici di dettaglio.
+
+La stesura usa i risultati già presenti nel repository, fino alla calibrazione NLI. Non sono state avviate nuove inferenze per scriverla. Le fonti bibliografiche aggiunte sono indicate in note con autore o collegamento; non vengono inventati numeri corrispondenti alla bibliografia del PDF teorico.
+
+## Inserimento nella tesi
+
+Il PDF teorico fornito termina la discussione con la sezione 12 e contiene poi la sezione 13 Bibliografia. Inserire il **frammento** LaTeX dopo la sezione 12 e prima della bibliografia:
 
 ```latex
 \input{thesis/sezione_sperimentale.tex}
 ```
 
-La nuova parte diventerà la sezione 13 e la bibliografia passerà alla 14. Le formule e le tabelle sono numerate automaticamente. Il frammento non imposta contatori: segue quelli del documento in cui viene incluso. L'anteprima autonoma imposta invece i contatori alla sezione 12, equazione 41 e tabella 6, come nel PDF fornito; la sua paginazione è autonoma.
+Il frammento [sezione_sperimentale.tex](sezione_sperimentale.tex) non contiene preambolo né contatori: segue quelli del documento che lo include. La nuova parte diventa la sezione 13 e la bibliografia passa alla 14. L'anteprima autonoma riparte dalla sezione 13, equazione 42 e tabella 7, con paginazione propria.
 
-Il preambolo della tesi deve disporre dei pacchetti matematici e tabellari usati: `amsmath`, `amssymb`, `longtable`, `booktabs`, `array`, `calc`, `hyperref` e `xurl`. Le macro Pandoc minime `\tightlist` e `\passthrough`, se richieste, sono definite in [anteprima.tex](anteprima.tex). Il frammento è UTF-8 e i segni meno sono esportati come comandi matematici compatibili anche con pdfLaTeX. L'anteprima usa XeLaTeX e Latin Modern, senza vincolare il motore del documento originale.
+Il preambolo deve includere `amsmath`, `amssymb`, `longtable`, `booktabs`, `array`, `calc`, `hyperref` e `xurl`. Le macro minime `\tightlist` e `\passthrough` sono definite in [anteprima.tex](anteprima.tex). Se il documento principale non le definisce già, copiarle nel suo preambolo. Il testo è UTF-8; i file autonomi usano Latin Modern e XeLaTeX.
 
-I riferimenti numerici `[1]`–`[48]` presenti nel testo riprendono le voci pertinenti della bibliografia del PDF teorico. Non essendo stato fornito il sorgente `.bib`, sono conservati come numeri, senza inventare chiavi BibTeX. In un documento che usa `\cite`, si possono ricollegare alle chiavi originali. Le schede dei nuovi checkpoint e la repository sono indicate in note distinte, senza attribuire loro numeri bibliografici inesistenti.
+## Rigenerare PDF e sorgenti
 
-## Rigenerare l'anteprima
-
-Servono Pandoc, Python 3 e XeLaTeX, con i pacchetti elencati in `anteprima.tex`:
+Servono Pandoc, Python 3 e XeLaTeX, con i pacchetti indicati nei due preamboli:
 
 ```bash
 bash thesis/compila.sh
 ```
 
-Modificare `sezione_sperimentale.md` e rigenerare: il comando aggiorna il frammento `.tex`, il documento autonomo `sezione_sperimentale_completa.tex`, il PDF e l'archivio ZIP. Il file autonomo incorpora il contenuto e il preambolo di `anteprima.tex`, senza dipendenze da altri file del progetto. I file di compilazione temporanei sono ignorati da Git. Gli strumenti di impaginazione non sono dipendenze delle pipeline sperimentali Python.
+Modificare i due Markdown e poi eseguire il comando: aggiorna i frammenti LaTeX, i documenti autonomi, entrambi i PDF e gli archivi ZIP. I due file autonomi non dipendono da altri file del progetto. I file temporanei di compilazione sono ignorati da Git. Gli strumenti di impaginazione non sono dipendenze delle pipeline sperimentali Python.

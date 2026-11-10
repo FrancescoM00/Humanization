@@ -1,4 +1,5 @@
-\documentclass[10pt,letterpaper]{article}
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=2.2cm]{geometry}
 \usepackage{fontspec}
 \setmainfont{Latin Modern Roman}
 \setsansfont{Latin Modern Sans}
@@ -7,29 +8,34 @@
 \setdefaultlanguage{italian}
 \usepackage{amsmath,amssymb}
 \usepackage{longtable,booktabs,array,calc}
-\usepackage{fancyvrb}
+\usepackage{fancyvrb,microtype}
 \usepackage{xurl}
 \usepackage[hidelinks]{hyperref}
-\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\tightlist}{\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}}
 \providecommand{\passthrough}[1]{#1}
 \setlength{\emergencystretch}{3em}
+\setlength{\parskip}{2pt}
 \setcounter{secnumdepth}{3}
-\setcounter{tocdepth}{3}
-% Spazio per numeri come 13.10 e 13.15.2 nell'indice dell'anteprima.
+\setcounter{tocdepth}{2}
 \makeatletter
 \renewcommand*\l@subsection{\@dottedtocline{2}{1.5em}{3.0em}}
 \renewcommand*\l@subsubsection{\@dottedtocline{3}{4.5em}{3.8em}}
 \makeatother
-% Il PDF di partenza termina la teoria alla sezione 12,
-% con equazione 41 e tabella 6. Questi contatori riguardano solo l'anteprima.
+% Contatori della sola anteprima, coerenti con il PDF teorico fornito.
+% Il frammento integrabile non imposta alcun contatore.
 \setcounter{section}{12}
 \setcounter{equation}{41}
 \setcounter{table}{6}
 \title{Text humanization\\Parte sperimentale}
 \author{Francesco Maria Cariello}
-\date{Bozza di integrazione alla parte teorica}
+\date{Aggiornamento al 10 novembre 2026}
+\raggedbottom
 \begin{document}
 \maketitle
+\begin{center}
+\small Studio delle riscritture inglesi: obiettivi, metodi e risultati.\\
+Le annotazioni umane sono in raccolta e non sono ancora analizzate.
+\end{center}
 \newpage
 \tableofcontents
 \newpage

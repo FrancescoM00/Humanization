@@ -176,7 +176,7 @@ La dimensione finale va fissata in base alla precisione desiderata per il confro
 | `results*` | Output numerici, interpretazioni e metadati degli esperimenti completati |
 | `exports/` | Archivi ricevuti/condivisibili e schede manuali, con chiavi separate |
 | `provenance/` | Verifica della provenienza dei CSV forniti |
-| `thesis/` | Sezione sperimentale in Markdown, LaTeX e PDF; precedente alla nuova fase Kaggle |
+| `thesis/` | Sezione sperimentale aggiornata al 10 novembre 2026 in Markdown, LaTeX e PDF, più sintesi di due pagine per il professore |
 | `CODEX_HANDOFF.md` | Stato operativo, decisioni e indicazioni per riprendere il lavoro |
 
 Le directory locali `data/` e `.venv/` non sono versionate in `main`; gli archivi e i report pertinenti sono esportati. Il ramo `cloud-backup` conserva i materiali pesanti secondo [TRANSFER_STATUS.md](TRANSFER_STATUS.md). L'ambiente Kaggle viene ricreato con dipendenze dedicate e PyTorch CUDA dell'immagine. Gli ZIP dei run non contengono pesi o venv.
@@ -296,7 +296,7 @@ Non sono state effettuate altre chiamate nell'analisi dello ZIP. Un'eventuale ri
 
 Lo [ZIP cieco da annotare](exports/kaggle_v2_study/annotation_forms.zip) comprende due copie indipendenti delle stesse **183 coppie**, senza sistemi o score: 84 reference da 21 fonti e 99 diagnostiche da ulteriori 25. La selezione a gruppi completi porta il diagnostico a 99 pur avendo capacità maggiore; non è corretto dichiarare cento, duplicare esempi o presentare l'arricchimento per score come campione casuale. Le chiavi sono separate. Le schede sono vuote e i giudizi di due annotatori non aumentano le fonti indipendenti.
 
-Il reference permette una revisione meno condizionata dagli score; il diagnostico concentra l'attenzione sui disaccordi informativi. La valutazione manuale deve distinguere significato, naturalezza e tipo di input. Non è ancora disponibile un'accuratezza gold delle metriche sui veri humanizer. I file compilati della tesi precedono questa fase: il report è aggiornato, non si dichiara una revisione LaTeX/PDF già avvenuta.
+Il reference permette una revisione meno condizionata dagli score; il diagnostico concentra l'attenzione sui disaccordi informativi. La valutazione manuale deve distinguere significato, naturalezza e tipo di input. Non è ancora disponibile un'accuratezza gold delle metriche sui veri humanizer. La [sezione sperimentale della tesi](thesis/README.md), in LaTeX e PDF, è stata riscritta al 10 novembre 2026 includendo questa fase e la successiva calibrazione NLI. La [sintesi per il professore](thesis/sintesi_incontro_professore.pdf) separa risultati e decisioni aperte.
 
 ## 11. Calibrazione NLI completata e configurazione primaria fissata
 
@@ -321,7 +321,7 @@ Per famiglia, window2+min ha AUC 0,9884 sulle entità (129 alterazioni), 0,9583 
 
 La [configurazione primaria](results_nli_context_calibration/selection.json) è ora congelata prima di ricevere le nuove annotazioni reference. È stata applicata senza nuove inferenze agli score contestuali dello study già disponibili: [630 righe, 626 score validi e quattro fallimenti](results_kaggle_v2_study/nli_primary_scores.csv). Tutte le 84 reference hanno lo score. È una rielaborazione descrittiva successiva allo studio sulle 126 fonti, non una preregistrazione retroattiva; le altre modalità e i risultati originari rimangono secondari e conservati.
 
-Il passo successivo è compilare il [modulo A delle 84 reference](exports/kaggle_v2_study/reference/semantic_reference_annotator_A.csv), con 21 fonti e quattro riscrittori per fonte. Il modulo B serve a un secondo lettore indipendente; chiavi e score individuali non vanno consultati prima dell'annotazione. Le 99 diagnostiche restano separate. Nessuna nuova etichetta umana è ancora ricevuta: servirà a verificare la scelta già fissata, senza ritoccarla per massimizzare l'accordo sullo stesso campione. Non occorre un nuovo run Kaggle per iniziare questa verifica.
+Le 84 reference, con 21 fonti e quattro riscrittori per fonte, sono state inviate ai colleghi e le annotazioni sono in raccolta. Il [modulo A](exports/kaggle_v2_study/reference/semantic_reference_annotator_A.csv) e il modulo B servono a lettori indipendenti; chiavi e score individuali non vanno consultati prima dell'annotazione. Le 99 diagnostiche restano separate. Nessuna nuova etichetta umana è ancora ricevuta: servirà a verificare la scelta già fissata, senza ritoccarla per massimizzare l'accordo sullo stesso campione. Non occorre un nuovo run Kaggle per questa verifica.
 
 ## 12. Attività successive e confini delle conclusioni
 
@@ -329,6 +329,6 @@ Il passo successivo è compilare il [modulo A delle 84 reference](exports/kaggle
 2. Raccogliere annotazioni indipendenti di conservazione e naturalezza sulle schede comuni. Le schede preparate non sono risultati e le review dell'assistente non sostituiscono giudizi umani; la fusione delle frasi è un caso prioritario per misurare i falsi allarmi dell'NLI.
 3. Usare il pannello da 126 ricevuto e le 84 fonti nuove per i confronti fissati, senza ripetere le inferenze. Valutare eventuale completamento Groq solo con budget espliciti e dopo aver considerato la fragilità all’ordine. Il passaggio a 420 resta rinviato.
 4. Tenere espliciti i limiti: testi brevi e iniziali, generatori storici, pool RoBERTa, singolo preset per humanizer, input anomali e assenza di stima gold dell'accuratezza semantica sui nuovi output.
-5. Aggiornare la sezione sperimentale della tesi quando il confronto e la valutazione manuale avranno risultati consolidati. EditLens rimane rinviato; il giudice LLM è eseguito nello smoke e parzialmente sulle 126, ma manca una validazione umana indipendente.
+5. Integrare nella sezione sperimentale, già aggiornata ai risultati disponibili, gli esiti della valutazione manuale quando saranno ricevuti. EditLens rimane rinviato; il giudice LLM è eseguito nello smoke e parzialmente sulle 126, ma manca una validazione umana indipendente.
 
 Il risultato attuale è una suite implementata e sottoposta a controlli, con due pilot da 42 fonti, lo smoke v2 e l’applicazione ai quattro riscrittori sulle 126 fonti; la naturalezza estesa resta parziale. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.
