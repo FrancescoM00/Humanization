@@ -18,9 +18,10 @@ from semantics.hedging_analysis import (
     CONDITIONS, HISTORICAL_THRESHOLD, analyze, grouped_metrics, load_panel, load_review, wilson95,
 )
 from semantics.hedging_controls import (
-    collect_exclusions, load_machine_records, select_sources, sentence_triplet, source_pairs, text_digest,
+    collect_exclusions, discover_candidates, load_machine_records, select_sources,
+    sentence_triplet, source_pairs, text_digest,
 )
-from semantics.perturbations import load_perturbation_nlp
+from semantics.perturbations import _stable_hex, load_perturbation_nlp
 from stylometry.data import DOMAINS, GENERATORS
 
 
@@ -268,6 +269,42 @@ class NativeHedgeTransformationTests(unittest.TestCase):
             self.assertTrue(pair["modified"].endswith("The report describes the procedure in detail."))
             self.assertFalse(pair["metadata"]["semantic_label_verified"])
             self.assertEqual(pair["label_source"], "rule_intent_not_human_gold")
+
+    def test_prefetched_duplicate_group_does_not_consume_generator_cap_or_domain_quota(self):
+        # Force the duplicate B source to precede B's independent source in the
+        # real deterministic queue; A accepts that shared group first.
+        duplicate_id, fresh_id = sorted(("B-source-0", "B-source-1"),
+                                        key=lambda value: _stable_hex(7, value))
+        records = [
+            {"source_id": "A-source", "source_group_id": "shared", "domain": "Essay",
+             "generator": "A", "source_row": 0,
+             "original": "The treatment may be effective in this setting."},
+            {"source_id": duplicate_id, "source_group_id": "shared", "domain": "Essay",
+             "generator": "B", "source_row": 0,
+             "original": "The treatment may be effective in another setting."},
+            {"source_id": fresh_id, "source_group_id": "independent", "domain": "Essay",
+             "generator": "B", "source_row": 1,
+             "original": "The method may be effective in this setting."},
+        ]
+        parser = self.nlp
+
+        class PrefetchingParser:
+            def pipe(self, inputs, *, as_tuples, batch_size):
+                # Mimic a parser reading a batch before yielding its documents.
+                queued = list(inputs)
+                for text, record in queued:
+                    yield parser(text), record
+
+        candidates, diagnostics = discover_candidates(records, PrefetchingParser(), seed=7,
+                                                       max_per_cell=1, max_per_domain=2)
+        self.assertEqual(len(candidates), 2)
+        self.assertEqual({row["source_group_id"] for row in candidates}, {"shared", "independent"})
+        self.assertEqual({row["generator"] for row in candidates}, {"A", "B"})
+        self.assertTrue(any(row["reason"] == "source_group_already_accepted_in_prefetched_batch"
+                            for row in diagnostics))
+        limited, _ = discover_candidates(records, PrefetchingParser(), seed=7,
+                                         max_per_cell=1, max_per_domain=1)
+        self.assertEqual(len(limited), 1)
 
 
 class IndependentSourceTests(unittest.TestCase):

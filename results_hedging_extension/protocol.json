@@ -94,5 +94,9 @@
   ],
   "secondary_rate_ci": "Wilson 95% for sensitivity in full/partial subtypes and FPR only when exactly one evaluated variant per original source; never treat the 120 pooled alterations as independent for a binomial interval.",
   "secondary_rate_ci_reason": "Prespecified before any new NLI scores: ordinary source bootstrap rates can have degenerate intervals at zero or one events.",
-  "amended_before_inference_utc": "2026-11-11T20:23:07.135544+00:00"
+  "amended_before_inference_utc": "2026-11-11T20:23:07.135544+00:00",
+  "max_per_cell": 20,
+  "max_unique_candidates_per_domain": 40,
+  "candidate_search_amendment": "Before any NLI scoring, initial source search found only 51 independent eligible originals under a per-generator candidate cap that could count variants of the same source. Search now counts globally unique source groups, increases the computational cap to 20 per domain/generator and stops at 40 independent eligible candidates per domain. No grammatical/semantic filter, target count, random seed, label or NLI setting is relaxed.",
+  "candidate_search_amended_utc": "2026-11-11T20:35:16.097856+00:00"
 }

@@ -317,20 +317,27 @@ def load_machine_records(raw_dir: Path, exclusion_files, root: Path,
                      'exclusion_files':exclusions_manifest,'n_marker_prefilter_records':len(records)}
 
 
-def discover_candidates(records, nlp=None, seed=20261111, max_per_cell=10):
+def discover_candidates(records, nlp=None, seed=20261111, max_per_cell=10, max_per_domain=None):
     """Parse score-independent queues, retaining native eligible source triples."""
     if nlp is None: nlp=load_perturbation_nlp()
     cells=defaultdict(list)
     for record in records: cells[(record['domain'],record['generator'])].append(record)
     queues={key:deque(sorted(items,key=lambda r:_stable_hex(seed,r['source_id']))) for key,items in sorted(cells.items())}
-    accepted=Counter(); diagnostics=[]; candidates=[]
+    accepted=Counter(); accepted_domains=Counter(); diagnostics=[]; candidates=[]; accepted_groups=set()
     # Eligibility is evaluated in a deterministic balanced stream. A cell cap
     # bounds parsing work without using scores or changing experimental labels.
     def stream():
         while any(queues.values()):
             progressed=False
             for key,queue in queues.items():
-                if queue and accepted[key]<max_per_cell:
+                # Different generators from one raw-row/source component are
+                # not independent sources and must not consume separate caps.
+                while queue and queue[0]['source_group_id'] in accepted_groups:
+                    skipped=queue.popleft()
+                    diagnostics.append({**{k:skipped[k] for k in ('source_id','domain','generator','source_row')},
+                                        'eligible':False,'reason':'source_group_already_accepted_before_parse'})
+                domain_available = max_per_domain is None or accepted_domains[key[0]] < max_per_domain
+                if queue and accepted[key]<max_per_cell and domain_available:
                     progressed=True; yield queue.popleft()
             if not progressed: break
     pending=iter(stream())
@@ -339,6 +346,11 @@ def discover_candidates(records, nlp=None, seed=20261111, max_per_cell=10):
     for doc,record in nlp.pipe(inputs(),as_tuples=True,batch_size=16):
         key=(record['domain'],record['generator'])
         if accepted[key]>=max_per_cell: continue
+        if max_per_domain is not None and accepted_domains[record['domain']] >= max_per_domain: continue
+        if record['source_group_id'] in accepted_groups:
+            diagnostics.append({**{k:record[k] for k in ('source_id','domain','generator','source_row')},
+                                'eligible':False,'reason':'source_group_already_accepted_in_prefetched_batch'})
+            continue
         choices=[]
         for index,sentence in enumerate(doc.sents):
             triple=sentence_triplet(sentence)
@@ -354,7 +366,7 @@ def discover_candidates(records, nlp=None, seed=20261111, max_per_cell=10):
         candidate={**record,'target_original':sentence.text,'target_start_char':sentence.start_char,
                    'target_end_char':sentence.end_char,'sentence_index':index,'family':triple['family'],
                    'marker':triple['marker'],'targets':{name:triple[name] for name in ('complete','partial','preserved')}}
-        candidates.append(candidate);accepted[key]+=1
+        candidates.append(candidate);accepted[key]+=1;accepted_domains[record['domain']]+=1;accepted_groups.add(record['source_group_id'])
         diagnostics.append({**{k:record[k] for k in ('source_id','domain','generator','source_row')},'eligible':True,'reason':triple['family']})
     return candidates,diagnostics
 
@@ -413,13 +425,32 @@ def prepare_panel(protocol_path:Path, output:Path, root:Path):
             if hashlib.sha256(path.read_bytes()).hexdigest()!=item['sha256']:raise ValueError('Frozen exclusion input changed')
     records,screen=load_machine_records(raw_dir,names,root,int(protocol.get('minimum_words',80)),int(protocol.get('maximum_words',1000)))
     nlp=load_perturbation_nlp(protocol.get('model','en_core_web_sm'))
-    candidates,diagnostics=discover_candidates(records,nlp,int(protocol.get('seed',20261111)),int(protocol.get('max_per_cell',10)))
+    candidates,diagnostics=discover_candidates(records,nlp,int(protocol.get('seed',20261111)),
+                                             int(protocol.get('max_per_cell',10)),
+                                             protocol.get('max_unique_candidates_per_domain'))
     n=int(protocol.get('n_sources',60));seed=int(protocol.get('seed',20261111))
+    def fail_preparation(message):
+        # Preserve applicability diagnostics when a registered quota cannot be
+        # met. These are candidates, not a completed panel or metric results.
+        output.mkdir(parents=True,exist_ok=True)
+        stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        failure={'status':'incomplete_no_pairs_exported','reason':message,
+                 'created_at_utc':datetime.now(timezone.utc).isoformat(),
+                 'n_unique_eligible_groups':len({r['source_group_id'] for r in candidates}),
+                 'eligible_per_domain':dict(Counter(r['domain'] for r in candidates)),
+                 'eligible_per_cell':dict(Counter(r['domain']+':'+r['generator'] for r in candidates)),
+                 'eligible_per_family':dict(Counter(r['family'] for r in candidates)),
+                 'screening':screen,'code_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+        (output/f'preparation_failure_{stamp}.json').write_text(json.dumps(failure,ensure_ascii=False,indent=2)+'\n')
+        (output/f'candidate_pool_debug_{stamp}.jsonl').write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in candidates))
+        import pandas as pd
+        pd.DataFrame(diagnostics).to_csv(output/f'screening_attempt_{stamp}.csv',index=False)
+        raise RuntimeError(message+'; native applicability by domain: '+str(failure['eligible_per_domain']))
     selected=select_sources(candidates,n,seed)
-    if len(selected)!=n:raise RuntimeError(f'Only {len(selected)} eligible independent sources; required {n}; no synthetic hedge insertion or rule relaxation')
+    if len(selected)!=n:fail_preparation(f'Only {len(selected)} eligible independent sources; required {n}; no synthetic hedge insertion or rule relaxation')
     per_domain=Counter(r['domain'] for r in selected)
     expected=protocol.get('target_sources_per_domain',protocol.get('sources_per_domain'))
-    if isinstance(expected,int) and set(per_domain.values())!={expected}:raise RuntimeError('Native applicability cannot meet the frozen domain quota')
+    if isinstance(expected,int) and set(per_domain.values())!={expected}:fail_preparation('Native applicability cannot meet the frozen domain quota')
     reserve=select_sources(candidates,int(protocol.get('reserve_sources',30)),seed+1,[r['source_group_id'] for r in selected])
     pairs=[p for r in selected for p in source_pairs(r,seed)]
     output.mkdir(parents=True,exist_ok=True)

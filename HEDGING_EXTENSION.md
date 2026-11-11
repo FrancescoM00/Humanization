@@ -8,6 +8,10 @@ Si vuole verificare se il criterio storico trasferisca a nuove alterazioni della
 
 Si usano cautele già presenti nei testi nativi, senza aggiungerle artificialmente. Sono esclusi gruppi delle precedenti analisi semantiche e dei campioni stilometrici indicati nel protocollo, collegando righe con prompt o testo umano condiviso e rimuovendo duplicati testuali. Le riscritture restano collegate allo stesso originale; non si assume che umano e macchina della riga MGTBench abbiano contenuto equivalente.
 
+Il primo screening di applicabilità, prima di qualsiasi score NLI, ha trovato soltanto 51 fonti indipendenti. La ricerca è ampliata contando gruppi globalmente unici anziché versioni dello stesso gruppo nel limite per generatore; il limite computazionale diventa 20 candidati per cella e 40 fonti uniche per dominio. Non si allentano i filtri grammaticali o semantici né si cambiano seme, etichette o obiettivo del campione.
+
+La soglia storica era calibrata su riscritture OpAI. Questo nuovo pannello usa testi macchina MGTBench e controlli costruiti sulle stesse fonti: il trasferimento riguarda quindi anche una diversa distribuzione dei testi, pur mantenendo la categoria di errore. Non si interpreta un eventuale cambiamento come effetto isolato della numerosità.
+
 ## Trasformazioni e revisione
 
 Le regole ammettono frasi affermative con modalità epistemica sufficientemente isolata. Escludono negazioni, citazioni, condizionali e letture di permesso o capacità non distinguibili con sufficiente chiarezza. La parziale deve rafforzare la proposizione mantenendo una qualificazione; togliere soltanto possibly da could possibly non viene etichettato automaticamente come errore di significato.
