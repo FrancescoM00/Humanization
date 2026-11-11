@@ -59,3 +59,13 @@ C3 verifica una procedura con selezione confinata al training. C2 descrive una s
 I dati e i risultati storici restano invariati. Le nuove predizioni, selezioni e tabelle sono conservate nella cartella dedicata.
 
 Correzione di implementazione v1.1: un primo tentativo, con le cinque partizioni identiche, è stato escluso prima di calcolarne le AUC. Si è corretta soltanto la randomizzazione dei gruppi, senza cambiare feature, classificatori, quaterne casuali o criteri di valutazione. Il protocollo aggiornato è fissato prima dei fit finali; la traccia del tentativo è in `implementation_note.json`.
+
+## Controllo aggiuntivo: 100 candidate anziché 105
+
+Su richiesta dell'autore si aggiunge una verifica separata, specificata prima dei nuovi fit nel [protocollo dedicato](results_shortlist_length_robustness/protocol.json). Non modifica i risultati precedenti. Si fittano soltanto 35 modelli C3 con 100 candidate, escludendo `n_words`, `n_characters`, `n_sentences`, `ttr`, `hapax_ratio`. La selezione di quattro colonne, la soglia assoluta di Spearman 0,85 e la regressione logistica restano identiche.
+
+Le partizioni vengono lette da `results_shortlist_validation/split_membership.csv`, senza rigenerarle. Le predizioni C3 con 105 candidate sono riutilizzate esattamente dall'esperimento precedente. Imputazione, standardizzazione e selezione delle nuove quattro feature usano soltanto il training delle stesse 25 partizioni CV, tre di dominio e sette di generatore. Le quaterne casuali non vengono ricalcolate.
+
+Si confrontano AUC e differenze appaiate C3-100 meno C3-105, con la stessa misura macro e 2.000 ricampionamenti per gruppo. I pesi bootstrap e gli intervalli del riferimento C3-105 devono riprodurre quelli precedenti. Si riportano frequenze di selezione di tutte le colonne, permanenza di MATTR e comparsa di nuove candidate.
+
+Si tratta di un controllo dell'insieme candidato: non dimostra che le 100 misure rimaste siano tutte indipendenti dalla lunghezza. Una perdita di prestazione non prova da sola che il segnale precedente fosse spurio: per esempio, TTR misura anche diversità lessicale e i conteggi delle parole erano già pareggiati. Nessun margine di equivalenza è fissato e non si promuove automaticamente una nuova shortlist. Il controllo rimane distinto dalla valutazione della humanization.
