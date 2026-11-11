@@ -352,3 +352,19 @@ C2 rimane descrittiva perché i nomi erano stati scelti sull'intero campione. An
 Il riferimento per famiglie è decisivo: 23/100 quaterne matched eguagliano o superano C2 nella CV e 48/100 nel trasferimento a generatori esclusi. Questi conteggi descrivono la distribuzione dei riferimenti, non sono p-value. Il pannello compatto contiene segnale ma non emerge come soluzione unica, indipendentemente confermata o universalmente stabile. Nessuna nuova shortlist è promossa automaticamente.
 
 Gli intervalli sono puntuali ed esplorativi, ottenuti da 2.000 bootstrap appaiati per gruppo sulle predizioni salvate: non rappresentano tutta l'incertezza dell'addestramento e non trattano fold e semi come osservazioni indipendenti. Il controllo solo numero di parole è 0,500 in ogni protocollo. Numerali e nomi propri possono dipendere anche da argomento e corpus; questa prova non valida una misura di humanization. Fit e tabelle sono conservati nella [cartella dedicata](results_shortlist_validation/README.md); il PDF della tesi del 10 novembre precede questa nuova analisi.
+
+## 14. Robustezza C3: esclusione di cinque indicatori diagnostici
+
+Il [controllo aggiuntivo](results_shortlist_length_robustness/report.md), anche in [PDF](results_shortlist_length_robustness/report.pdf), confronta C3 con 105 candidate e C3 con 100. Entrambi i classificatori usano quattro feature: cambia soltanto l'insieme candidato, escludendo `n_words`, `n_characters`, `n_sentences`, `ttr`, `hapax_ratio`. Sono riutilizzate esattamente le 35 partizioni salvate e le predizioni C3 precedenti; si effettuano soltanto 35 nuovi fit su CPU. Nessuna generazione o API, nessun nuovo sorteggio di fold.
+
+| Protocollo, AUC macro | 105 candidate | 100 candidate | Differenza 100−105 | IC 95% appaiato |
+|---|---:|---:|---:|---|
+| CV ripetuta | 0,7825 | 0,7627 | −0,0198 | [−0,0319; −0,0074] |
+| Dominio escluso | 0,7157 | 0,6614 | −0,0543 | [−0,0721; −0,0384] |
+| Generatore escluso | 0,7452 | 0,7195 | −0,0257 | [−0,0400; −0,0122] |
+
+Il segnale discriminante resta, ma la prestazione media diminuisce nei tre protocolli. Il calo principale nel trasferimento fra domini è Essay, da 0,6974 a 0,5650; Reuters cambia poco e WritingPrompts scende meno. Gli intervalli sono puntuali ed esplorativi, condizionati alle predizioni: non comprendono tutto il riaddestramento e non costituiscono una prova di equivalenza o conferma indipendente. Le AUC e gli intervalli della baseline sono riprodotti entro 1e-12 usando gli stessi 2.000 bootstrap appaiati per gruppo.
+
+MATTR resta selezionata 35/35 e punteggiatura totale 33/35, come prima. La frequenza di “and” passa da 12/25 a 21/25 nella CV e la variabilità relativa della lunghezza delle frasi da 4/25 a 12/25. Numerali compare 5/35, mentre congiunzioni coordinanti POS e nomi propri restano 0/35; la non selezione non dimostra assenza di informazione. L'unica colonna mai scelta nel controllo precedente che compare ora è `pos_det`, in un solo training LODO.
+
+Fra le cinque escluse, soltanto TTR occupava posti nelle quaterne precedenti, in tutti i 35 training. Il calo non dimostra che il segnale fosse soltanto un artefatto di lunghezza: le parole erano già pareggiate e TTR misura anche ripetizione e varietà del lessico. Le cento candidate rimaste non sono tutte indipendenti dalla lunghezza, comprendendo anche caratteristiche della struttura delle frasi. Questo è un controllo di robustezza della procedura di selezione, non una nuova valutazione della humanization; non promuove automaticamente una lista di quattro nomi. Il PDF della tesi del 10 novembre precede anche questa analisi.
