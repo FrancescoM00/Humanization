@@ -1,5 +1,5 @@
 {
-  "protocol_version": "compact_stylometry_training_only_selection_v1",
+  "protocol_version": "compact_stylometry_training_only_selection_v1.1",
   "created_at_utc": "2026-11-11T13:26:36.973334+00:00",
   "created_at_rome": "2026-11-11T14:26:36.974009+01:00",
   "input_csv": "results_length_matched/features.csv",
@@ -178,5 +178,8 @@
     "repeated folds and source group bootstrap do not provide independent dataset confirmation",
     "random references and confidence intervals conditional on chosen draws/fixed held-out predictions",
     "no inference about humanization quality or naturalness from classifier AUC"
-  ]
+  ],
+  "amended_at_utc": "2026-11-11T13:32:29.529878+00:00",
+  "cv_group_randomization": "For each CV seed randomly relabel entire group IDs before StratifiedGroupKFold; this ensures distinct repetitions when every group has identical class composition.",
+  "implementation_correction": "An initial attempt produced identical five-fold partitions for all seeds under sklearn 1.7.2. It was excluded before AUC analysis. No feature, model, random panel or metric choice was changed. Only group randomization was corrected before the final fits."
 }

@@ -30,7 +30,7 @@ Questa è una nuova regola semplice: non replica i filtri storici di coerenza fr
 
 ## Partizioni e riferimenti casuali
 
-- Cross-validation aggregata sui tre domini: `StratifiedGroupKFold`, cinque fold e cinque semi fissi, 42, 137, 271, 811 e 2026. Le configurazioni condividono tutte le partizioni. Le AUC sono riportate anche separatamente per dominio.
+- Cross-validation aggregata sui tre domini: `StratifiedGroupKFold`, cinque fold e cinque semi fissi, 42, 137, 271, 811 e 2026. Prima dello split i gruppi sono rinominati con una permutazione determinata dal seme: è necessario perché, con un umano e una macchina in ogni gruppo, il solo shuffle di scikit-learn 1.7.2 produceva le stesse partizioni. Le configurazioni condividono tutte le partizioni. Le AUC sono riportate anche separatamente per dominio.
 - Leave-one-domain-out: tre confronti, training su due domini e test sul terzo. Ogni gruppo con un testo nel test è rimosso interamente dal training.
 - Leave-one-generator-out: sette confronti, training sugli altri sei generatori e test sul settimo e sugli umani associati. Nessun gruppo del test né esempio del generatore escluso entra nel training.
 - Le quaterne casuali sono fissate una volta con seme 20261111, senza usare le etichette, e riutilizzate in ogni confronto. Le due distribuzioni sono mostrate integralmente, senza scegliere le migliori. C4 matched controlla la prevalenza delle parole funzionali nel pannello completo.
@@ -57,3 +57,5 @@ C3 verifica una procedura con selezione confinata al training. C2 descrive una s
 ```
 
 I dati e i risultati storici restano invariati. Le nuove predizioni, selezioni e tabelle sono conservate nella cartella dedicata.
+
+Correzione di implementazione v1.1: un primo tentativo, con le cinque partizioni identiche, è stato escluso prima di calcolarne le AUC. Si è corretta soltanto la randomizzazione dei gruppi, senza cambiare feature, classificatori, quaterne casuali o criteri di valutazione. Il protocollo aggiornato è fissato prima dei fit finali; la traccia del tentativo è in `implementation_note.json`.
