@@ -1,6 +1,6 @@
 # Report cumulativo della sperimentazione
 
-Aggiornamento: **10 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti e lo smoke v2 sono stati ricevuti e analizzati; lo study da 126 è stato ricevuto: 626 esiti validi su 630, detector/semantica/stile disponibili e naturalezza parziale per limiti API.
+Aggiornamento: **11 novembre 2026**. Questo documento raccoglie il percorso sperimentale, collega i report completi e distingue risultati ottenuti, prove preliminari e attività ancora da svolgere. I pilot baseline 3B e DIPPER sulle stesse 42 fonti e lo smoke v2 sono stati ricevuti e analizzati; lo study da 126 è stato ricevuto: 626 esiti validi su 630, detector/semantica/stile disponibili e naturalezza parziale per limiti API. È completata anche la verifica aggiuntiva della shortlist con selezione limitata al training, descritta nella sezione 13.
 
 ## 1. Obiettivo e stato dei quattro assi
 
@@ -17,7 +17,7 @@ La validazione iniziale degli strumenti e la loro applicazione agli humanizer so
 
 ## 2. Dati, provenienza e unità di analisi
 
-La base stilometrica comprende **900 coppie umano/macchina, 1.800 testi**: 300 umani e 300 macchine per ciascuno dei domini inglesi Essay, Reuters e WritingPrompts. I generatori storici sono ChatGLM, ChatGPT, ChatGPT-turbo, Claude, Dolly, GPT4All e StableLM.
+La base stilometrica comprende **900 abbinamenti umano/macchina, 1.800 testi**: 300 umani e 300 macchine per ciascuno dei domini inglesi Essay, Reuters e WritingPrompts. I generatori storici sono ChatGLM, ChatGPT, ChatGPT-turbo, Claude, Dolly, GPT4All e StableLM. L'associazione per riga e il successivo matching delle parole non garantiscono corrispondenza semantica: non sono coppie originale umano/parafrasi LLM. Le differenze di argomento rimangono un possibile fattore, soprattutto per numerali e nomi propri.
 
 I tre CSV sono stati inizialmente acquisiti da un mirror fissato; quelli successivamente caricati dall'autore come scaricati dal Drive indicato sono risultati identici byte per byte. Il confronto è documentato in [provenance/mgtbench_drive_comparison.md](provenance/mgtbench_drive_comparison.md). La fonte effettivamente analizzata è la baseline MGTBench: non si presenta il campione come una replica di tutti i file di attacco TH-Bench.
 
@@ -332,3 +332,23 @@ Le 84 reference, con 21 fonti e quattro riscrittori per fonte, sono state inviat
 5. Integrare nella sezione sperimentale, già aggiornata ai risultati disponibili, gli esiti della valutazione manuale quando saranno ricevuti. EditLens rimane rinviato; il giudice LLM è eseguito nello smoke e parzialmente sulle 126, ma manca una validazione umana indipendente.
 
 Il risultato attuale è una suite implementata e sottoposta a controlli, con due pilot da 42 fonti, lo smoke v2 e l’applicazione ai quattro riscrittori sulle 126 fonti; la naturalezza estesa resta parziale. Le conclusioni su prestazioni generali, naturalezza e graduatorie degli humanizer restano da sostenere con il campione esteso e le annotazioni previste.
+
+## 13. Shortlist: selezione sul training, stabilità e trasferimento
+
+L'11 novembre è eseguito il [confronto aggiuntivo](results_shortlist_validation/report.md), disponibile anche in [PDF](results_shortlist_validation/report.pdf), con [specifica](SHORTLIST_VALIDATION.md) fissata prima dei nuovi fit. Si riutilizzano i 1.800 testi del campione a lunghezza esattamente abbinata. Regressione logistica fissa, cinque fold per gruppo e cinque ripetizioni realmente diverse, tre domini e sette generatori esclusi a turno; nessuna nuova inferenza linguistica o chiamata API. Le configurazioni condividono gli split.
+
+| Configurazione | AUC CV macro | IC 95% per gruppo | Dominio escluso | Generatore escluso |
+|---|---:|---|---:|---:|
+| C1: tutte le 105 | 0,8828 | [0,8677; 0,8974] | 0,7092 | 0,8467 |
+| C2: quattro storiche, esplorative | 0,7601 | [0,7389; 0,7812] | 0,7453 | 0,7150 |
+| C3: quattro selezionate sul training | 0,7825 | [0,7630; 0,8028] | 0,7157 | 0,7452 |
+| C4: media di 100 quaterne uniformi | 0,6202 | [0,6133; 0,6273] | 0,5734 | 0,6051 |
+| C4: media di 100 quaterne, tre POS e una lessicale | 0,7190 | [0,7038; 0,7344] | 0,6880 | 0,6914 |
+
+C3 seleziona tramite valore assoluto del g di Hedges e scarta ridondanze con correlazione assoluta di Spearman almeno 0,85, sempre sul training. Non replica il vecchio filtro di coerenza fra domini e generatori. La differenza C3−C1 in CV è −0,1002 AUC, IC [−0,1185; −0,0816]; C3 supera la media del casuale matched di 0,0636, IC [0,0527; 0,0753]. Nel trasferimento fra domini C3−C1 è 0,0065, IC [−0,0192; 0,0321]: non è una prova di equivalenza.
+
+C2 rimane descrittiva perché i nomi erano stati scelti sull'intero campione. Anche il vantaggio apparente nel leave-domain-out non è una conferma su domini mai visti dalla selezione. MATTR è selezionata in 25/25 training CV, 3/3 domini e 7/7 generatori; numerali solo 1/25, 0/3 e 1/7, mentre congiunzioni coordinanti e nomi propri mai. TTR ricorre in tutti i 35 training; la punteggiatura complessiva in tutti i CV e LGO, ma solo un LODO. La non selezione non dimostra inutilità, soprattutto con feature correlate e obiettivi diversi.
+
+Il riferimento per famiglie è decisivo: 23/100 quaterne matched eguagliano o superano C2 nella CV e 48/100 nel trasferimento a generatori esclusi. Questi conteggi descrivono la distribuzione dei riferimenti, non sono p-value. Il pannello compatto contiene segnale ma non emerge come soluzione unica, indipendentemente confermata o universalmente stabile. Nessuna nuova shortlist è promossa automaticamente.
+
+Gli intervalli sono puntuali ed esplorativi, ottenuti da 2.000 bootstrap appaiati per gruppo sulle predizioni salvate: non rappresentano tutta l'incertezza dell'addestramento e non trattano fold e semi come osservazioni indipendenti. Il controllo solo numero di parole è 0,500 in ogni protocollo. Numerali e nomi propri possono dipendere anche da argomento e corpus; questa prova non valida una misura di humanization. Fit e tabelle sono conservati nella [cartella dedicata](results_shortlist_validation/README.md); il PDF della tesi del 10 novembre precede questa nuova analisi.
