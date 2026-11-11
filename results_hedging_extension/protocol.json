@@ -91,5 +91,8 @@
     "Transfer of a frozen threshold is tested, not assumed; current window2 primary suite is unchanged.",
     "Non-entailment need not mean contradiction.",
     "No automatic extension to real humanizers; no repetition of BLEU/ROUGE/BERTScore or prior experiments."
-  ]
+  ],
+  "secondary_rate_ci": "Wilson 95% for sensitivity in full/partial subtypes and FPR only when exactly one evaluated variant per original source; never treat the 120 pooled alterations as independent for a binomial interval.",
+  "secondary_rate_ci_reason": "Prespecified before any new NLI scores: ordinary source bootstrap rates can have degenerate intervals at zero or one events.",
+  "amended_before_inference_utc": "2026-11-11T20:23:07.135544+00:00"
 }

@@ -22,4 +22,6 @@ L'endpoint documentale è il minimo fra tutte le unità e le due direzioni, dopo
 
 Si riportano AUC, sensibilità, falsi positivi, specificità, conteggi e intervalli al 95%, complessivi e separati per rimozione completa e parziale. I positivi sono le parafrasi fedeli collegate alle stesse fonti. Il bootstrap ha 2.000 estrazioni per gruppo originale, mantenendo insieme le versioni e dando uguale peso alle fonti entro classe. I conteggi delle varianti non sono fonti indipendenti. Gli intervalli sono puntuali ed esplorativi; non si sceglie una soglia migliore sul nuovo test.
 
+Prima delle inferenze si specifica anche un intervallo Wilson secondario per sensibilità del singolo sottotipo e falsi positivi, soltanto quando ogni fonte contribuisce un unico esempio alla relativa classe. Serve a rendere leggibile l'incertezza anche se nessun caso viene segnalato: il bootstrap ordinario può restituire un intervallo degenere. Non si trattano le 120 alterazioni complessive come prove binomiali indipendenti e non si applica Wilson all'AUC.
+
 Un rafforzamento può essere non supportato senza contraddire l'originale: si osservano anche forward, reverse e la frase modificata. L'analisi rimane un controllo mirato di cautele sintetiche e trasferimento del criterio storico, non una nuova validazione degli humanizer o una misura gold della fedeltà umana.
