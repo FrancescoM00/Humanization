@@ -301,6 +301,11 @@ def write_report(output: Path | str) -> Path:
     metrics = pd.read_csv(output / "metrics.csv")
     frame = pd.read_csv(output / "pair_scores.csv")
     summary = json.loads((output / "summary.json").read_text())
+    preparation_path=output/'preparation_manifest.json'
+    preparation=json.loads(preparation_path.read_text()) if preparation_path.exists() else {}
+    source_table=markdown_table(pd.DataFrame(
+        [[domain,count] for domain,count in preparation.get('sources_per_domain',{}).items()],
+        columns=['Dominio','Originali indipendenti'])) if preparation else ''
     primary = metrics[(metrics.panel == "rule_intended_full") & (metrics.metric == "document_min")]
     labels = {"all": "Tutte le alterazioni", "complete": "Rimozione completa", "partial": "Rafforzamento parziale"}
     rows = []
@@ -335,7 +340,9 @@ def write_report(output: Path | str) -> Path:
         review_text=markdown_table(review.rename(columns={'reviewer_source':'Provenienza revisione','validity':'Giudizio','n_pairs':'Coppie'}))
         review_text+="\n\nUna revisione dell'assistente non è annotazione umana indipendente. Le classi del pannello completo rimangono etichette di intento; i sottoinsiemi revisionati sono analisi secondarie, non nuove etichette umane."
     reviewed=metrics[(metrics.panel!='rule_intended_full') & (metrics.metric=='document_min')]
-    review_table=markdown_table(pd.DataFrame([[row.panel,labels[row.scope],row.n_sources,_decimal(row.auc),_decimal(100*getattr(row,'sensitivity',np.nan),1)+"%"]
+    review_names={'assistant_review_valid':'Assistente: validi',
+                  'assistant_review_valid_qualified':'Assistente: validi e qualificati'}
+    review_table=markdown_table(pd.DataFrame([[review_names.get(row.panel,row.panel),labels[row.scope],row.n_sources,_decimal(row.auc),_decimal(100*getattr(row,'sensitivity',np.nan),1)+"%"]
                      for row in reviewed.itertuples(index=False)],columns=['Sottoinsieme','Confronto','Originali','AUC','Sensibilità'])) if len(reviewed) else "Non ci sono controlli conservativi e alterazioni entrambi revisionati sufficienti per un confronto appaiato."
     import matplotlib
     matplotlib.use('Agg')
@@ -358,7 +365,9 @@ def write_report(output: Path | str) -> Path:
 
 ## Obiettivo e risposta del test
 
-Il pannello comprende **{n_full+n_partial} alterazioni** ({n_full} rimozioni complete e {n_partial} rafforzamenti parziali), **{n_positive} parafrasi conservative** e **{summary['n_sources']} originali distinti**. Si valuta soltanto la risposta dell'NLI alle cautele: non si ripetono gli altri esperimenti semantici e non si valuta direttamente la humanization.
+Il pannello comprende **{n_full+n_partial} modifiche con intento di alterazione** ({n_full} rimozioni complete e {n_partial} rafforzamenti parziali), **{n_positive} parafrasi con intento conservativo** e **{summary['n_sources']} originali distinti**. Si valuta soltanto la risposta dell'NLI alle cautele: non si ripetono gli altri esperimenti semantici e non si valuta direttamente la humanization.
+
+Le etichette indicano l'intento delle regole, controllato mediante lettura dell'assistente prima dei punteggi. Non sono disponibili etichette umane indipendenti per questo nuovo pannello. I casi linguisticamente ambigui sono segnalati e analizzati separatamente.
 
 Sul confronto complessivo, l'AUC documentale è **{_decimal(all_row.auc)}**, la sensibilità alla soglia storica è **{_decimal(100*all_row.sensitivity,1)}%** e i falsi allarmi sui controlli conservativi sono **{_decimal(100*all_row.false_positive_rate,1)}%**. La soglia è mantenuta, non ricalibrata. Il confronto con i due tipi di trasformazione e con i controlli positivi è necessario per interpretare questi valori.
 
@@ -368,7 +377,21 @@ Ogni originale mantiene tre confronti collegati quando applicabili: una rimozion
 
 I controlli conservativi provengono dagli stessi originali delle alterazioni. Non si confrontano semplicemente identità facili con testi modificati, né si confonde la classe con la provenienza da un altro corpus. Il numero di coppie è distinto dal numero di originali indipendenti; le varianti dello stesso testo rimangono insieme nell'analisi.
 
+## Provenienza e selezione dei testi
+
+Si usano testi macchina nativi dei tre file MGTBench del progetto, lunghi da 80 a 1.000 parole prima della modifica. La cautela è già presente nell'originale: non viene inserita artificialmente. Si seleziona un solo testo macchina per gruppo di fonte, collegando righe con prompt o testo umano condiviso e rimuovendo duplicati. Gruppo e testo macchina non sono sinonimi: lo stesso gruppo può contenere generazioni differenti.
+
+{source_table}
+
+Il piano iniziale preferiva 20 originali per dominio. Lo screening non ha trovato abbastanza Reuters ammissibili; prima di qualsiasi inferenza NLI è stata accettata una distribuzione non uniforme, mantenendo 60 originali e senza allentare le regole semantiche. Sono stati riammessi testi usati soltanto per la stilometria: non avevano contribuito alla calibrazione NLI. Restano esclusi i casi delle precedenti perturbazioni semantiche indicati nel protocollo. Le modifiche del piano e gli screening falliti sono documentati, non nascosti.
+
+Il criterio storico era calibrato su OpAI, mentre qui si usano testi MGTBench. Si verifica quindi anche un trasferimento fra distribuzioni: il risultato non isola soltanto l'effetto di ampliare il numero di esempi della vecchia categoria. I controlli conservativi e le alterazioni condividono però le stesse fonti nel nuovo test.
+
 ## Configurazione e soglia
+
+spaCy con `en_core_web_sm` identifica le frasi e le costruzioni ammissibili. `all-MiniLM-L6-v2` recupera, per ogni unità, le tre premesse più simili nell'altro testo. Le unità lunghe sono suddivise in blocchi entro 160 token per il recupero; ogni coppia NLI rispetta il budget di 384 token. **DeBERTa-v3 base**, checkpoint `MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli`, calcola entailment nelle due direzioni in float32. Si riutilizzano modelli locali e l'export ONNX già disponibile; non viene addestrato alcun modello.
+
+Forward significa originale come premessa e riscrittura come ipotesi; reverse scambia i ruoli. Per ogni unità si prende il massimo entailment tra le tre premesse recuperate, poi il minimo sulle unità. Questa è la configurazione storica della soglia, distinta dalla configurazione contestuale `window2` della suite attuale.
 
 Il punteggio documentale è **il minimo fra supporto forward e reverse**, con le rispettive unità e regole storiche. La decisione è: **segnalare se il supporto è inferiore a {summary['threshold_support']:.15f}**, visualizzato come 0,04075. Non si sceglie una soglia guardando il nuovo test e non la si trasferisce a una configurazione NLI diversa.
 

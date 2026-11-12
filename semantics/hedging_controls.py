@@ -52,12 +52,14 @@ def _case_start(text, upper):
 
 
 def _lower_clause(text, token):
-    return text if token.pos_ == "PROPN" or token.text == "I" or token.text.isupper() else _case_start(text, False)
+    return text if (token.pos_ == "PROPN" or token.text == "I"
+                    or (len(token.text) > 1 and token.text.isupper())) else _case_start(text, False)
 
 
 def _safe(sentence):
     words = [t for t in sentence if t.is_alpha]
-    return (5 <= len(words) <= 70 and sentence.text.rstrip().endswith(".")
+    return (5 <= len(words) <= 70 and sentence.text.strip()[:1].isalpha()
+            and sentence.text.rstrip().endswith(".")
             and len([line for line in sentence.text.splitlines() if line.strip()]) == 1
             and not any(t.text in {'"', '“', '”', "'", '‘', '’', '?', '!', ';', ':'}
                         or t.text.casefold() in _NEGATION | {"if", "unless", "whether", "suppose", "allowed", "permitted", "authorized", "entitled"}
@@ -72,11 +74,17 @@ def _subject(sentence):
     subject = subjects[0]
     if any(t.dep_ in {"relcl", "acl", "ccomp", "advcl"} for t in subject.subtree):
         return None
+    if any(t.pos_ in {"VERB", "AUX"} and "Fin" in t.morph.get("VerbForm")
+           for t in subject.subtree):
+        return None  # Parser errors can put a reporting verb inside the subject.
     return subject
 
 
 def _number(subject):
     word = subject.text.casefold()
+    if (any(t.dep_ == "conj" for t in subject.children)
+            and any(t.text.casefold() in {"or", "nor"} for t in subject.subtree)):
+        return None  # Disjunctive/parenthetic coordination has uncertain agreement.
     if word == "i":
         return "first"
     if word in {"you", "we", "they", "these", "those"} or any(c.dep_ == "conj" for c in subject.children):
@@ -157,6 +165,8 @@ def sentence_triplet(sentence: Any) -> dict | None:
             base = modal.nbor(1)
             if base.tag_ != "VB" or base.pos_ not in {"VERB", "AUX"}:
                 return None
+            if base.lemma_ == "be" and any(c.lemma_ == "able" for c in base.children):
+                return None  # Keep ability constructions outside this targeted panel.
             if any(t.text.casefold() in _HEDGES and t != modal for t in tokens):
                 return None
             subject_tokens = list(subject.subtree)

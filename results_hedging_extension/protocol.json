@@ -4,8 +4,6 @@
   "created_at_rome": "2026-11-11T21:19:16.457637+01:00",
   "raw_dir": "data/raw",
   "exclusion_files": [
-    "results/features.csv",
-    "results_length_matched/features.csv",
     "data/semantic/pairs.jsonl",
     "data/semantic_full/pairs.jsonl",
     "data/semantic_clean/pairs.jsonl",
@@ -14,8 +12,6 @@
     "data/semantic_fairness/original_panel/pairs.jsonl"
   ],
   "exclusion_sha256": {
-    "results/features.csv": "6284e19237e9132b5a0f337ee60fed3540b6aa260910cce8e6e7372ac01db4d8",
-    "results_length_matched/features.csv": "b61cf98d66f960a2497c5ba5ba5cfb479289d48de94b3605b96009952532b68c",
     "data/semantic/pairs.jsonl": "a65187a8d360a887d5f639b0dc82e8cdf058aa1f6b094208a5a24c889e50d088",
     "data/semantic_full/pairs.jsonl": "5081d5aa5253b81ad99fa0ae087343016abada0ff6d13e981f866072269c3ba7",
     "data/semantic_clean/pairs.jsonl": "8da5f641dd186d751558d2788615a1c22f738dc8d091e27a961ca4dbf49ab9f5",
@@ -34,7 +30,7 @@
   "maximum_words": 1000,
   "reserve_sources": 30,
   "model": "en_core_web_sm",
-  "target_sources_per_domain": 20,
+  "target_sources_per_domain": null,
   "generator_balance": "prefer diversity without relaxing semantic or grammatical screening",
   "conditions": [
     "hedging_complete",
@@ -98,5 +94,32 @@
   "max_per_cell": 20,
   "max_unique_candidates_per_domain": 40,
   "candidate_search_amendment": "Before any NLI scoring, initial source search found only 51 independent eligible originals under a per-generator candidate cap that could count variants of the same source. Search now counts globally unique source groups, increases the computational cap to 20 per domain/generator and stops at 40 independent eligible candidates per domain. No grammatical/semantic filter, target count, random seed, label or NLI setting is relaxed.",
-  "candidate_search_amended_utc": "2026-11-11T20:35:16.097856+00:00"
+  "candidate_search_amended_utc": "2026-11-11T20:35:16.097856+00:00",
+  "native_pool_amended_utc": "2026-11-12T01:29:28.985847+00:00",
+  "native_pool_amendment": "Before any new NLI inference: all 1976 eligible-marker records under the initial exclusion set were screened and yielded only 51 independent applicable originals (29 Essay, 14 WritingPrompts, 8 Reuters); no computational cap was responsible. Remove only the two stylometry-feature CSVs from source exclusions. Their feature extraction did not use semantic labels, NLI scores or threshold calibration. Retain all six previous semantic-panel exclusions, connected-source and canonical-text exclusions. Keep 60 sources, target 20/domain, 120 alterations, original seed, rules and NLI settings. Sources may have appeared in prior stylometry analyses; they are new to the previous declared semantic panels, not globally untouched texts.",
+  "previous_stylometry_inputs_not_excluded": [
+    {
+      "path": "results/features.csv",
+      "sha256": "6284e19237e9132b5a0f337ee60fed3540b6aa260910cce8e6e7372ac01db4d8"
+    },
+    {
+      "path": "results_length_matched/features.csv",
+      "sha256": "b61cf98d66f960a2497c5ba5ba5cfb479289d48de94b3605b96009952532b68c"
+    }
+  ],
+  "grammatical_guard_amendment": "Before any NLI inference, reject leading list bullets, finite verbs inside parser-derived subject subtrees, uncertain disjunctive subject agreement, and be-able ability constructions. Lower the article A inside preserved possibility wrappers. These conservative fixes do not broaden semantic eligibility or use scores.",
+  "preferred_sources_per_domain": 20,
+  "planned_actual_domain_allocation": {
+    "Essay": 22,
+    "Reuters": 16,
+    "WritingPrompts": 22
+  },
+  "domain_quota_amended_utc": "2026-11-12T01:34:36.405944+00:00",
+  "domain_quota_amendment": "Before NLI inference: expanded native screening found 82 independent eligible originals (40 Essay computational cap, 26 WritingPrompts, 16 Reuters). Keep 60 originals, 120 alterations and 60 faithful controls; balanced deterministic selection gives 22 Essay, 22 WritingPrompts and 16 Reuters. Treat 20/domain as preference, not requirement. No semantic/grammatical rule, threshold or model is changed. If textual review rejects a source and its same-domain reserve is exhausted, use the next deterministic score-blind reserve from another domain and log the replacement before inference.",
+  "score_free_candidate_screening_reference": {
+    "path": "results_hedging_extension/candidate_pool_debug_20261112T013316Z.jsonl",
+    "sha256": "ce428549191bd47b6007f1adeb5cda5aebcc3fc0f29485c80380dfffc0afa364",
+    "generator_code_sha256": "9f82314a01073be402c56e1368f29eff6bce1c3e07b48c0a4bb180dbdf21eab0",
+    "candidate_count": 82
+  }
 }

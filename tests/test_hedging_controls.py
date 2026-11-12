@@ -211,6 +211,7 @@ class NativeHedgeTransformationTests(unittest.TestCase):
             ("The treatments may have caused these minor effects.", "The treatments have caused these minor effects."),
             ("The treatment may improve the final outcome.", "The treatment improves the final outcome."),
             ("The measure may vary across different population groups.", "The measure varies across different population groups."),
+            ("A treatment may improve the final outcome.", "A treatment improves the final outcome."),
         ):
             with self.subTest(text=text):
                 triple = self.triple(text)
@@ -218,6 +219,7 @@ class NativeHedgeTransformationTests(unittest.TestCase):
                 self.assertEqual(triple["complete"], expected)
                 self.assertIn("probably", triple["partial"].lower())
                 self.assertTrue(triple["preserved"].startswith("It is possible that "))
+                self.assertFalse(triple["preserved"].startswith("It is possible that A "))
                 self.assertEqual(len({text, triple["complete"], triple["partial"], triple["preserved"]}), 4)
 
     def test_proposition_wrapper_and_probability_adverb_have_distinct_partial_condition(self):
@@ -244,6 +246,10 @@ class NativeHedgeTransformationTests(unittest.TestCase):
             "The treatment may possibly be effective in this setting.",
             "The treatment may reduce the risk and improve outcomes.",
             "The study began in May and ended in June.",
+            "The essay length (or word count) may vary.",
+            "- A brief comment about cocoa prices in other markets may be included.",
+            "The Reaper sensed Drakov might prove a worthy substitute.",
+            "Those countries may be able to benefit from cheap labor.",
         ):
             with self.subTest(text=text):
                 self.assertIsNone(self.triple(text))
