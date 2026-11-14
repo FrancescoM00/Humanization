@@ -1,0 +1,13 @@
+source_id,source_group_id,domain,generator,original_word_count,system,n_ratings,mean_rating,median_rating,sd_rating,min_rating,max_rating,ceiling_rate,rating_1_count,rating_2_count,rating_3_count,rating_4_count,rating_5_count,rating_1_fraction,rating_2_fraction,rating_3_fraction,rating_4_fraction,rating_5_fraction
+Essay:401:9ca17791d9a2f1ab,Essay:401:9ca17791d9a2f1ab,Essay,GPT4All,136,dipper,12,2.5,2.5,0.5222329678670935,2,3,0.0,0,6,6,0,0,0.0,0.5,0.5,0.0,0.0
+Essay:401:9ca17791d9a2f1ab,Essay:401:9ca17791d9a2f1ab,Essay,GPT4All,136,dipper_context3,12,3.3333333333333335,3.0,0.4923659639173309,3,4,0.0,0,0,8,4,0,0.0,0.0,0.6666666666666666,0.3333333333333333,0.0
+Essay:401:9ca17791d9a2f1ab,Essay:401:9ca17791d9a2f1ab,Essay,GPT4All,136,qwen14b_humanize,12,4.583333333333333,5.0,0.5149286505444371,4,5,0.5833333333333334,0,0,0,5,7,0.0,0.0,0.0,0.4166666666666667,0.5833333333333334
+Essay:401:9ca17791d9a2f1ab,Essay:401:9ca17791d9a2f1ab,Essay,GPT4All,136,qwen_humanize,12,3.8333333333333335,4.0,0.38924947208076144,3,4,0.0,0,0,2,10,0,0.0,0.0,0.16666666666666666,0.8333333333333334,0.0
+Essay:811:7c55fe56dd8a539a,Essay:811:7c55fe56dd8a539a,Essay,Dolly,147,dipper,12,3.0,3.0,0.0,3,3,0.0,0,0,12,0,0,0.0,0.0,1.0,0.0,0.0
+Essay:811:7c55fe56dd8a539a,Essay:811:7c55fe56dd8a539a,Essay,Dolly,147,dipper_context3,12,3.25,3.0,0.45226701686664544,3,4,0.0,0,0,9,3,0,0.0,0.0,0.75,0.25,0.0
+Essay:811:7c55fe56dd8a539a,Essay:811:7c55fe56dd8a539a,Essay,Dolly,147,qwen14b_humanize,12,3.6666666666666665,4.0,0.4923659639173309,3,4,0.0,0,0,4,8,0,0.0,0.0,0.3333333333333333,0.6666666666666666,0.0
+Essay:811:7c55fe56dd8a539a,Essay:811:7c55fe56dd8a539a,Essay,Dolly,147,qwen_humanize,12,3.5,3.5,0.5222329678670935,3,4,0.0,0,0,6,6,0,0.0,0.0,0.5,0.5,0.0
+Reuters:955:09bab6378b5df91f,Reuters:955:09bab6378b5df91f,Reuters,Claude,170,dipper,12,3.75,4.0,0.45226701686664544,3,4,0.0,0,0,3,9,0,0.0,0.0,0.25,0.75,0.0
+Reuters:955:09bab6378b5df91f,Reuters:955:09bab6378b5df91f,Reuters,Claude,170,dipper_context3,12,3.75,4.0,0.45226701686664544,3,4,0.0,0,0,3,9,0,0.0,0.0,0.25,0.75,0.0
+Reuters:955:09bab6378b5df91f,Reuters:955:09bab6378b5df91f,Reuters,Claude,170,qwen14b_humanize,12,4.75,5.0,0.45226701686664544,4,5,0.75,0,0,0,3,9,0.0,0.0,0.0,0.25,0.75
+Reuters:955:09bab6378b5df91f,Reuters:955:09bab6378b5df91f,Reuters,Claude,170,qwen_humanize,12,4.0,4.0,0.0,4,4,0.0,0,0,0,12,0,0.0,0.0,0.0,1.0,0.0

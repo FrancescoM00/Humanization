@@ -1,0 +1,4 @@
+source_id,source_group_id,domain,generator,original_word_count,length_bin,eligible_generation,planned_requests,valid_requests,invalid_requests,missing_requests,complete_panel,status
+Reuters:955:09bab6378b5df91f,Reuters:955:09bab6378b5df91f,Reuters,Claude,170,150–299,True,12,12,0,0,True,complete
+Essay:811:7c55fe56dd8a539a,Essay:811:7c55fe56dd8a539a,Essay,Dolly,147,<150,True,12,12,0,0,True,complete
+Essay:401:9ca17791d9a2f1ab,Essay:401:9ca17791d9a2f1ab,Essay,GPT4All,136,<150,True,12,12,0,0,True,complete

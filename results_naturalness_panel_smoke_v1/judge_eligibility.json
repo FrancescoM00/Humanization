@@ -1,0 +1,31 @@
+{
+  "protocol": "groq_panel_naturalness_williams_v1",
+  "systems": [
+    "qwen_humanize",
+    "qwen14b_humanize",
+    "dipper",
+    "dipper_context3"
+  ],
+  "seed": 42,
+  "failure_policy": "complete_panel_no_replacement",
+  "selection": "Source-id hash ranking before generation-status checks; no replacement",
+  "n_candidate_sources": 126,
+  "n_selected_sources": 3,
+  "n_eligible_sources": 3,
+  "n_generation_failure_sources": 0,
+  "n_eligible_panels": 3,
+  "n_generation_failure_panels": 0,
+  "n_failed_generations": 0,
+  "selected_source_ids": [
+    "Reuters:955:09bab6378b5df91f",
+    "Essay:811:7c55fe56dd8a539a",
+    "Essay:401:9ca17791d9a2f1ab"
+  ],
+  "failures": [],
+  "input_rewrites": [
+    {
+      "name": "rewrites.jsonl",
+      "sha256": "16325f4b9668e4ee3d1c18cd9ddad9609529f2bb58b07370e1b27302a815725d"
+    }
+  ]
+}
