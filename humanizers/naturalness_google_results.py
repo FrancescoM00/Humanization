@@ -1,10 +1,16 @@
 """Controlla i metadati di pensiero e normalizza le sole risposte Google valide."""
 from __future__ import annotations
 
+import re
+
 
 _COUNTERS = (
     "promptTokenCount", "candidatesTokenCount", "totalTokenCount",
     "toolUsePromptTokenCount", "thoughtsTokenCount",
+)
+_NON_TEXT_PART_FIELDS = (
+    "functionCall", "functionResponse", "inlineData", "fileData",
+    "executableCode", "codeExecutionResult",
 )
 
 
@@ -13,32 +19,56 @@ def _token_count(value):
     return value if type(value) is int and value >= 0 else None
 
 
-def _thought_parts(raw):
+def _empty_thought_part(part):
+    """Riconosce soltanto una parte di pensiero testuale priva di contenuto."""
+    return (isinstance(part, dict) and part.get("thought") is True
+            and isinstance(part.get("text"), str) and not part["text"].strip()
+            and set(part) <= {"thought", "text", "thoughtSignature", "thought_signature"})
+
+
+def _thought_part_counts(raw):
+    """Conserva i marcatori vuoti e tratta quelli malformati come non sicuri."""
+    empty, nonempty = 0, 0
     if not isinstance(raw, dict) or not isinstance(raw.get("candidates"), list):
-        return False
+        return empty, nonempty
     for candidate in raw["candidates"]:
         if not isinstance(candidate, dict):
             continue
         content = candidate.get("content")
         if not isinstance(content, dict) or not isinstance(content.get("parts"), list):
             continue
-        if any(isinstance(part, dict) and part.get("thought") is True
-               for part in content["parts"]):
-            return True
-    return False
+        for part in content["parts"]:
+            if isinstance(part, dict) and part.get("thought") is True:
+                if _empty_thought_part(part):
+                    empty += 1
+                else:
+                    nonempty += 1
+    return empty, nonempty
+
+
+def _normalize_json_code_fence(text):
+    """Rimuove solo un unico blocco Markdown che contiene l'intero oggetto JSON."""
+    match = re.fullmatch(r"```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```", text.strip(), re.IGNORECASE)
+    if match:
+        body = match.group(1)
+        if "```" not in body and body.lstrip().startswith("{") and body.rstrip().endswith("}"):
+            return body, "single_json_code_fence"
+    return text, "none"
 
 
 def inspect_google_thinking(raw):
     """Distingue lo zero esplicito da quello ricavato dal bilancio dei token.
 
     L'assenza dell'intero usage non viene mai interpretata come assenza di
-    pensiero. Una parte marcata come pensiero o contatori contraddittori
-    impediscono la verifica anche se il provider dichiara zero.
+    pensiero. Le parti di pensiero vuote rimangono contate separatamente;
+    parti non vuote, malformate o contatori contraddittori impediscono la verifica.
     """
-    has_parts = _thought_parts(raw)
+    empty_parts, nonempty_parts = _thought_part_counts(raw)
     result = dict(thoughts_token_count=None, thoughts_field_present=False,
                   thoughts_evidence="unknown", zero_thoughts_verified=False,
-                  has_thought_parts=has_parts)
+                  has_thought_parts=bool(empty_parts or nonempty_parts),
+                  has_nonempty_thought_parts=bool(nonempty_parts),
+                  empty_thought_part_count=empty_parts, nonempty_thought_part_count=nonempty_parts)
     usage = raw.get("usageMetadata") if isinstance(raw, dict) else None
     if not isinstance(usage, dict):
         return result
@@ -61,12 +91,12 @@ def inspect_google_thinking(raw):
         result["thoughts_token_count"] = value
         result["thoughts_evidence"] = "explicit_zero" if value == 0 else "explicit_positive"
         result["zero_thoughts_verified"] = bool(
-            value == 0 and not malformed and not has_parts
+            value == 0 and not malformed and not nonempty_parts
             and (unaccounted is None or unaccounted == 0)
         )
     elif not malformed and known_balance and unaccounted == 0:
         result.update(thoughts_token_count=0, thoughts_evidence="usage_balance_zero",
-                      zero_thoughts_verified=not has_parts)
+                      zero_thoughts_verified=not nonempty_parts)
     return result
 
 
@@ -86,8 +116,9 @@ def _reported_model(raw, requested):
 def normalize_google_response(raw, model):
     """Conserva il modello effettivo e prepara il formato del parser JSON comune.
 
-    La normalizzazione non corregge né completa voti o JSON: il parser del
-    pannello continua ad accettare soltanto i quattro interi previsti.
+    La normalizzazione ignora i marcatori di pensiero vuoti e può rimuovere
+    un solo involucro Markdown. Non corregge né completa voti o JSON: il parser
+    del pannello continua ad accettare soltanto i quattro interi previsti.
     """
     if not isinstance(raw, dict):
         raise ValueError("La risposta Google deve essere un oggetto JSON")
@@ -126,12 +157,12 @@ def normalize_google_response(raw, model):
             raise ValueError("Una parte Google non ha il formato previsto")
         if "thought" in part and type(part["thought"]) is not bool:
             raise ValueError("L'indicatore di pensiero Google non è booleano")
-        if part.get("thought") is True:
-            raise ValueError("Il candidato Google contiene una parte di pensiero")
-        if any(key in part for key in (
-                "functionCall", "functionResponse", "inlineData", "fileData",
-                "executableCode", "codeExecutionResult")):
+        if any(key in part for key in _NON_TEXT_PART_FIELDS):
             raise ValueError("Sono ammessi soltanto voti testuali, senza strumenti o dati multimediali")
+        if part.get("thought") is True:
+            if _empty_thought_part(part):
+                continue
+            raise ValueError("Il candidato Google contiene una parte di pensiero non vuota o malformata")
         text = part.get("text")
         if not isinstance(text, str):
             raise ValueError("Una parte del candidato Google non contiene testo")
@@ -139,12 +170,14 @@ def normalize_google_response(raw, model):
     text = "".join(texts)
     if not text.strip():
         raise ValueError("Il candidato Google contiene soltanto testo vuoto")
+    text, text_normalization = _normalize_json_code_fence(text)
     usage = raw["usageMetadata"]
     counts = {key: _token_count(usage.get(key)) for key in _COUNTERS}
     if any(counts[key] is None for key in ("promptTokenCount", "candidatesTokenCount", "totalTokenCount")):
         raise ValueError("Mancano contatori Google interi per prompt, candidato o totale")
     return dict(
         model=model, provider_model_version=version, provider_model_match_rule=match_rule,
+        response_text_normalization=text_normalization,
         choices=[dict(finish_reason="stop", message=dict(content=text))],
         usage=dict(prompt_tokens=counts["promptTokenCount"],
                    completion_tokens=counts["candidatesTokenCount"],

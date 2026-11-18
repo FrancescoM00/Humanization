@@ -15,7 +15,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "humaniz
 
 from humanizers.naturalness import read_jsonl
 from humanizers.naturalness_google_plan import GOOGLE_MODEL, prepare_google_comparison
-from humanizers.naturalness_google_runner import run_google_panel_plan
+from humanizers.naturalness_google_runner import reparse_saved_google_responses, run_google_panel_plan
 from humanizers.naturalness_judge_comparison_analysis import analyze_judge_comparison
 from humanizers.naturalness_panel_analysis import analyze_panel
 
@@ -35,12 +35,15 @@ def main():
     parser.add_argument("--bootstrap", type=int, default=2000)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--reparse-saved", action="store_true",
+                        help="Rilegge offline le risposte grezze conservando originale e audit")
     args = parser.parse_args()
     if (args.bootstrap < 2 or args.max_requests < 1 or args.max_retries < 0
             or not 0 <= args.min_request_interval <= 60):
         parser.error("Bootstrap almeno due, budget positivo e pausa fra zero e sessanta secondi")
     plan, reference_plan, reference_rows, setup = prepare_google_comparison(
         args.reference, args.output, model=args.model)
+    reparse = reparse_saved_google_responses(plan, args.output) if args.reparse_saved else None
     manifest = run_google_panel_plan(plan, args.output, execute=args.execute, stage=args.stage,
         max_requests=args.max_requests, max_retries=args.max_retries,
         min_request_interval=args.min_request_interval)
@@ -69,6 +72,8 @@ def main():
         blocked_reason=manifest.get("blocked_reason"), pilot_check=pilot,
         n_common_complete_sources=comparison["n_common_complete_sources"],
         human_annotation_produced=False)
+    if reparse is not None:
+        console["saved_response_reparse"] = reparse
     if manifest.get("last_provider_error"):
         console["last_provider_error"] = manifest["last_provider_error"]
     print(json.dumps(console, ensure_ascii=False, indent=2))

@@ -334,3 +334,196 @@ def test_invalid_runtime_options_fail_without_a_client(tmp_path, monkeypatch, kw
     monkeypatch.setattr(runner, "GoogleGemmaClient", no_client)
     with pytest.raises(ValueError):
         run(plan(), tmp_path, execute=True, **kwargs)
+
+
+def _legacy_checkpoint(path, raws, *, statuses=None):
+    """Ricrea il formato v1 salvato, senza inviare richieste o cambiare i raw."""
+    p = plan(1)
+    path.mkdir(parents=True, exist_ok=True)
+    (path/"judge_plan.json").write_text(json.dumps(p) + "\n")
+    rows, attempts = [], []
+    for index, raw in enumerate(raws):
+        item = p["requests"][index]
+        evidence = runner.inspect_google_thinking(raw)
+        legacy = {key: evidence[key] for key in (
+            "thoughts_token_count", "thoughts_field_present", "thoughts_evidence",
+            "zero_thoughts_verified", "has_thought_parts")}
+        if legacy["has_thought_parts"]:
+            legacy["zero_thoughts_verified"] = False
+        status = statuses[index] if statuses is not None else "invalid_response"
+        row = {name: deepcopy(item[name]) for name in runner.ITEM_METADATA}
+        row.update(provider="google", label_source="LLM", thinking_level="minimal",
+                   requested_model=p["model"], response_model=p["model"] if status == "ok" else None,
+                   provider_model_version=raw.get("modelVersion"), raw_response=deepcopy(raw),
+                   usage_metadata=deepcopy(raw.get("usageMetadata", {})),
+                   usage=runner._google_usage(raw, legacy), google_thinking_evidence=legacy,
+                   status=status, created_at="2026-11-18T10:00:00+00:00", elapsed_seconds=1.25)
+        if status == "ok":
+            row.update(provider_model_match_rule="exact",
+                       judgment={"ratings": {f"T{i}": 4 for i in range(1, 5)}})
+        else:
+            row.update(error="Errore del parser v1", validation_reason="positive_thinking_tokens_or_parts"
+                       if legacy["has_thought_parts"] else "invalid_model_response")
+        rows.append(row)
+        attempts.append(dict(request_id=item["request_id"], attempt_number=index+1,
+                             created_at="2026-11-18T09:59:59+00:00"))
+    for name, values in [("judgments.jsonl", rows), ("api_attempts.jsonl", attempts)]:
+        (path/name).write_text("".join(json.dumps(row, ensure_ascii=False)+"\n" for row in values))
+    return p
+
+
+def _empty_marker_fenced_response():
+    raw = response(text='```json\n{"ratings":{"T1":5,"T2":4,"T3":3,"T4":4}}\n```',
+                   usage=dict(promptTokenCount=980, candidatesTokenCount=52, totalTokenCount=1032))
+    raw["candidates"][0]["content"]["parts"].insert(0, dict(text="", thought=True))
+    return raw
+
+
+def _file_snapshot(path):
+    return {str(p.relative_to(path)): (p.read_bytes(), p.stat().st_mtime_ns)
+            for p in path.rglob("*") if p.is_file()}
+
+
+def test_offline_reparse_recovers_the_saved_user_response_without_another_post(tmp_path, monkeypatch):
+    raw = _empty_marker_fenced_response()
+    p = _legacy_checkpoint(tmp_path, [raw])
+    original = (tmp_path/"judgments.jsonl").read_bytes()
+    ledger = (tmp_path/"api_attempts.jsonl").read_bytes()
+    monkeypatch.setattr(runner, "GoogleGemmaClient", no_client)
+    audit = runner.reparse_saved_google_responses(p, tmp_path)
+    assert audit["status"] == "reparsed" and audit["api_requests"] == 0
+    assert audit["n_records"] == audit["n_reclassified"] == 1
+    saved = read_jsonl(tmp_path/"judgments.jsonl")[0]
+    assert saved["status"] == "ok"
+    assert saved["judgment"] == {"ratings": {"T1": 5, "T2": 4, "T3": 3, "T4": 4}}
+    assert saved["raw_response"] == raw
+    assert saved["created_at"] == "2026-11-18T10:00:00+00:00" and saved["elapsed_seconds"] == 1.25
+    assert saved["parser_version"] == runner.PARSER_VERSION
+    assert saved["response_text_normalization"] == "single_json_code_fence"
+    assert saved["google_thinking_evidence"]["has_thought_parts"]
+    assert not saved["google_thinking_evidence"]["has_nonempty_thought_parts"]
+    assert "error" not in saved and "validation_reason" not in saved
+    assert (tmp_path/"reparse_v2/judgments_before.jsonl").read_bytes() == original
+    assert (tmp_path/"api_attempts.jsonl").read_bytes() == ledger
+    assert audit["raw_responses_sha256_before"] == audit["raw_responses_sha256_after"]
+    result = run(p, tmp_path, execute=True, max_requests=1)
+    assert result["completed_valid_requests"] == result["generation_post_attempts"] == 1
+    assert result["blocked_reason"] == "request_budget_exhausted"
+    assert result["token_usage"]["responses_with_empty_thought_markers"] == 1
+    assert json.loads((tmp_path/"pilot_check.json").read_text())["empty_thought_marker_responses"] == 1
+
+
+def test_offline_analysis_clears_the_old_thinking_failure_after_reparse(tmp_path, monkeypatch):
+    p = _legacy_checkpoint(tmp_path, [_empty_marker_fenced_response()])
+    (tmp_path/"judge_run.json").write_text(json.dumps(dict(
+        status="partial", blocked_reason="positive_thinking_tokens_or_parts",
+        last_provider_error=None)))
+    runner.reparse_saved_google_responses(p, tmp_path)
+    monkeypatch.setattr(runner, "GoogleGemmaClient", no_client)
+    manifest = run(p, tmp_path)
+    assert manifest["completed_valid_requests"] == manifest["generation_post_attempts"] == 1
+    assert manifest["blocked_reason"] is None
+    assert manifest["last_provider_error"] is None
+    assert manifest["parser_version"] == runner.PARSER_VERSION
+
+
+def test_offline_analysis_keeps_real_http_errors_after_reparse(tmp_path, monkeypatch):
+    p = _legacy_checkpoint(tmp_path, [_empty_marker_fenced_response()])
+    (tmp_path/"judge_run.json").write_text(json.dumps(dict(
+        status="partial", blocked_reason="provider_http_503", last_provider_error="Google busy")))
+    runner.reparse_saved_google_responses(p, tmp_path)
+    monkeypatch.setattr(runner, "GoogleGemmaClient", no_client)
+    manifest = run(p, tmp_path)
+    assert manifest["blocked_reason"] == "provider_http_503"
+    assert manifest["last_provider_error"] == "Google busy"
+
+
+def test_reparse_is_idempotent_even_after_new_v2_rows_are_appended(tmp_path):
+    p = _legacy_checkpoint(tmp_path, [_empty_marker_fenced_response()])
+    runner.reparse_saved_google_responses(p, tmp_path)
+    before = _file_snapshot(tmp_path)
+    repeated = runner.reparse_saved_google_responses(p, tmp_path)
+    assert repeated["status"] == "already_current" and repeated["n_reclassified"] == 0
+    assert _file_snapshot(tmp_path) == before
+    old_backup = (tmp_path/"reparse_v2/judgments_before.jsonl").read_bytes()
+    old_audit = (tmp_path/"reparse_v2/audit.json").read_bytes()
+    api = FakeClient()
+    result = run(p, tmp_path, execute=True, client=api, max_requests=2)
+    assert len(api.posts) == 1 and result["completed_valid_requests"] == 2
+    grown = _file_snapshot(tmp_path)
+    repeated = runner.reparse_saved_google_responses(p, tmp_path)
+    assert repeated["status"] == "already_current" and repeated["n_records"] == 2
+    assert _file_snapshot(tmp_path) == grown
+    assert (tmp_path/"reparse_v2/judgments_before.jsonl").read_bytes() == old_backup
+    assert (tmp_path/"reparse_v2/audit.json").read_bytes() == old_audit
+
+
+def test_reparse_applies_the_same_parser_to_valid_and_invalid_records(tmp_path):
+    p = _legacy_checkpoint(tmp_path, [response(), _empty_marker_fenced_response()],
+                           statuses=["ok", "invalid_response"])
+    audit = runner.reparse_saved_google_responses(p, tmp_path)
+    rows = read_jsonl(tmp_path/"judgments.jsonl")
+    assert audit["statuses_before"] == {"ok": 1, "invalid_response": 1}
+    assert audit["statuses_after"] == {"ok": 2} and audit["n_reclassified"] == 1
+    assert all(row["parser_version"] == runner.PARSER_VERSION for row in rows)
+    assert rows[0]["response_text_normalization"] == "none"
+    assert rows[1]["response_text_normalization"] == "single_json_code_fence"
+
+
+@pytest.mark.parametrize("raw,reason", [
+    (response(thoughts=121), "positive_thinking_tokens_or_parts"),
+    (response(thought_parts=True), "positive_thinking_tokens_or_parts"),
+    (response(usage={}), "unverified_thinking_tokens"),
+    (response(text="This is not JSON."), "invalid_model_response"),
+    (response(version="another-model"), "provider_model_mismatch"),
+])
+def test_reparse_does_not_turn_actual_invalid_data_into_valid_ratings(tmp_path, raw, reason):
+    p = _legacy_checkpoint(tmp_path, [raw])
+    before_raw = deepcopy(raw)
+    ledger = (tmp_path/"api_attempts.jsonl").read_bytes()
+    audit = runner.reparse_saved_google_responses(p, tmp_path)
+    row = read_jsonl(tmp_path/"judgments.jsonl")[0]
+    assert audit["n_reclassified"] == 0 and row["status"] == "invalid_response"
+    assert row["validation_reason"] == reason and "judgment" not in row
+    assert row["raw_response"] == before_raw
+    assert (tmp_path/"api_attempts.jsonl").read_bytes() == ledger
+
+
+@pytest.mark.parametrize("mutation", ["source", "provider", "duplicate", "attempt", "raw"])
+def test_reparse_rejects_bad_provenance_before_creating_a_backup(tmp_path, mutation):
+    p = _legacy_checkpoint(tmp_path, [_empty_marker_fenced_response()])
+    rows = read_jsonl(tmp_path/"judgments.jsonl")
+    if mutation == "source":
+        rows[0]["source_id"] = "another-source"
+    elif mutation == "provider":
+        rows[0]["provider"] = "another-provider"
+    elif mutation == "duplicate":
+        rows.append(deepcopy(rows[0]))
+    elif mutation == "raw":
+        rows[0]["raw_response"] = None
+    elif mutation == "attempt":
+        attempt = read_jsonl(tmp_path/"api_attempts.jsonl")[0]
+        attempt["attempt_number"] = 8
+        (tmp_path/"api_attempts.jsonl").write_text(json.dumps(attempt)+"\n")
+    (tmp_path/"judgments.jsonl").write_text("".join(json.dumps(row)+"\n" for row in rows))
+    before = _file_snapshot(tmp_path)
+    with pytest.raises(ValueError):
+        runner.reparse_saved_google_responses(p, tmp_path)
+    assert _file_snapshot(tmp_path) == before
+    assert not (tmp_path/"reparse_v2").exists()
+
+
+def test_reparse_preserves_the_error_ledger_and_post_numbering(tmp_path):
+    p = _legacy_checkpoint(tmp_path, [_empty_marker_fenced_response()])
+    first = read_jsonl(tmp_path/"api_attempts.jsonl")[0]
+    second = dict(first, attempt_number=2)
+    (tmp_path/"api_attempts.jsonl").write_text(json.dumps(first)+"\n"+json.dumps(second)+"\n")
+    error = dict(request_id=first["request_id"], attempt_number=1, status_code=503, error="Busy")
+    (tmp_path/"api_errors.jsonl").write_text(json.dumps(error)+"\n")
+    ledger = (tmp_path/"api_attempts.jsonl").read_bytes()
+    errors = (tmp_path/"api_errors.jsonl").read_bytes()
+    runner.reparse_saved_google_responses(p, tmp_path)
+    assert (tmp_path/"api_attempts.jsonl").read_bytes() == ledger
+    assert (tmp_path/"api_errors.jsonl").read_bytes() == errors
+    result = run(p, tmp_path, max_requests=2)
+    assert result["generation_post_attempts"] == 2 and result["completed_valid_requests"] == 1

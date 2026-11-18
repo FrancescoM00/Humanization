@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 from collections import Counter
+from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
+import tempfile
 import time
 
 from .naturalness import APIError, _digest, _retry_seconds, read_jsonl
@@ -18,6 +21,7 @@ from .naturalness_panel_runner import ITEM_METADATA, _append_jsonl, _safe_error,
 
 
 RETRYABLE_HTTP = {429, 500, 502, 503, 504}
+PARSER_VERSION = "google_response_format_v2"
 
 
 def _read_rows(path):
@@ -46,15 +50,16 @@ def _google_usage(raw, evidence):
 
 
 def _thinking_problem(evidence):
-    if evidence.get("has_thought_parts") or (type(evidence.get("thoughts_token_count")) is int
-                                             and evidence["thoughts_token_count"] > 0):
+    has_content = evidence.get("has_nonempty_thought_parts", evidence.get("has_thought_parts"))
+    if has_content or (type(evidence.get("thoughts_token_count")) is int
+                       and evidence["thoughts_token_count"] > 0):
         return "positive_thinking_tokens_or_parts"
     if not evidence.get("zero_thoughts_verified"):
         return "unverified_thinking_tokens"
     return None
 
 
-def _validate_stored(plan, rows, attempts, errors, by_request):
+def _validate_stored(plan, rows, attempts, errors, by_request, *, check_derived=True):
     """Rivalida le risposte grezze e non si fida dei soli flag del checkpoint."""
     attempted = set()
     for number, item in enumerate(attempts, 1):
@@ -93,6 +98,10 @@ def _validate_stored(plan, rows, attempts, errors, by_request):
         raw_version = raw.get("modelVersion")
         if first_observed_version is None and _version_matches(raw_version, plan["model"]):
             first_observed_version = raw_version
+        if not check_derived:
+            # Solo il ricalcolo esplicito può sostituire i campi derivati dal vecchio parser.
+            done.add(identifier)
+            continue
         if row.get("google_thinking_evidence") != evidence:
             raise ValueError("Il controllo dei token di pensiero non coincide con la risposta grezza")
         usage_meta = raw.get("usageMetadata", {})
@@ -110,6 +119,9 @@ def _validate_stored(plan, rows, attempts, errors, by_request):
                     or row.get("provider_model_version") != normalized.get("provider_model_version")
                     or row.get("provider_model_match_rule") != normalized.get("provider_model_match_rule")):
                 raise ValueError("Il modello effettivo della risposta Google non coincide")
+            if (row.get("parser_version") == PARSER_VERSION
+                    and row.get("response_text_normalization") != normalized.get("response_text_normalization", "none")):
+                raise ValueError("La normalizzazione del testo non coincide con la risposta grezza")
             version = normalized.get("provider_model_version")
             if not isinstance(version, str) or not version:
                 raise ValueError("Un giudizio Google valido deve conservare modelVersion")
@@ -151,6 +163,8 @@ def _pilot_check(plan, rows, attempts, errors):
     invalid = len(selected)-len(valid)
     positive = sum(_thinking_problem(row["google_thinking_evidence"]) == "positive_thinking_tokens_or_parts"
                    for row in selected)
+    empty_markers = sum(row["google_thinking_evidence"].get("empty_thought_part_count", 0) > 0
+                        for row in selected)
     unknown = sum(_thinking_problem(row["google_thinking_evidence"]) == "unverified_thinking_tokens"
                   for row in selected)
     fraction = invalid/len(selected) if selected else None
@@ -182,6 +196,7 @@ def _pilot_check(plan, rows, attempts, errors):
         invalid_responses=invalid, invalid_fraction=fraction,
         all_planned_requests_answered=all_accounted, n_complete_source_panels=len(complete),
         complete_source_ids=complete, positive_thinking_responses=positive,
+        empty_thought_marker_responses=empty_markers,
         unverified_thinking_responses=unknown, model_version_changed=version_changes,
         observed_provider_model_versions=sorted(observed_versions),
         thinking_evidence_counts=dict(Counter(row["google_thinking_evidence"].get("thoughts_evidence", "unknown")
@@ -189,7 +204,7 @@ def _pilot_check(plan, rows, attempts, errors):
         post_attempts=sum(item["request_id"] in expected for item in attempts),
         http_429_count=error_counts["429"], http_503_count=error_counts["503"], warnings=warning,
         pass_rule="All pilot slots answered; invalid fraction below 5%; at least one complete panel; "
-                  "all responses verified zero thought tokens without thought parts; stable model version",
+                  "all responses verified zero thought tokens without nonempty thought parts; stable model version",
         minimal_is_not_assumed_to_disable_thinking=True, human_annotation_produced=False,
     )
 
@@ -208,7 +223,131 @@ def _usage_totals(rows):
     totals["responses_with_missing_usage_counts"] = sum(
         any(row.get("usage", {}).get(field) is None for field in
             ("prompt_tokens", "completion_tokens", "total_tokens")) for row in rows)
+    totals["responses_with_empty_thought_markers"] = sum(
+        row["google_thinking_evidence"].get("empty_thought_part_count", 0) > 0 for row in rows)
     return totals
+
+
+def _atomic_bytes(path, content):
+    """Sostituisce un singolo file soltanto dopo averlo scritto integralmente."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    name = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, prefix="." + path.name + ".",
+                                         delete=False) as handle:
+            name = handle.name
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(name, path)
+    finally:
+        if name is not None:
+            Path(name).unlink(missing_ok=True)
+
+
+def _sha256(content):
+    return hashlib.sha256(content).hexdigest()
+
+
+def reparse_saved_google_responses(plan, output):
+    """Rilegge uniformemente il raw già salvato, senza richiedere nuovi voti.
+
+    L'originale rimane in un backup immutabile. Si ricalcolano soltanto stato,
+    voti e metadati derivati; piano, risposte grezze e tentativi non cambiano.
+    """
+    by_request = validate_google_plan(plan)
+    output = Path(output)
+    plan_path = output / "judge_plan.json"
+    if not plan_path.is_file() or _digest(json.loads(plan_path.read_text())) != _digest(plan):
+        raise ValueError("Il piano Google salvato non coincide con quello da ricalcolare")
+    results_path = output / "judgments.jsonl"
+    if not results_path.is_file() or not results_path.stat().st_size:
+        return dict(status="no_saved_responses", parser_version=PARSER_VERSION,
+                    n_records=0, n_reclassified=0, api_requests=0)
+    before = results_path.read_bytes()
+    rows = [json.loads(line) for line in before.splitlines() if line.strip()]
+    ledger_paths = [output / "api_attempts.jsonl", output / "api_errors.jsonl"]
+    ledger_bytes = {path.name: path.read_bytes() if path.is_file() else None for path in ledger_paths}
+    attempts, errors = (_read_rows(path) for path in ledger_paths)
+    _validate_stored(plan, rows, attempts, errors, by_request, check_derived=False)
+    if all(row.get("parser_version") == PARSER_VERSION for row in rows):
+        _validate_stored(plan, rows, attempts, errors, by_request)
+        return dict(status="already_current", parser_version=PARSER_VERSION,
+                    n_records=len(rows), n_reclassified=0, api_requests=0)
+
+    updated, pinned_version = [], None
+    for saved in rows:
+        row = deepcopy(saved)
+        item, raw = by_request[row["request_id"]], row["raw_response"]
+        evidence = inspect_google_thinking(raw)
+        for key in ("judgment", "error", "validation_reason", "validation_error_kind",
+                    "provider_model_match_rule", "response_text_normalization"):
+            row.pop(key, None)
+        row.update(status="invalid_response", response_model=None,
+                   parser_version=PARSER_VERSION, google_thinking_evidence=evidence,
+                   usage_metadata=raw.get("usageMetadata", {}), usage=_google_usage(raw, evidence),
+                   provider_model_version=raw.get("modelVersion"))
+        problem = _thinking_problem(evidence)
+        try:
+            version = raw.get("modelVersion")
+            if not _version_matches(version, plan["model"]):
+                problem = "provider_model_mismatch"
+                row["validation_error_kind"] = "provider_model_version"
+                raise ValueError("La risposta Google non documenta la versione del modello richiesto")
+            if pinned_version is None:
+                pinned_version = version
+            elif version != pinned_version:
+                problem = "provider_model_version_changed"
+                row["validation_error_kind"] = "provider_model_version"
+                raise ValueError("modelVersion differisce da quella già registrata")
+            if problem:
+                raise ValueError("Il controllo Google non verifica zero token di pensiero")
+            normalized = normalize_google_response(raw, plan["model"])
+            ids = [f"T{i+1}" for i in range(len(item["system_order"]))]
+            row["judgment"] = parse_panel_judgment(normalized, plan["model"], ids)
+            row.update(status="ok", response_model=plan["model"],
+                       provider_model_match_rule=normalized.get("provider_model_match_rule"),
+                       response_text_normalization=normalized.get("response_text_normalization", "none"))
+        except (ValueError, TypeError, KeyError) as exc:
+            row.update(error=_safe_error(exc), validation_reason=problem or "invalid_model_response")
+        updated.append(row)
+    _validate_stored(plan, updated, attempts, errors, by_request)
+    if [row["raw_response"] for row in rows] != [row["raw_response"] for row in updated]:
+        raise ValueError("Il ricalcolo non può cambiare le risposte grezze")
+    after = "".join(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n"
+                    for row in updated).encode()
+    backup_path = output / "reparse_v2/judgments_before.jsonl"
+    audit_path = output / "reparse_v2/audit.json"
+    if backup_path.exists() and backup_path.read_bytes() != before:
+        raise ValueError("Esiste già un backup di un altro ricalcolo; non viene sovrascritto")
+    if audit_path.exists():
+        audit = json.loads(audit_path.read_text())
+        if (audit.get("judgments_sha256_before") != _sha256(before)
+                or audit.get("judgments_sha256_after") != _sha256(after)):
+            raise ValueError("L'audit esistente non coincide con il ricalcolo richiesto")
+    else:
+        audit = dict(
+            parser_version=PARSER_VERSION, reason="Empty thought markers and one complete JSON code fence",
+            created_at=datetime.now(timezone.utc).isoformat(), api_requests=0,
+            n_records=len(rows), n_reclassified=sum(a["status"] != b["status"] for a, b in zip(rows, updated)),
+            statuses_before=dict(Counter(row["status"] for row in rows)),
+            statuses_after=dict(Counter(row["status"] for row in updated)),
+            judgments_sha256_before=_sha256(before), judgments_sha256_after=_sha256(after),
+            raw_responses_sha256_before=_digest([row["raw_response"] for row in rows]),
+            raw_responses_sha256_after=_digest([row["raw_response"] for row in updated]),
+            ledger_sha256={name: _sha256(value) if value is not None else None
+                           for name, value in ledger_bytes.items()},
+        )
+    # Tutti i record sono stati verificati prima di creare backup o sostituire file.
+    if results_path.read_bytes() != before or any(
+            (path.read_bytes() if path.is_file() else None) != ledger_bytes[path.name] for path in ledger_paths):
+        raise ValueError("Il checkpoint è cambiato durante il ricalcolo")
+    if not backup_path.exists():
+        _atomic_bytes(backup_path, before)
+    if not audit_path.exists():
+        _atomic_bytes(audit_path, (json.dumps(audit, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode())
+    _atomic_bytes(results_path, after)
+    return dict(status="reparsed", **audit)
 
 
 def run_google_panel_plan(plan, output, *, execute=False, stage="pilot", client=None,
@@ -307,6 +446,7 @@ def run_google_panel_plan(plan, output, *, execute=False, stage="pilot", client=
                     row = {name: item[name] for name in ITEM_METADATA}
                     row.update(provider="google", label_source="LLM", thinking_level="minimal",
                                requested_model=plan["model"], response_model=None, status="invalid_response",
+                               parser_version=PARSER_VERSION,
                                provider_model_version=raw.get("modelVersion"), raw_response=raw,
                                usage_metadata=raw.get("usageMetadata", {}),
                                usage=_google_usage(raw, evidence), google_thinking_evidence=evidence,
@@ -334,7 +474,8 @@ def run_google_panel_plan(plan, output, *, execute=False, stage="pilot", client=
                         ids = [f"T{i+1}" for i in range(len(item["system_order"]))]
                         row["judgment"] = parse_panel_judgment(normalized, plan["model"], ids)
                         row.update(status="ok", response_model=plan["model"], provider_model_version=version,
-                                   provider_model_match_rule=normalized.get("provider_model_match_rule"))
+                                   provider_model_match_rule=normalized.get("provider_model_match_rule"),
+                                   response_text_normalization=normalized.get("response_text_normalization", "none"))
                         pinned_version = version
                     except (ValueError, TypeError, KeyError) as exc:
                         row.update(error=_safe_error(exc, client),
@@ -360,10 +501,20 @@ def run_google_panel_plan(plan, output, *, execute=False, stage="pilot", client=
         status = "partial"
         blocked_reason = previous.get("blocked_reason")
         provider_error = previous.get("last_provider_error")
+        if blocked_reason in {
+                "positive_thinking_tokens_or_parts", "unverified_thinking_tokens",
+                "invalid_model_response", "provider_model_version_changed", "provider_model_mismatch",
+                "pilot_acceptance_criteria_failed", "pilot_not_passed",
+                "stored_invalid_or_incomplete_responses"}:
+            # Il vecchio giudizio del parser non prevale sulla rivalidazione del raw.
+            blocked_reason = ("stored_invalid_or_incomplete_responses"
+                              if any(row["status"] != "ok" for row in rows) else None)
+            provider_error = None
     pilot = _pilot_check(plan, rows, attempts, errors)
     _write_json(output/"pilot_check.json", pilot)
     manifest = dict(
         protocol=plan["protocol"], provider="google", requested_model=plan["model"], stage=stage,
+        parser_version=PARSER_VERSION,
         thinking_level="minimal", minimal_is_not_assumed_to_disable_thinking=True,
         plan_sha256=_digest(plan), status=status, blocked_reason=blocked_reason,
         last_provider_error=provider_error, api_execution_requested=bool(execute),
