@@ -10,6 +10,7 @@ import re
 import time
 
 from .naturalness import APIError, GroqClient, _digest, _retry_seconds, read_jsonl
+from .naturalness_judges import client_for_plan, validate_judge_payload
 
 
 ITEM_METADATA = (
@@ -57,8 +58,7 @@ def _validate_plan(plan):
             raise ValueError("Una fonte ripete lo stesso slot di ordine e ripetizione")
         slots.add(slot)
         payload = item.get("payload", {})
-        if payload.get("model") != plan["model"] or payload.get("reasoning_effort") != "none":
-            raise ValueError("Il modello o l'opzione no-thinking non coincide con il piano")
+        validate_judge_payload(plan, payload)
         by_request[item["request_id"]] = item
     if len({item["source_id"] for item in requests}) != plan.get("n_sources"):
         raise ValueError("Il numero di fonti non coincide con il piano")
@@ -184,7 +184,9 @@ def run_panel_plan(plan, output, *, execute=False, client=None, max_requests=36,
     elif execute and len(attempts) >= max_requests:
         status, blocked_reason = "partial", "request_budget_exhausted"
     elif execute:
-        client = client if client is not None else GroqClient()
+        if client is None:
+            client = (client_for_plan(plan) if plan.get("reasoning_control") == "native_non_reasoning"
+                      else GroqClient())
         model_check = None
         try:
             model_check = client.check_model(plan["model"])
@@ -269,7 +271,8 @@ def run_panel_plan(plan, output, *, execute=False, client=None, max_requests=36,
         max_requests=max_requests, generation_post_attempts=len(attempts),
         min_request_interval_seconds=min_request_interval,
         remaining_request_budget=max(0, max_requests - len(attempts)),
-        model_check=model_check, requested_model=plan["model"], reasoning_effort="none",
+        model_check=model_check, requested_model=plan["model"],
+        reasoning_effort=plan.get("reasoning_effort", "none"),
         human_annotation_produced=False, label_source="LLM",
         no_implicit_model_or_reasoning_fallback=True,
         token_usage=_token_usage(rows), elapsed_seconds_this_run=time.monotonic() - started,
@@ -280,5 +283,7 @@ def run_panel_plan(plan, output, *, execute=False, client=None, max_requests=36,
         primary_scope="Pannelli con tutte le richieste valide; le risposte parziali restano disponibili.",
         **_source_coverage(plan, rows),
     )
+    if plan.get("reasoning_control") == "native_non_reasoning":
+        manifest["reasoning_control"] = "native_non_reasoning"
     (output / "judge_run.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return manifest
