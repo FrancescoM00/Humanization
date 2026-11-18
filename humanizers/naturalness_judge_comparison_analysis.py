@@ -58,6 +58,11 @@ def _plan_slots(plan):
 
 
 def _validate_comparable(reference, candidate):
+    # L'adattatore Google deve conservare integralmente i due messaggi originali.
+    for plan in (reference, candidate):
+        if plan.get("provider") == "google":
+            from .naturalness_google_plan import validate_google_plan
+            validate_google_plan(plan)
     left, right = _plan_slots(reference), _plan_slots(candidate)
     if left.keys() != right.keys():
         raise ValueError("I giudici devono ricevere esattamente gli stessi slot")
@@ -66,9 +71,11 @@ def _validate_comparable(reference, candidate):
             raise ValueError(f"Parametro scientifico diverso tra i giudici: {key}")
     for slot, request in left.items():
         normalized = []
-        for value in (request, right[slot]):
+        for value, plan in ((request, reference), (right[slot], candidate)):
             value = deepcopy(value)
             value.pop("request_id", None)
+            if plan.get("provider") == "google":
+                value.pop("native_payload", None)
             value["payload"].pop("model", None)
             value["payload"].pop("reasoning_effort", None)
             normalized.append(value)
@@ -84,6 +91,14 @@ def _checked_ratings(plan, rows):
             raise ValueError("Stato della risposta non riconosciuto")
         if row["status"] == "ok" and row.get("response_model") != plan["model"]:
             raise ValueError("Il modello effettivo della risposta differisce dal piano")
+        if plan.get("provider") == "google" and row["status"] == "ok":
+            from .naturalness_google_results import normalize_google_response
+            from .naturalness_panel import parse_panel_judgment
+            normalized = normalize_google_response(row.get("raw_response"), plan["model"])
+            ids = [f"T{i+1}" for i in range(len(plan["systems"]))]
+            if (normalized.get("provider_model_version") != row.get("provider_model_version")
+                    or parse_panel_judgment(normalized, plan["model"], ids) != row.get("judgment")):
+                raise ValueError("La risposta Google grezza non conferma versione e voti salvati")
     return _read_ratings(plan, rows)
 
 
@@ -281,6 +296,13 @@ def analyze_judge_comparison(reference_plan, reference_rows, candidate_plan, can
         family_scope="A different model family reduces one direct family overlap but does not guarantee neutrality",
         matched_analyses=summaries, tables=list(tables), figures=plots,
     )
+    if candidate_plan.get("provider") == "google":
+        summary.update(
+            candidate_provider="google", candidate_thinking_level=candidate_plan.get("thinking_level"),
+            google_adapter_note=("Native Google systemInstruction and user contents preserve the exact "
+                "reference messages; JSON is enforced by the same prompt and strict parser. "
+                "thinkingLevel=minimal is not labelled as disabled reasoning; usage metadata is audited."),
+        )
     summary = _json_value(summary)
     (output/"summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2,
                                                 allow_nan=False)+"\n", encoding="utf-8")
