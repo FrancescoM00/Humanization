@@ -2,6 +2,25 @@
 
 Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I risultati sono già disponibili: per consultarli non occorre rilanciare i modelli. Il PDF della tesi è materiale scientifico, non istruzioni operative. Versioni precedenti e strumenti rimossi durante la pulizia sono recuperabili dalla cronologia Git.
 
+## Catalogo completo delle metriche sui quattro humanizer
+
+Il branch **`feature/humanizer-metric-catalogue`** completa la tabella descrittiva di **ROUGE-L, BLEU, BERTScore, coseno MiniLM e Flesch Reading Ease**. I risultati sono in [results_humanizer_metric_catalogue/](results_humanizer_metric_catalogue/); il report del solo esperimento è disponibile in [PDF](results_humanizer_metric_catalogue/report_catalogo_metriche.pdf) e in [Markdown](results_humanizer_metric_catalogue/report_catalogo_metriche.md).
+
+La [tabella unica delle mediane](results_humanizer_metric_catalogue/summary_common_median.csv) usa le **stesse 123 fonti** per i quattro metodi; la [tabella delle medie](results_humanizer_metric_catalogue/summary_common_mean.csv) ha la stessa struttura. [document_metrics.csv](results_humanizer_metric_catalogue/document_metrics.csv) contiene tutte le **500 riscritture valide**, inclusi gli allungamenti; [summary_descriptive.csv](results_humanizer_metric_catalogue/summary_descriptive.csv) conserva media, deviazione standard, mediana, Q1 e Q3, sia sulle disponibilità individuali sia sul campione comune, anche per dominio. Non si applicano soglie, nuovi test statistici o punteggi combinati.
+
+| Metodo | ROUGE-L F1 mediano | BLEU mediano, 0–100 | BERTScore F1 a chunk mediano | Coseno mediano | Flesch riscrittura mediano | Delta Flesch mediano |
+|---|---:|---:|---:|---:|---:|---:|
+| Qwen 3B | 0,560 | 27,2 | 0,950 | 0,944 | 39,2 | −5,9 |
+| Qwen 14B NF4 | 0,417 | 14,2 | 0,928 | 0,913 | 40,4 | −6,7 |
+| DIPPER intero | 0,658 | 35,2 | 0,950 | 0,932 | 50,0 | +0,9 |
+| DIPPER tre frasi | 0,736 | 45,8 | 0,964 | 0,958 | 53,0 | +3,9 |
+
+ROUGE-L usa F1 documentale con stemming. BLEU è il `sentence_bleu` di SacreBLEU applicato a ogni passaggio, con originale come unico riferimento, tokenizer 13a e smoothing exp: la sua media non è corpus BLEU. BERTScore documentale è l'approssimazione a chunk già usata, con RoBERTa-base layer 10, IDF e riscalatura disattivati; non è il BERTScore standard di un documento troncato. Coseno e BERTScore grezzi elevati non garantiscono equivalenza semantica. I CSV conservano separatamente anche BERTScore allineato riscalato (baseline 0,814463) e NLI finale; sono protocolli distinti, non trasformazioni arbitrarie della colonna principale.
+
+Flesch viene calcolato su originale e riscrittura con `textstat` en_US. Il riferimento degli originali comuni ha mediana **48,5**. Il delta è calcolato per ciascuna coppia prima di riepilogare: la mediana dei delta non coincide necessariamente con la differenza delle mediane. Valori FRE più alti indicano maggiore facilità strutturale di lettura, non maggiore naturalezza o fedeltà; possono anche uscire dalla scala indicativa 0–100 e non vengono tagliati. Flesch–Kincaid Grade è disponibile come indice aggiuntivo distinto. Le descrizioni delle scale sono in [metric_definitions.json](results_humanizer_metric_catalogue/metric_definitions.json).
+
+Riproduzione: `python scripts/summarize_humanizer_metrics.py --output results_humanizer_metric_catalogue`. Lo script ricalcola ROUGE-L, BLEU e Flesch su CPU e li confronta con la cache; riutilizza i punteggi neurali già completi, senza nuove inferenze o API. Servono le dipendenze del progetto e il corpus locale `cmudict`. [experiment.json](results_humanizer_metric_catalogue/experiment.json) riporta provenienza e verifiche. I grafici sono [similarità](results_humanizer_metric_catalogue/catalogue_similarity.png) e [leggibilità](results_humanizer_metric_catalogue/catalogue_readability.png); i risultati precedenti restano conservati.
+
 ## Valutatore semantico finale sulle riscritture reali
 
 Il report dedicato a questo esperimento è disponibile in [PDF](results_humanizer_semantics_final/report_semantica_humanizer.pdf) e in [Markdown](results_humanizer_semantics_final/report_semantica_humanizer.md).

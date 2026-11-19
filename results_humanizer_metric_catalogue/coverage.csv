@@ -1,0 +1,5 @@
+humanizer,n_attempted,n_valid,n_failed,n_expanded_included,n_common_sources
+qwen_humanize,126,124,2,25,123
+qwen14b_humanize,126,126,0,19,123
+dipper,126,125,1,4,123
+dipper_context3,126,125,1,17,123

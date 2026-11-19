@@ -1,0 +1,86 @@
+{
+  "rouge_l_f1": {
+    "label": "ROUGE-L F1",
+    "units": "0–1",
+    "family": "overlap",
+    "meaning": "Sottosequenza comune più lunga, F1 documentale con Porter stemming; originale come riferimento."
+  },
+  "bleu_0_100": {
+    "label": "BLEU",
+    "units": "0–100",
+    "family": "overlap",
+    "meaning": "SacreBLEU sentence-level sull'intero passaggio, tokenizer 13a, smoothing exp, effective order, unico riferimento originale; non corpus BLEU."
+  },
+  "bert_document_chunk_f1": {
+    "label": "BERTScore F1 documentale approssimato",
+    "units": "0–1",
+    "family": "contextual_similarity",
+    "meaning": "RoBERTa-base layer10, IDF e riscalatura disattivati; migliori corrispondenze fra chunk, precision/recall pesate per token e media armonica finale."
+  },
+  "embedding_cosine": {
+    "label": "Coseno MiniLM documentale",
+    "units": "−1–1",
+    "family": "embedding_similarity",
+    "meaning": "Coseno fra medie pesate per token di embedding di frase/chunk normalizzati; nessun troncamento documentale."
+  },
+  "flesch_original": {
+    "label": "Flesch Reading Ease originale",
+    "units": "indice FRE, senza clipping",
+    "family": "readability",
+    "meaning": "textstat en_US sul testo originale; valori più alti indicano maggiore facilità strutturale di lettura."
+  },
+  "flesch_rewrite": {
+    "label": "Flesch Reading Ease riscrittura",
+    "units": "indice FRE, senza clipping",
+    "family": "readability",
+    "meaning": "textstat en_US sul testo riscritto; non è una misura di naturalezza o conservazione semantica."
+  },
+  "flesch_delta": {
+    "label": "Delta Flesch Reading Ease",
+    "units": "punti FRE",
+    "family": "readability",
+    "meaning": "FRE della riscrittura meno FRE dell'originale, calcolato per coppia prima dell'aggregazione."
+  },
+  "fk_grade_original": {
+    "label": "Flesch–Kincaid Grade originale",
+    "units": "anni scolastici USA stimati",
+    "family": "readability",
+    "meaning": "Indice di leggibilità textstat en_US, aggiuntivo rispetto al Flesch Reading Ease."
+  },
+  "fk_grade_rewrite": {
+    "label": "Flesch–Kincaid Grade riscrittura",
+    "units": "anni scolastici USA stimati",
+    "family": "readability",
+    "meaning": "Indice di leggibilità della riscrittura; un aumento indica maggiore complessità stimata."
+  },
+  "fk_grade_delta": {
+    "label": "Delta Flesch–Kincaid Grade",
+    "units": "anni scolastici stimati",
+    "family": "readability",
+    "meaning": "Grade della riscrittura meno grade dell'originale, calcolato per coppia."
+  },
+  "bert_aligned_rescaled_mean": {
+    "label": "BERTScore allineato riscalato, media",
+    "units": "scala riscalata, valori negativi possibili",
+    "family": "aligned_contextual_similarity",
+    "meaning": "Massimo F1 per unità su tutte le unità dell'altro testo; riscalatura con baseline ufficiale 0,814463; media delle unità e direzione peggiore."
+  },
+  "bert_aligned_rescaled_min": {
+    "label": "BERTScore allineato riscalato, minimo",
+    "units": "scala riscalata, valori negativi possibili",
+    "family": "aligned_contextual_similarity",
+    "meaning": "Minimo delle corrispondenze massime per unità, nelle due direzioni; protocollo distinto dall'approssimazione documentale."
+  },
+  "nli_bidirectional_min": {
+    "label": "NLI bidirezionale, minimo",
+    "units": "0–1",
+    "family": "nli",
+    "meaning": "Premesse a finestre di una o due unità; minimo fra supporti minimi forward e reverse."
+  },
+  "nli_bidirectional_mean": {
+    "label": "NLI bidirezionale, media conservativa",
+    "units": "0–1",
+    "family": "nli",
+    "meaning": "Minimo fra le medie dei supporti forward e reverse; non media aritmetica delle due direzioni."
+  }
+}
