@@ -1,4 +1,14 @@
 detector,domain,comparison,n_documents,auroc
+binoculars_falcon7b,essays,v0_vs_v5,100,0.4893
+binoculars_falcon7b,essays,v0_vs_v8,100,0.5567
+binoculars_falcon7b,news,v0_vs_v5,100,0.26189999999999997
+binoculars_falcon7b,news,v0_vs_v8,100,0.2784
+binoculars_falcon7b,reports,v0_vs_v5,100,0.2877
+binoculars_falcon7b,reports,v0_vs_v8,100,0.268
+binoculars_falcon7b,abstracts,v0_vs_v5,100,0.4052
+binoculars_falcon7b,abstracts,v0_vs_v8,100,0.4558
+binoculars_falcon7b,overall,v0_vs_v5,400,0.36364375
+binoculars_falcon7b,overall,v0_vs_v8,400,0.39167500000000005
 openai_roberta_base,essays,v0_vs_v5,100,0.5502
 openai_roberta_base,essays,v0_vs_v8,100,0.6345
 openai_roberta_base,news,v0_vs_v5,100,0.46849999999999997

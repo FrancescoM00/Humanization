@@ -1,13 +1,12 @@
 {
-  "status": "awaiting_detector_scoring",
+  "status": "completed",
   "complete_detectors": [
-    "openai_roberta_base"
-  ],
-  "pending_detectors": [
+    "openai_roberta_base",
     "binoculars_falcon7b"
   ],
+  "pending_detectors": [],
   "n_expected_scores": 2400,
-  "n_available_scores": 1200,
+  "n_available_scores": 2400,
   "config_sha256": "aaaa44892b9e503e0461161f6df2cd1cd0b520c34342ef85f152ce31ffbcb677",
   "panel_sha256": "12d946191175e1f0e43ae2fd91c36bd9f5196faab09c95ef03cb2c6c1d187b45",
   "human_annotation_produced": false,

@@ -1,3 +1,5 @@
 detector,version,k,n,rate,minimum_fraction,proceed
+binoculars_falcon7b,v5,0,400,0.0,0.3333333333333333,False
+binoculars_falcon7b,v8,6,400,0.015,0.3333333333333333,False
 openai_roberta_base,v5,2,400,0.005,0.3333333333333333,False
 openai_roberta_base,v8,4,400,0.01,0.3333333333333333,False

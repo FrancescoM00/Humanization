@@ -1,6 +1,6 @@
 ---
 title: "Pilota di rilevabilità su OpAI-Bench"
-subtitle: "Piano congelato e risultati disponibili — 19 novembre 2026"
+subtitle: "Risultati completi di OpenAI e Binoculars — 19 novembre 2026"
 lang: it-IT
 fontsize: 10pt
 papersize: a4
@@ -17,7 +17,9 @@ Il pilota misura quanti testi OpAI-Bench vengono riconosciuti come macchina da O
 
 I testi **v0 sono umani; v5 e v8 sono testi umani rieditati cumulativamente da LLM, non testi generati da zero**. L'analisi è descrittiva e non è validata da annotazioni umane indipendenti. Le etichette v0/v5/v8 identificano stadi del dataset, non una misura umana della quantità o della qualità dell'intervento artificiale.
 
-**Stato: OpenAI completato su tutti i 1.200 testi; Binoculars in attesa di GPU.** Lo scoring OpenAI è stato eseguito qui su CPU in FP32. Questo report è quindi parziale: non riporta rilevazioni o AUROC inventate per Binoculars. Per OpenAI, sia v5 sia v8 **falliscono il criterio di fattibilità**. Il notebook già predisposto permette di completare Binoculars sulle due T4 e riutilizza gli score OpenAI inclusi.
+**Stato: completato, 2.400 score su 2.400.** Entrambi i detector hanno valutato tutti i 1.200 testi. Tutte e quattro le combinazioni detector × livello rieditato **falliscono il criterio di fattibilità**: OpenAI rileva 2/400 v5 e 4/400 v8; Binoculars 0/400 v5 e 6/400 v8. Con queste soglie il pannello non offre denominatori sufficienti per uno studio di ASR condizionato.
+
+Lo ZIP ricevuto contiene anche una nuova esecuzione OpenAI su GPU in FP32, che conferma tutte le decisioni della precedente esecuzione CPU. Gli score grezzi differiscono al massimo di circa 0,0000091. Si conservano ora gli score e i metadati del run GPU completo; il precedente risultato CPU rimane nello ZIP parziale e nella cronologia Git. Configurazione, pannello e selezione sono identici byte per byte a quelli congelati. Qui si ricalcolano soltanto i riepiloghi, senza ulteriori inferenze.
 
 # Piano e campione
 
@@ -50,7 +52,9 @@ Binoculars usa Falcon-7B e Falcon-7B-Instruct alle revisioni dello studio. Riman
 
 Per ogni detector/versione/dominio si riporta k/n con intervallo Wilson bilaterale al 95%. Su v0 la frazione è l'FPR di trasferimento. Su v5/v8 si parla di tasso di rilevazione di testi rieditati, senza assumerli equivalenti a generazioni interamente artificiali. AUROC confronta v0 con v5 e v0 con v8; per Binoculars si inverte il segno del rapporto prima del calcolo. Non si applicano test statistici.
 
-# Risultati disponibili
+# Risultati dei due detector
+
+## OpenAI RoBERTa-base
 
 Per OpenAI ogni cella riporta **k/n (percentuale), [Wilson 95%]**. Sul totale dei 400 documenti, v0 ha FPR 0,75% [0,26%; 2,18%]; v5 ha rilevazione 0,50% [0,14%; 1,80%] e v8 1,00% [0,39%; 2,54%].
 
@@ -62,21 +66,37 @@ Per OpenAI ogni cella riporta **k/n (percentuale), [Wilson 95%]**. Sul totale de
 | arXiv abstracts | 0/100, [0; 3,70]% | 0/100, [0; 3,70]% | 0/100, [0; 3,70]% |
 | Totale | 3/400 (0,75%), [0,26; 2,18]% | 2/400 (0,50%), [0,14; 1,80]% | 4/400 (1,00%), [0,39; 2,54]% |
 
-**Esito pratico:** con OpenAI e queste soglie, un pannello OpAI non fornisce denominatori sufficienti per l'ASR condizionato. Occorrerebbero almeno 134/400 originali rilevati; se ne osservano 2 per v5 e 4 per v8. Il basso FPR sui v0 non è accompagnato da una capacità utile di rilevare i livelli rieditati. Non si ricalibra la soglia per ottenere un esito più favorevole. La decisione per Binoculars rimane aperta.
+## Binoculars Falcon-7B
 
-La figura rappresenta soltanto score effettivamente calcolati. Un detector in attesa non è rappresentato con un tasso nullo. L’asse verticale parte da zero ed è adattato ai tassi e agli intervalli disponibili; la linea punteggiata indica il riferimento del 5%.
+Sul totale dei 400 documenti, Binoculars ha FPR **9/400, 2,25% [1,19%; 4,22%]** sui v0. Rileva **0/400 v5, 0% [0%; 0,95%]**, e **6/400 v8, 1,50% [0,69%; 3,23%]**. Lo zero su v5 è un risultato effettivo di tutti i 400 score, non un dato mancante. Il limite superiore Wilson resta maggiore di zero.
+
+| Dominio | v0 umano | v5 rieditato | v8 rieditato |
+|---|---:|---:|---:|
+| Essay | 4/100 (4,0%), [1,57; 9,84]% | 0/100, [0; 3,70]% | 2/100 (2,0%), [0,55; 7,00]% |
+| News | 2/100 (2,0%), [0,55; 7,00]% | 0/100, [0; 3,70]% | 2/100 (2,0%), [0,55; 7,00]% |
+| Government reports | 1/100 (1,0%), [0,18; 5,45]% | 0/100, [0; 3,70]% | 0/100, [0; 3,70]% |
+| arXiv abstracts | 2/100 (2,0%), [0,55; 7,00]% | 0/100, [0; 3,70]% | 2/100 (2,0%), [0,55; 7,00]% |
+| Totale | 9/400 (2,25%), [1,19; 4,22]% | 0/400, [0; 0,95]% | 6/400 (1,50%), [0,69; 3,23]% |
+
+**Esito pratico:** nessuno dei due detector, su nessuno dei due livelli, raggiunge le almeno 134/400 rilevazioni richieste. I bassi FPR sui v0 non sono accompagnati da una capacità utile di rilevare questi testi rieditati. Non si ricalibrano le soglie per ottenere un esito più favorevole. Il pilota si conclude con una decisione negativa sulla fattibilità del successivo ASR, nelle condizioni fissate.
+
+La figura rappresenta tutti gli score effettivamente calcolati. L'asse verticale parte da zero ed è adattato ai tassi e agli intervalli; la linea punteggiata indica il riferimento del 5%.
 
 ![Tassi per dominio e versione, con intervalli Wilson al 95%.](detection_rates.png){width=100%}
 
-| Dominio | AUROC v0 contro v5 | AUROC v0 contro v8 |
-|---|---:|---:|
-| Essay | 0,5502 | 0,6345 |
-| News | 0,4685 | 0,4998 |
-| Government reports | 0,4874 | 0,4852 |
-| arXiv abstracts | 0,5876 | 0,5052 |
-| Totale, 400 documenti | 0,5190 | 0,5345 |
+## Separazione senza usare la soglia: AUROC
 
-Le AUROC complessive sono vicine a 0,5: **la scarsa rilevazione non appare spiegata soltanto da una soglia conservativa**, perché la separazione attraverso l'intera scala degli score è limitata. Essay mostra una separazione numericamente maggiore per v8 (0,6345), ma alla soglia congelata solo quattro testi sono rilevati. Non si applicano test o interpretazioni causali. La miscela di editor e domini limita la generalizzazione; v5/v8 non sono generazioni da zero come gli originali macchina MGTBench.
+| Dominio | OpenAI: v0/v5 | OpenAI: v0/v8 | Binoculars: v0/v5 | Binoculars: v0/v8 |
+|---|---:|---:|---:|---:|
+| Essay | 0,5502 | 0,6345 | 0,4893 | 0,5567 |
+| News | 0,4685 | 0,4998 | 0,2619 | 0,2784 |
+| Government reports | 0,4874 | 0,4852 | 0,2877 | 0,2680 |
+| arXiv abstracts | 0,5876 | 0,5052 | 0,4052 | 0,4558 |
+| Totale, 400 documenti | 0,5190 | 0,5345 | 0,3636 | 0,3917 |
+
+Le AUROC complessive di OpenAI sono vicine a 0,5: **la scarsa rilevazione non appare spiegata soltanto da una soglia conservativa**, perché la separazione attraverso l'intera scala degli score è limitata. Essay mostra una separazione numericamente maggiore per v8 (0,6345), ma alla soglia congelata solo quattro testi sono rilevati. Non si applicano test o interpretazioni causali. La miscela di editor e domini limita la generalizzazione; v5/v8 non sono generazioni da zero come gli originali macchina MGTBench.
+
+**Binoculars dà AUROC complessive sotto 0,5 nell'orientamento prestabilito**, con valori particolarmente bassi per news e government reports. Il rapporto grezzo mediano è 0,9851 sui v0, 1,0067 sui v5 e 1,0030 sui v8: le versioni rieditate si spostano numericamente verso il lato che il detector considera più umano. Il verso è stato verificato sulla formula salvata e resta quello dello studio MGTBench: rapporto più basso significa più IA, quindi AUROC calcolata sul rapporto negato. **Non si cambia segno dopo aver visto il risultato.** Il dato non dimostra che i testi siano più umani o più naturali; descrive il comportamento di questo detector sul corpus e sulla miscela di editor scelti.
 
 # Lunghezza e riferimento MGTBench
 
@@ -98,25 +118,27 @@ I riferimenti storici sono riportati anche in `summary_rates.csv`, con dataset e
 
 Il 5% sugli umani di calibrazione deriva dalla costruzione della soglia: **non è una verifica indipendente dell'FPR**. La misura sui nuovi v0 OpAI serve invece a descriverne il trasferimento. MGTBench contiene originali macchina con una diversa costruzione; OpAI contiene umani rieditati. Le percentuali non confrontano la stessa popolazione o lo stesso grado di intervento artificiale. Le righe di calibrazione nel CSV sono etichettate esplicitamente e i loro intervalli non validano l'FPR fuori campione.
 
-# File e completamento
+# File e riproduzione
 
 Il branch è **`feature/opai-detectability-pilot`**. I file sono in `results_opai_detectability_pilot/`:
 
 - `config_pilot.json`: piano, soglie, 534 esclusioni e regola di fattibilità;
 - `panel.jsonl` e `panel_metadata.csv`: 1.200 testi selezionati e relativi identificativi;
 - `selection.json`: hash, revisione, disponibilità per dominio e verifica di assenza di sovrapposizioni;
-- `scores_long.csv`: score effettivi per documento/versione/detector; non contiene score inventati per il detector in attesa;
+- `scores_long.csv`: 2.400 score effettivi per documento/versione/detector;
 - `summary_rates.csv`: tassi, Wilson, mediane di parole e riferimenti MGTBench;
 - `auroc.csv`: separazione v0/v5 e v0/v8 per dominio e complessiva;
-- `feasibility.csv`: applicazione della regola di un terzo ai risultati disponibili;
+- `feasibility.csv`: quattro combinazioni detector/livello, tutte con decisione di non avanzare;
 - `detection_rates.png`: grafico con Wilson;
-- `experiment.json`: stato, detector completati/in attesa e copertura degli score;
+- `experiment.json`: stato `completed`, due detector completati e 2.400 score su 2.400;
 - `scores_<detector>.csv`, `run_<detector>.json` e cache per testo: risultati dettagliati e ripresa;
 - questo report in Markdown e PDF.
 
 Lo script è **`scripts/opai_detectability_pilot.py`**, con tre fasi `prepare`, `score`, `summarize`. Per rigenerare il campione servono i Parquet ufficiali del caricatore `scripts/download_opai.py` alla revisione indicata; per lo scoring basta il pannello già incluso nel repository. `summarize` non esegue inferenza e non ricalibra soglie.
 
 Il notebook **`kaggle/OpAI_Detectability_Pilot.ipynb`** richiede Internet e **due T4**, senza Secrets. Include l'ambiente Python senza `ensurepip`, verifica della cache scrivibile con spazio sufficiente per i Falcon, sei celle di codice e ZIP degli output. Le cache persistono dopo ogni testo e permettono la ripresa da un checkpoint caricato negli Input, anche estratto. Il notebook esegue solo i detector mancanti nel proprio run; il pannello rimane congelato. Lo stato finale atteso è `completed`, con **2.400 score**.
+
+Lo stato finale è stato raggiunto nel run ricevuto. Per consultare i risultati o rigenerare i CSV non serve ripetere lo scoring GPU. L'archivio originale ricevuto e lo ZIP completo con questo report sono conservati in `exports/opai_detectability_pilot/`; il precedente ZIP OpenAI rimane come risultato parziale storico.
 
 Il comando per ricalcolare soltanto le tabelle, dopo lo scoring, è:
 
