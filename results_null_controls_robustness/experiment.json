@@ -1,0 +1,81 @@
+{
+  "protocol": "null_controls_paired_robustness_v2",
+  "created_at": "2026-11-19T10:56:47.403267+00:00",
+  "input_sha256": {
+    "config.json": "947f1aaee4739d3ed5929b05a08884027b4ce5438e4cf3c7c47d023ac3ef65cd",
+    "cohorts/study.jsonl": "84f9f6933b2ee72412d65eedbf8f1fbe70cf0139bcd3d6d395cb85250c0edb68",
+    "null_controls/rewrites.jsonl": "23c8a5a890c091ede15916c8b5206dedf52df486198749eda968a71eb67cac37",
+    "detection/detector_scores.csv": "78cbcd8509f783906bdebb7400edcaab2cfeb75f1350b5b73a44468028f55042",
+    "zero_shot/zero_shot_scores.csv": "922a410a02f82ff09d5ae8733a0a18784de239644517d559bf48e638012bd266",
+    "detector_thresholds_combined.json": "c367abfa0f95b7b4dc3007eb3f801046ef6b748ec8901908608587ddb496d489",
+    "cohorts/pilot.jsonl": "ed6b343dc972038515ff6dc4ebdfe7e1ce6ce50386cb49c5e104732da440574a"
+  },
+  "panel_sizes": {
+    "all126": 126,
+    "unseen84": 84
+  },
+  "systems": [
+    "qwen_humanize",
+    "qwen14b_humanize",
+    "dipper",
+    "dipper_context3"
+  ],
+  "controls": [
+    "length",
+    "lexical_noise",
+    "length_and_lexical_noise"
+  ],
+  "scopes": [
+    "eligible_per_humanizer",
+    "common_eligible",
+    "all_success_per_humanizer",
+    "common_success_for_control",
+    "common_all_controls"
+  ],
+  "primary_length_table": "all126 / common_eligible / length: same 78 sources for all four systems",
+  "primary_three_control_table": "all126 / common_all_controls: same 33 sources for all systems and controls",
+  "analysis_status": "Retrospective robustness analysis of inspected study data; not a new confirmatory holdout",
+  "inference": "Two-sided exact McNemar on control-only vs rewrite-only evasions among baseline-detected originals",
+  "multiplicity": "Holm20 within panel/scope/control (five detectors x four writers), plus Holm60 across all three controls within panel/scope; Holm60 used for primary evidence",
+  "scope_multiplicity": "Panels and scopes are not independent confirmations; no selection of a favorable scope. Alternative scopes are sensitivity analyses, not extra discovery families",
+  "asr_intervals": "Two-sided Wilson 95%, one independent source per trial; pointwise descriptive intervals, not simultaneous intervals",
+  "zero_success_example": {
+    "successes": 0,
+    "trials": 95,
+    "wilson95_upper": 0.038864853539472964,
+    "note": "3.1% is the exact one-sided upper limit, not the two-sided 95% interval"
+  },
+  "delta_asr": "reference rewrite ASR minus control ASR; positive means more evasion for the rewrite",
+  "tpr": "TPR includes every source in the selected panel; descriptive net change can differ from conditional ASR",
+  "scopes_description": {
+    "eligible_per_humanizer": "Original strict eligibility, different sources by writer; reproduces the old diagnostic counts",
+    "common_eligible": "Intersection of strict eligibility over all four writers, separately for each control",
+    "all_success_per_humanizer": "Include expanded valid outputs using already saved capped prefixes; noise must still be applicable",
+    "common_success_for_control": "Intersection of valid/capped-applicable outputs for all writers, separately for each control; length uses 123, noise can use fewer",
+    "common_all_controls": "Strict eligibility intersection over all four writers and all three controls; same sources everywhere"
+  },
+  "expansion_policy": "For expanded rewrites, saved length control equals the unchanged original; flagged as NOT length matched. This sensitivity does not identify a causal length effect",
+  "failure_policy": "No score imputation; unsuccessful or truncated generations remain excluded and counted",
+  "noise_policy": "Frozen dictionary, at most one replacement with POS/NER restrictions; unchanged texts are not counted as noise. No eligible word in 56/126 original texts; prefixes can remove eligible words",
+  "evidence_rule": "Positive ASR delta and Holm60 p<0.05 for each of all three controls; common_all_controls is the comparable joint panel. Failing this rule is insufficient evidence, not proof of no effect",
+  "majority_vote": "Historical vote of the three supervised classifiers; not independent of them",
+  "calibration_policy": "Frozen thresholds and directions; calibration humans disjoint from test; no refitting",
+  "source_of_truth": "New CSVs supersede bootstrap ASR intervals and unadjusted effect claims in results_kaggle_v2_study/null_comparisons.csv; old files retained unchanged",
+  "model_inference_executed": false,
+  "api_calls_executed": false,
+  "files": [
+    "comparisons.csv",
+    "length_common_sources.csv",
+    "all_three_same_sources.csv",
+    "expansion_sensitivity.csv",
+    "eligibility.csv",
+    "coverage.csv",
+    "paired_scores.csv",
+    "panel_membership.csv",
+    "three_control_evidence.csv"
+  ],
+  "figures": [
+    "length_common_sources.png",
+    "expansion_sensitivity.png"
+  ]
+}
