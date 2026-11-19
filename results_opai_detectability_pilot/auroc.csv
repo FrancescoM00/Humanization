@@ -1,0 +1,11 @@
+detector,domain,comparison,n_documents,auroc
+openai_roberta_base,essays,v0_vs_v5,100,0.5502
+openai_roberta_base,essays,v0_vs_v8,100,0.6345
+openai_roberta_base,news,v0_vs_v5,100,0.46849999999999997
+openai_roberta_base,news,v0_vs_v8,100,0.49979999999999997
+openai_roberta_base,reports,v0_vs_v5,100,0.4874
+openai_roberta_base,reports,v0_vs_v8,100,0.48519999999999996
+openai_roberta_base,abstracts,v0_vs_v5,100,0.5876
+openai_roberta_base,abstracts,v0_vs_v8,100,0.5052
+openai_roberta_base,overall,v0_vs_v5,400,0.51896875
+openai_roberta_base,overall,v0_vs_v8,400,0.53448125

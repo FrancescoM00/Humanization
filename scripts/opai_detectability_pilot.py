@@ -210,6 +210,7 @@ def plot_rates(frame,output):
     import matplotlib.pyplot as plt
     from matplotlib.ticker import PercentFormatter
     fig,axes=plt.subplots(1,2,figsize=(12,4.8),sharey=True,constrained_layout=True)
+    upper = min(1.03,max(.1,1.1*frame.wilson95_high.max())) if not frame.empty else 1.03
     for ax,name in zip(axes,["openai_roberta_base","binoculars_falcon7b"]):
         own=frame[frame.detector.eq(name)]
         ax.set_title("OpenAI RoBERTa-base" if name.startswith("openai") else "Binoculars")
@@ -224,7 +225,7 @@ def plot_rates(frame,output):
             ax.set_xticks(range(4),["Essay","News","Government\nreports","arXiv\nabstracts"])
             ax.legend()
         ax.axhline(.05,color="gray",ls=":",lw=1,label="FPR riferimento5%")
-        ax.set_ylim(0,1.03);ax.yaxis.set_major_formatter(PercentFormatter(1))
+        ax.set_ylim(0,upper);ax.yaxis.set_major_formatter(PercentFormatter(1))
     axes[0].set_ylabel("Quota rilevata; Wilson95%")
     fig.suptitle("OpAI: v0 umano; v5/v8 cumulativamente rieditati da LLM")
     fig.savefig(output / "detection_rates.png",dpi=180);plt.close(fig)

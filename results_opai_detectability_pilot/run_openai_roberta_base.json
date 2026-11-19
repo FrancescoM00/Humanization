@@ -1,0 +1,24 @@
+{
+  "name": "openai_roberta_base",
+  "model_id": "openai-community/roberta-base-openai-detector",
+  "revision": "6cba99c003b711c7fe94f8a3aa2be35a792cb6fa",
+  "id2label": {
+    "0": "Fake",
+    "1": "Real"
+  },
+  "ai_label_index": 0,
+  "device": "cpu",
+  "preprocessing": "none",
+  "full_text_coverage": true,
+  "aggregation": "token-weighted mean of non-overlapping chunk AI scores",
+  "max_tokens_including_specials": 512,
+  "cache_fingerprint": "13880619f1da5880b796e0e81618becb4ff0f837f8db5aa4a72a6899447f5b79",
+  "elapsed_seconds": 1166.369389263,
+  "config_sha256": "aaaa44892b9e503e0461161f6df2cd1cd0b520c34342ef85f152ce31ffbcb677",
+  "panel_sha256": "12d946191175e1f0e43ae2fd91c36bd9f5196faab09c95ef03cb2c6c1d187b45",
+  "frozen_threshold": {
+    "raw_threshold": 0.9706076979637146,
+    "detected_if": "greater_than"
+  },
+  "recalibration": false
+}
