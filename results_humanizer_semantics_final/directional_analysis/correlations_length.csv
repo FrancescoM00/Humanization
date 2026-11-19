@@ -1,0 +1,5 @@
+humanizer,n_sources,rho,ci95_low,ci95_high,bootstrap_replicates,n_finite_bootstrap_replicates,interval_status,interpretation
+qwen_humanize,123,0.14258812000394952,-0.05105165733349594,0.3343113953890121,5000,5000,pointwise_source_percentile,"associazione descrittiva, non effetto causale della lunghezza"
+qwen14b_humanize,123,0.14961160571850915,-0.0230529670730716,0.3137837898753008,5000,5000,pointwise_source_percentile,"associazione descrittiva, non effetto causale della lunghezza"
+dipper,123,0.5674688267103299,0.4284673676359538,0.6833933032880826,5000,5000,pointwise_source_percentile,"associazione descrittiva, non effetto causale della lunghezza"
+dipper_context3,123,0.2894895113662844,0.10699691074336484,0.45823744346081546,5000,5000,pointwise_source_percentile,"associazione descrittiva, non effetto causale della lunghezza"

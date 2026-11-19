@@ -8,7 +8,7 @@ geometry: margin=2cm
 colorlinks: true
 ---
 
-**Risultato principale.** Il valutatore NLI a finestre fino a due frasi è stato applicato alle 500 riscritture valide dello studio, comprese quelle più lunghe dell'originale. Sul campione comune di 123 fonti, DIPPER intero presenta supporti inferiori rispetto alla configurazione a tre frasi. Le due configurazioni Qwen non risultano nettamente ordinate dal confronto descrittivo. Le guardie lessicali rilevano modifiche di numeri, date, entità, negazioni, quantificatori e cautele, ma producono anche falsi allarmi: le loro percentuali non rappresentano errori semantici accertati.
+**Risultato principale.** Il valutatore NLI a finestre fino a due frasi è stato applicato alle 500 riscritture valide dello studio, comprese quelle più lunghe dell'originale. Sul campione comune di 123 fonti, DIPPER intero presenta supporti inferiori rispetto alla configurazione a tre frasi. La separazione delle direzioni mostra che il minimo di DIPPER intero dipende soprattutto dal reverse, che è più basso in 107/123 documenti: un risultato compatibile con omissioni secondo il valutatore. Le due configurazioni Qwen non risultano nettamente ordinate dal confronto descrittivo. Le guardie lessicali producono anche falsi allarmi e non rappresentano errori semantici accertati.
 
 # 1. Obiettivo
 
@@ -72,6 +72,53 @@ La tabella principale usa le **stesse 123 fonti per tutti i metodi**. Ogni cella
 
 Il divario tra minimo e media mostra che un buon supporto complessivo può convivere con almeno un'unità molto poco supportata. Per DIPPER intero il terzo quartile del minimo è circa 0,030: il supporto della peggiore unità è basso nella maggior parte dei documenti di questo campione. Questo non quantifica da solo quanta informazione sia stata persa né dimostra che ciascun minimo basso corrisponda a un errore reale.
 
+## 4.1. Separare forward e reverse
+
+Per capire quale direzione determina il minimo bidirezionale, si descrivono separatamente i quattro aggregati. Le celle contengono sempre **mediana [Q1; Q3]**, sulle stesse 123 fonti:
+
+| Metodo | Minimo forward | Minimo reverse | Media forward | Media reverse |
+|---|---:|---:|---:|---:|
+| Qwen 3B | 0,816 [0,071; 0,985] | 0,248 [0,027; 0,908] | 0,972 [0,854; 0,995] | 0,894 [0,821; 0,982] |
+| Qwen 14B NF4 | 0,937 [0,251; 0,990] | 0,226 [0,017; 0,950] | 0,981 [0,877; 0,996] | 0,884 [0,749; 0,985] |
+| DIPPER intero | 0,865 [0,083; 0,979] | 0,006 [0,002; 0,046] | 0,951 [0,799; 0,990] | 0,724 [0,583; 0,853] |
+| DIPPER tre frasi | 0,883 [0,159; 0,977] | 0,178 [0,026; 0,859] | 0,974 [0,882; 0,992] | 0,868 [0,786; 0,965] |
+
+Le mediane delle direzioni e quella del minimo bidirezionale vengono calcolate dopo aver aggregato ciascun documento: la mediana del minimo non coincide necessariamente con il minimo delle mediane.
+
+Per DIPPER intero il forward rimane relativamente alto, mentre il reverse è molto più basso. Il reverse determina il minimo in **107/123 casi, pari all'87,0%**; il forward nei restanti 16. **Secondo il valutatore, il basso minimo di DIPPER intero riguarda soprattutto il recupero delle informazioni originali nella riscrittura, un risultato compatibile con omissioni.** Non dimostra che ogni caso sia un'omissione verificata: restano possibili difficoltà di allineamento, segmentazione o inferenza NLI.
+
+## 4.2. Associazione tra reverse e lunghezza
+
+Il rapporto di lunghezza è il numero di parole alfabetiche della riscrittura diviso per quello dell'originale. Un rapporto inferiore a uno indica accorciamento. La correlazione di Spearman descrive se il minimo reverse tende ad aumentare quando questo rapporto aumenta. Gli intervalli al 95% ricampionano 5.000 volte le stesse fonti; i ranghi vengono ricalcolati dentro ogni replica.
+
+| Metodo | Spearman ρ | Intervallo bootstrap 95% | Reverse più basso del forward |
+|---|---:|---:|---:|
+| Qwen 3B | 0,143 | [−0,051; +0,334] | 80/123, 65,0% |
+| Qwen 14B NF4 | 0,150 | [−0,023; +0,314] | 87/123, 70,7% |
+| DIPPER intero | 0,567 | [+0,428; +0,683] | 107/123, 87,0% |
+| DIPPER tre frasi | 0,289 | [+0,107; +0,458] | 91/123, 74,0% |
+
+Per DIPPER intero l'associazione positiva è più evidente: le riscritture relativamente più corte tendono ad avere supporto reverse inferiore. È un'associazione descrittiva coerente con una perdita di informazioni, non la prova che l'accorciamento causi ogni minimo basso. Nei conteggi delle direzioni Qwen 3B ha anche una parità esatta; le parità sono conservate separatamente.
+
+## 4.3. Distribuzione cumulativa completa
+
+Per mostrare la struttura che la sola mediana può nascondere, si rappresenta la **funzione di distribuzione cumulativa empirica (ECDF)** del minimo bidirezionale. A ogni valore sull'asse orizzontale corrisponde la quota di documenti con minimo minore o uguale a quel valore. Ogni curva comprende tutti i 123 documenti di un metodo, senza smoothing.
+
+![Distribuzione cumulativa del minimo NLI bidirezionale sulle 123 fonti comuni.](directional_analysis/nli_min_ecdf_log.png)
+
+L'asse orizzontale è logaritmico e parte da **0,0001**, perché il minimo effettivo è circa **0,000330** e non tutti gli score sono sopra 0,001. Non si tagliano o sostituiscono i valori bassi. La linea a **0,04075** è soltanto un riferimento storico e non divide i testi in corretti ed errati.
+
+Le seguenti quote completano il grafico, usando confronti inclusivi:
+
+| Metodo | Documenti con minimo ≥ 0,5 | Documenti con minimo ≥ 0,8 |
+|---|---:|---:|
+| Qwen 3B | 42/123, 34,1% | 32/123, 26,0% |
+| Qwen 14B NF4 | 41/123, 33,3% | 34/123, 27,6% |
+| DIPPER intero | 15/123, 12,2% | 13/123, 10,6% |
+| DIPPER tre frasi | 35/123, 28,5% | 26/123, 21,1% |
+
+Anche 0,5 e 0,8 sono tagli descrittivi della distribuzione, non soglie calibrate di conservazione del significato. La curva e questa tabella possono sostituire le sole mediane nella presentazione. Quartili molto distanti suggeriscono di guardare la distribuzione, ma non costituiscono da soli una dimostrazione formale di bimodalità.
+
 Usando tutti gli output validi di ciascun metodo, le mediane risultano:
 
 | Metodo | Numero di output | Minimo bidirezionale mediano | Media conservativa mediana |
@@ -81,7 +128,7 @@ Usando tutti gli output validi di ciascun metodo, le mediane risultano:
 | DIPPER intero | 125 | 0,006 | 0,687 |
 | DIPPER tre frasi | 125 | 0,102 | 0,851 |
 
-I campioni della seconda tabella non sono identici: il confronto fra metodi fa quindi riferimento alla prima tabella e al bootstrap sulle fonti comuni. Quartili e risultati per dominio di entrambi i livelli sono conservati nei CSV.
+Le disponibilità individuali della tabella degli output validi non sono identiche: i confronti fra metodi fanno sempre riferimento alle 123 fonti comuni e al bootstrap appaiato. Quartili e risultati per dominio di entrambi i livelli sono conservati nei CSV.
 
 Non si applica una soglia decisionale. Il riferimento storico **0,04075** viene usato soltanto per un conteggio descrittivo: sul campione comune risultano sotto tale valore 46/123 documenti per Qwen 3B, 47/123 per Qwen 14B, 95/123 per DIPPER intero e 44/123 per DIPPER tre frasi. Non sono conteggi di errori accertati. Il controllo di identità mantiene una mediana del minimo pari a circa **0,987**, senza segnalazioni lessicali.
 
@@ -103,6 +150,28 @@ Per l'NLI la quantità stimata è la differenza fra le mediane documentali dei d
 La configurazione DIPPER a tre frasi ha un minimo mediano superiore a quella sull'intero passaggio secondo questo valutatore. Anche per la media conservativa il confronto dà **+0,162**, con intervallo **[+0,117; +0,195]**. Per Qwen 14B meno Qwen 3B la differenza della media conservativa è **−0,019**, con intervallo **[−0,056; +0,015]**: non emerge un ordinamento netto dei due metodi.
 
 Gli intervalli sono **puntuali e descrittivi**, senza correzione congiunta per i diversi confronti. Non vengono utilizzati per formulare nuove conclusioni confermative di superiorità. Il confronto misura differenze del punteggio NLI, non un miglioramento verificato della qualità semantica. Tutti i sei confronti, anche per dominio e per le singole direzioni, sono disponibili nei risultati.
+
+## 5.1. Bootstrap delle singole direzioni
+
+Si riprende lo stesso bootstrap per fonte, con 5.000 repliche e seme 42, per i due confronti esplicitamente indicati: DIPPER tre frasi contro intero e Qwen 14B contro 3B. Le tabelle usano il segno del secondo metodo meno il primo. Tutti i sei abbinamenti fra metodi restano disponibili nei CSV.
+
+| Aggregato | DIPPER tre frasi − DIPPER intero | Intervallo bootstrap 95% |
+|---|---:|---:|
+| Minimo forward | +0,018 | [−0,093; +0,324] |
+| Minimo reverse | +0,171 | [+0,073; +0,407] |
+| Media forward | +0,023 | [−0,004; +0,068] |
+| Media reverse | +0,144 | [+0,118; +0,186] |
+
+Il vantaggio di DIPPER tre frasi emerge soprattutto nel reverse. Il forward cambia meno e i relativi intervalli comprendono lo zero: l'analisi direzionale rende quindi più precisa l'interpretazione del miglioramento del punteggio bidirezionale.
+
+| Aggregato | Qwen 14B − Qwen 3B | Intervallo bootstrap 95% |
+|---|---:|---:|
+| Minimo forward | +0,121 | [−0,024; +0,276] |
+| Minimo reverse | −0,022 | [−0,230; +0,297] |
+| Media forward | +0,010 | [−0,008; +0,032] |
+| Media reverse | −0,010 | [−0,048; +0,024] |
+
+Per i due Qwen non emerge un ordinamento netto dei supporti direzionali da questi intervalli descrittivi. Non vengono formulate nuove affermazioni di significatività corrette per confronti multipli.
 
 # 6. Guardie lessicali: cosa viene controllato
 
@@ -162,13 +231,14 @@ Il risultato sostenuto da questa analisi è quindi una **descrizione comparabile
 
 # 9. Codice, risultati e riproduzione
 
-L'esecuzione documentata corrisponde al commit **3525d64** del branch `feature/final-semantic-evaluation` della repository `FrancescoM00/Humanization`. Questo report non modifica i risultati dell'esecuzione.
+L'esecuzione semantica di base corrisponde al commit **3525d64** del branch `feature/final-semantic-evaluation` della repository `FrancescoM00/Humanization`. L'estensione di direzioni e distribuzioni è nel branch **`feature/nli-directions-distributions`** e legge i CSV già esportati, senza modificare gli score o rieseguire modelli.
 
 Gli script principali sono:
 
 - `scripts/evaluate_humanizer_semantics.py`: avvia la rianalisi, esporta tabelle ed evidenze e costruisce i grafici.
 - `semantics/humanizer_evaluation.py`: verifica le coppie NLI, ricostruisce gli aggregati e calcola distribuzioni e confronti appaiati.
 - `semantics/humanizer_guards.py`: estrae gli inventari spaCy e applica le nuove guardie; quelle storiche restano invariate.
+- `scripts/analyze_nli_directions.py`: separa le direzioni, ricalcola i confronti appaiati e costruisce ECDF e grafico lunghezza–reverse.
 
 Tutti i risultati sono in **`results_humanizer_semantics_final/`**. `document_scores.csv` contiene i 500 documenti con minimo e media forward/reverse, aggregati bidirezionali, numero di ipotesi, lunghezze, evidenze dei minimi e guardie. `nli_distributions.csv` e `lexical_alert_rates.csv` riportano i riepiloghi, distinguendo campione completo e fonti comuni, anche per dominio. `paired_source_comparisons.csv` contiene differenze e intervalli bootstrap.
 
@@ -182,3 +252,5 @@ python scripts/evaluate_humanizer_semantics.py \
 ```
 
 La rianalisi usa CPU e l'archivio dello studio già incluso nella repository. Non richiede GPU, chiavi API o nuovi download dei modelli NLI. Conserva gli score storici ed esegue soltanto la nuova estrazione spaCy e i calcoli statistici.
+
+L'estensione direzionale si riproduce con `python scripts/analyze_nli_directions.py`, a partire da `document_scores.csv` e `common_source_ids.csv`. I risultati sono nella sottocartella **`directional_analysis/`**: `directional_summary.csv` e `directional_summary_long.csv` per i quartili, `correlations_length.csv` per Spearman, `weakest_direction.csv` per la direzione che determina il minimo, `support_fractions.csv` per le quote ≥0,5 e ≥0,8, `ecdf_points.csv` per i punti della cumulativa e i due file `paired_directional_comparisons.csv` e `focused_paired_comparisons.csv` per il bootstrap. La figura `nli_min_ecdf_log.png` è disponibile anche in SVG per le slide; `reverse_min_vs_length_ratio.png` illustra le associazioni con la lunghezza. Per questa estensione bastano i CSV e CPU, senza nemmeno ripetere l'estrazione spaCy.

@@ -2,6 +2,29 @@
 
 Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I risultati sono già disponibili: per consultarli non occorre rilanciare i modelli. Il PDF della tesi è materiale scientifico, non istruzioni operative. Versioni precedenti e strumenti rimossi durante la pulizia sono recuperabili dalla cronologia Git.
 
+## NLI: direzioni separate e distribuzione completa
+
+Il branch **`feature/nli-directions-distributions`** estende l'esperimento semantico sulle **123 fonti comuni**, leggendo i CSV già salvati senza nuove inferenze. Il [report PDF aggiornato](results_humanizer_semantics_final/report_semantica_humanizer.pdf) e il [Markdown](results_humanizer_semantics_final/report_semantica_humanizer.md) ora comprendono forward/reverse separati, associazione con la lunghezza, bootstrap e cumulativa completa.
+
+[directional_summary.csv](results_humanizer_semantics_final/directional_analysis/directional_summary.csv) riporta mediana, Q1 e Q3 per minimo e media di entrambe le direzioni. Per DIPPER intero il minimo forward mediano è **0,865**, quello reverse **0,006**; il reverse determina il minimo in **107/123 documenti (87,0%)**. Secondo il valutatore, il basso minimo è quindi soprattutto associato al recupero delle informazioni originali nella riscrittura, **compatibile con omissioni**, senza costituire una diagnosi umana o causale.
+
+La correlazione di Spearman fra minimo reverse e rapporto parole riscrittura/originale è **0,143** per Qwen 3B, **0,150** per Qwen 14B, **0,567** per DIPPER intero e **0,289** per DIPPER tre frasi. [correlations_length.csv](results_humanizer_semantics_final/directional_analysis/correlations_length.csv) conserva anche gli intervalli bootstrap al 95%, con ranghi ricalcolati a ogni replica; [grafico lunghezza–reverse](results_humanizer_semantics_final/directional_analysis/reverse_min_vs_length_ratio.png). Per DIPPER intero l'associazione positiva è coerente con reverse più basso nelle riscritture relativamente più corte; non isola l'effetto della lunghezza.
+
+La [cumulativa logaritmica PNG](results_humanizer_semantics_final/directional_analysis/nli_min_ecdf_log.png), disponibile anche in [SVG per le slide](results_humanizer_semantics_final/directional_analysis/nli_min_ecdf_log.svg), conserva **tutti i 123 punteggi per metodo**. Parte da 0,0001 perché esistono valori sotto 0,001: nessun valore viene tagliato o sostituito. L'ordinata è la quota con minimo ≤x. La linea 0,04075 è soltanto un riferimento storico.
+
+| Metodo | Minimo ≥0,5 | Minimo ≥0,8 |
+|---|---:|---:|
+| Qwen 3B | 42/123, 34,1% | 32/123, 26,0% |
+| Qwen 14B NF4 | 41/123, 33,3% | 34/123, 27,6% |
+| DIPPER intero | 15/123, 12,2% | 13/123, 10,6% |
+| DIPPER tre frasi | 35/123, 28,5% | 26/123, 21,1% |
+
+[support_fractions.csv](results_humanizer_semantics_final/directional_analysis/support_fractions.csv) conserva conteggi e quote inclusive; 0,5 e 0,8 descrivono la distribuzione e non sono soglie calibrate di correttezza. La curva e queste quote possono sostituire le sole mediane nella slide. Non viene dichiarata una bimodalità formale sulla base dei quartili.
+
+Il bootstrap usa le stesse **5.000 estrazioni per fonte, seme 42**, del confronto precedente. I [confronti focalizzati](results_humanizer_semantics_final/directional_analysis/focused_paired_comparisons.csv) coprono DIPPER tre frasi contro intero e Qwen 14B contro 3B; [tutti i sei abbinamenti](results_humanizer_semantics_final/directional_analysis/paired_directional_comparisons.csv) restano disponibili. DIPPER tre frasi meno intero dà **+0,171 [0,073; 0,407]** sul minimo reverse, mentre sul forward dà **+0,018 [−0,093; 0,324]**: il cambiamento riguarda soprattutto il reverse. Gli intervalli sono puntuali e descrittivi, senza nuove affermazioni di significatività corrette per confronti multipli.
+
+Riproduzione: `python scripts/analyze_nli_directions.py`. Gli input sono `document_scores.csv` e `common_source_ids.csv` dell'esperimento semantico; l'output è [directional_analysis/](results_humanizer_semantics_final/directional_analysis/). La logica è in `semantics/nli_directional_analysis.py`. Non servono GPU, API o nuova estrazione spaCy. `experiment.json` documenta input, convenzioni e assenza di nuovi score inferiti; `ecdf_points.csv` conserva i punti della curva e `weakest_direction.csv` i conteggi con parità separate.
+
 ## Catalogo completo delle metriche sui quattro humanizer
 
 Il branch **`feature/humanizer-metric-catalogue`** completa la tabella descrittiva di **ROUGE-L, BLEU, BERTScore, coseno MiniLM e Flesch Reading Ease**. I risultati sono in [results_humanizer_metric_catalogue/](results_humanizer_metric_catalogue/); il report del solo esperimento è disponibile in [PDF](results_humanizer_metric_catalogue/report_catalogo_metriche.pdf) e in [Markdown](results_humanizer_metric_catalogue/report_catalogo_metriche.md).

@@ -1,0 +1,61 @@
+{
+  "protocol": "nli_directions_full_distribution_v1",
+  "created_at": "2026-11-19T15:33:21.620168+00:00",
+  "input_sha256": {
+    "document_scores.csv": "9375c808863de97e7e80c7381da721ede495fff986befcb9b8bfb5492749ab5c",
+    "common_source_ids.csv": "b24785bbdd06acac66360f5fcc942ab069be0a7c4304602d165762f760218235"
+  },
+  "n_sources": 123,
+  "n_documents": 492,
+  "systems": [
+    "qwen_humanize",
+    "qwen14b_humanize",
+    "dipper",
+    "dipper_context3"
+  ],
+  "bootstrap_replicates": 5000,
+  "seed": 42,
+  "scores": "Saved complete window2 NLI; no new model inference and no source selection based on support or length",
+  "direction_interpretation": "Forward can indicate unsupported additions/changes; reverse can indicate omissions. These are model-based diagnostics, not confirmed human labels",
+  "quartiles": "Document median and linear Q1/Q3, separately for forward_min,reverse_min,forward_mean,reverse_mean",
+  "bootstrap": "Same sorted source IDs and original seed derivation; paired source percentile95 of B minus A document medians; all four outputs kept together",
+  "correlations": "Spearman(reverse_min, rewrite/original alphabetic word ratio); same source bootstrap draws, recompute average ranks inside every replicate; no causal interpretation",
+  "intervals": "Pointwise descriptive95; no familywise significance claims; no observed bootstrap variation is marked rather than reported as certain equality",
+  "focus": "Two pairs named explicitly: DIPPER three sentences versus whole passage, Qwen14B versus3B. All six humanizer pairs retained",
+  "weakest_direction": "Strict reverse_min < forward_min or forward_min < reverse_min; exact ties reported separately",
+  "ecdf": "Right-continuous empirical CDF P(score<=x), complete common panel; no clipping, no smoothing or formal bimodality claim",
+  "log_x_min": 0.0001,
+  "observed_minimum": 0.0003296007926110178,
+  "historical_reference": {
+    "value": 0.04075,
+    "role": "Reference line only, never a semantic decision threshold"
+  },
+  "fractions": "Descriptive shares with score >=0.5 and >=0.8, inclusive; not calibrated success or failure rates",
+  "code_sha256": {
+    "semantics/nli_directional_analysis.py": "dcafcaeb8fbc455ddfafd8e99d6752da50c6b59d20dfc2e57398992bd0d678ee",
+    "scripts/analyze_nli_directions.py": "894da3e2df97da64039642fc33aed2708ba2075139ba84f1238386dde3412dfc"
+  },
+  "runtime_versions": {
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scipy": "1.16.3"
+  },
+  "model_inference_executed": false,
+  "api_calls_executed": false,
+  "files": [
+    "common_document_scores.csv",
+    "directional_summary.csv",
+    "directional_summary_long.csv",
+    "correlations_length.csv",
+    "weakest_direction.csv",
+    "support_fractions.csv",
+    "ecdf_points.csv",
+    "paired_directional_comparisons.csv",
+    "focused_paired_comparisons.csv"
+  ],
+  "figures": [
+    "nli_min_ecdf_log.png",
+    "nli_min_ecdf_log.svg",
+    "reverse_min_vs_length_ratio.png"
+  ]
+}
