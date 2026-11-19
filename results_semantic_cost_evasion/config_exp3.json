@@ -1,0 +1,39 @@
+{
+  "experiment": "semantic_cost_of_evasion_v1",
+  "defined_on": "2026-11-19",
+  "branch": "feature/semantic-cost-evasion",
+  "analysis_status": "Retrospective descriptive analysis. NLI distributions and earlier ASR results were already inspected. These definitions are written before calculating this experiment; they are not blind or preregistered thresholds.",
+  "population": {
+    "n_common_sources": 123,
+    "n_methods": 4,
+    "n_rewrites": 492,
+    "generation_policy": "Only sources with successful outputs from every method; include expansions. Incomplete generations are already excluded by this common panel."
+  },
+  "methods": ["qwen_humanize", "qwen14b_humanize", "dipper", "dipper_context3"],
+  "detectors": ["openai_roberta_base", "binoculars_falcon7b"],
+  "detector_policy": "Reuse frozen detector thresholds calibrated for target 5% FPR; no recalibration or detector inference.",
+  "evaded": "orig_detected AND NOT rew_detected",
+  "asr_denominator": "All original-detected sources of the common panel for the detector, unchanged across methods, semantic definitions and tau.",
+  "moderate": {"nli_cons_mean_min": 0.8},
+  "stringent": {"nli_cons_mean_min": 0.8, "nli_min_min": 0.5},
+  "inequality": ">= for all semantic requirements; exact frozen detector decision rules remain unchanged",
+  "curve_grid": {"start": 0.0, "stop": 1.0, "step": 0.01, "include_stop": true},
+  "sensitivity_taus": [0.7, 0.8, 0.9],
+  "curves": [
+    {"name": "nli_mean", "score": "nli_cons_mean", "additional_nli_min": null},
+    {"name": "nli_mean_and_min", "score": "nli_cons_mean", "additional_nli_min": 0.5},
+    {"name": "bertscore_rescaled_mean", "score": "bs_resc_mean", "additional_nli_min": null}
+  ],
+  "figures": "Two figures, one for the NLI mean curve and one for the rescaled BERTScore mean curve; each has two detector panels and four method lines. The stringent NLI curve is additionally saved in CSV, with its fixed tau=0.8 value in the main table.",
+  "bertscore_policy": "Use existing aligned, rescaled bidirectional mean with baseline 0.814463. Do not clip negative values. Equal numerical NLI and BERTScore thresholds are not assumed to represent equal semantic fidelity.",
+  "bootstrap_replicates": 5000,
+  "bootstrap_seed": 42,
+  "bootstrap_unit": "source_group_id; resample the 123 sources jointly, retaining all four methods and both detectors in each draw",
+  "interval_policy": "Pointwise paired-source percentile 95% bands; report undefined resamples and degenerate empirical intervals. Wilson two-sided 95% for individual ASR proportions, including zero events.",
+  "evaded_vs_not_population": "Only orig_detected sources: compare evaded rewrites with rew_detected rewrites within each method and detector.",
+  "evaded_vs_not_statistics": ["nli_cons_mean", "nli_min"],
+  "evaded_vs_not_difference": "Median(evaded) minus median(not evaded), with source bootstrap; no causal interpretation. Do not impute scores when either group is empty.",
+  "optional_score_correlation": "Spearman of high-AI-oriented original score minus high-AI-oriented rewrite score versus nli_cons_mean, on all 123 sources, independent of detector threshold.",
+  "optional_method_comparison": "Two-sided exact McNemar on stringent-evasion outcomes among orig_detected sources; all six method pairs per detector, one Holm family of 12 tests.",
+  "interpretation": "Semantic metrics are automatic proxies, not human-validated labels. Neither threshold-qualified ASR nor a score difference measures a percentage of meaning lost. Conditional source selection and lack of causal identification must be disclosed."
+}
