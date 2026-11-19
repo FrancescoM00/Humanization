@@ -1,0 +1,894 @@
+{
+  "protocol": "humanizer_final_semantics_window2_lexical_v1",
+  "created_at": "2026-11-19T11:29:51.464441+00:00",
+  "input_sha256": {
+    "config.json": "947f1aaee4739d3ed5929b05a08884027b4ce5438e4cf3c7c47d023ac3ef65cd",
+    "cohorts/study.jsonl": "84f9f6933b2ee72412d65eedbf8f1fbe70cf0139bcd3d6d395cb85250c0edb68",
+    "rewriting/rewrites.jsonl": "16325f4b9668e4ee3d1c18cd9ddad9609529f2bb58b07370e1b27302a815725d",
+    "semantic_context/pairs.jsonl": "537fceaa0ba5b8e29518b97bf789f25a8b98a5c45ba12797669eb5b24ffecfb6",
+    "semantic_context/alignment.json": "e80ee4b479de8187a9516fccfdf85c05891c7ccc4384531119c76491becd4e45",
+    "semantic_context/contextual_nli.csv": "b4cd0f965d490b0fd9f7d3c19be8b33319192fa7e5ffb37e1f237e87ac92ca93",
+    "semantic_context/contextual_nli_units.jsonl": "e3aa522ae7bf4c5f55db096d5ab023cf8fa4dc58be5ae8473c74338472b00af5",
+    "semantic_context/contextual_nli_run.json": "9bfd7197e99300837e2469676e343bec21658b70cb00452de8e5f68aec2841db"
+  },
+  "n_attempts_per_system": 126,
+  "n_valid_outputs": 500,
+  "n_common_sources": 123,
+  "common_source_ids": [
+    "Essay:12:a31a73512fb6dcc2",
+    "Essay:136:0459e7ad136c6f17",
+    "Essay:174:846bfb9e017cb406",
+    "Essay:196:4ec0780c728f72c3",
+    "Essay:198:ee27e99f1bc3dc32",
+    "Essay:204:c92d94f8920676bb",
+    "Essay:210:babb32f643672f3c",
+    "Essay:218:156908c1de6b5bc7",
+    "Essay:245:198f5b62c8f94655",
+    "Essay:261:99fdf43504523caf",
+    "Essay:308:a3392ef1e918715d",
+    "Essay:326:4d0cbbaeb18077a4",
+    "Essay:353:6a8548d29b6cad80",
+    "Essay:357:a5277cbed4ecee10",
+    "Essay:367:a03b0356efebf8f2",
+    "Essay:3:f21ed6eb47e771fd",
+    "Essay:401:9ca17791d9a2f1ab",
+    "Essay:475:eb593e9f2cf4d703",
+    "Essay:476:30c42c3c6951daac",
+    "Essay:478:7c3a543a109849c4",
+    "Essay:482:aadd8c8c127b5195",
+    "Essay:489:51777f8d998ccb8e",
+    "Essay:50:25d8a112dc2ee806",
+    "Essay:543:63d12f654a7dd709",
+    "Essay:55:3ee18b2ac7858978",
+    "Essay:641:a8e05a96382cc9af",
+    "Essay:678:4fafbbe44b79f790",
+    "Essay:684:2b557b374236c998",
+    "Essay:721:6d9e012740be88a4",
+    "Essay:745:d6def8558de2ce4f",
+    "Essay:803:f3c9ed430c3b16a1",
+    "Essay:811:7c55fe56dd8a539a",
+    "Essay:848:7a1293a7159e78db",
+    "Essay:889:6dac9449b2023bbd",
+    "Essay:896:7ccb451764bd7b56",
+    "Essay:923:e07a351d25d493fb",
+    "Essay:925:7fc868a292f2a9fe",
+    "Essay:967:81632f5d469142c0",
+    "Essay:980:d83652831876f5f0",
+    "Essay:993:66c102ecf6b3c800",
+    "Essay:996:9d10f700ac2a400e",
+    "Reuters:126:596b613e8f73ff42",
+    "Reuters:196:99a59b1848e79106",
+    "Reuters:204:c982b32c2ad895d7",
+    "Reuters:207:2492b86ec18aa79c",
+    "Reuters:258:fe095ad494a53def",
+    "Reuters:289:4d4cd4a992f95fbc",
+    "Reuters:310:1abbade011068857",
+    "Reuters:317:5ba9831d5c2fa1a6",
+    "Reuters:373:f298982fe6a5acf4",
+    "Reuters:384:5eba4c088eea2371",
+    "Reuters:411:a47068bbe9eab960",
+    "Reuters:413:f03ded1cf6ac27d0",
+    "Reuters:417:b07c03bd035b9249",
+    "Reuters:432:ad8ebf2ed590432b",
+    "Reuters:441:60943b346925286c",
+    "Reuters:465:6f0986f0f1d9a7f4",
+    "Reuters:476:cfbdb7a3ee06073e",
+    "Reuters:4:806b89be8ec06944",
+    "Reuters:503:2d035c54028b239b",
+    "Reuters:519:b04e4c82621c2941",
+    "Reuters:531:79fd230231183ce2",
+    "Reuters:541:bf9090e8e53d5d33",
+    "Reuters:578:37b6595e84e290ce",
+    "Reuters:583:28328c18606ef671",
+    "Reuters:633:11827711b469c049",
+    "Reuters:672:dd3832e1e38692d0",
+    "Reuters:675:7d3c0c363d40e049",
+    "Reuters:693:bb1a2c4a68618c5b",
+    "Reuters:703:6a57ac5ffb2f1f88",
+    "Reuters:721:b779ed927af8e5c8",
+    "Reuters:739:84d830dbd6a59907",
+    "Reuters:760:910e49e81924288c",
+    "Reuters:764:b989e54ff2ad6d6d",
+    "Reuters:770:b01a28347a59a18f",
+    "Reuters:87:886bf9c04100a49f",
+    "Reuters:889:e2783d23c690fec1",
+    "Reuters:903:3d3ffb6dca295be8",
+    "Reuters:934:b99e68f88cd85455",
+    "Reuters:955:09bab6378b5df91f",
+    "Reuters:991:d73708fbb952542f",
+    "Reuters:99:72f0d777c8384b92",
+    "WritingPrompts:102:d3741c28724a751f",
+    "WritingPrompts:104:a95f224c147ea113",
+    "WritingPrompts:159:7536459ba70b9a41",
+    "WritingPrompts:1:9a7c98e2b4aa207c",
+    "WritingPrompts:218:c4b610f8383c46eb",
+    "WritingPrompts:242:2697b0278e102379",
+    "WritingPrompts:256:89e3f094a8e5a489",
+    "WritingPrompts:262:5ef378214da9ca22",
+    "WritingPrompts:285:80b9ea16794068e3",
+    "WritingPrompts:350:7dce665a38637929",
+    "WritingPrompts:363:eeab8f81502f76e1",
+    "WritingPrompts:370:dd56e3d8b708e42d",
+    "WritingPrompts:393:081cd5925691cfbf",
+    "WritingPrompts:407:72f1f1444a13b7ef",
+    "WritingPrompts:430:9836727d4dfa5560",
+    "WritingPrompts:440:e85378f4f9e16583",
+    "WritingPrompts:559:653bf94a80f68f73",
+    "WritingPrompts:562:785eead74dc70cd2",
+    "WritingPrompts:587:c37608c88c011067",
+    "WritingPrompts:599:40cfc6fe2cee6a0d",
+    "WritingPrompts:613:83d04da5adf80f86",
+    "WritingPrompts:648:ff7f5cc1d62b2f79",
+    "WritingPrompts:64:b0dc47cab2dbc7d6",
+    "WritingPrompts:653:a3cd7b6952333eb6",
+    "WritingPrompts:681:457df78035a9dc6a",
+    "WritingPrompts:691:1ceca5e5b4b9ca9b",
+    "WritingPrompts:692:315a3af71d78bf77",
+    "WritingPrompts:707:342415a90414ea4d",
+    "WritingPrompts:735:a19f3d73e54c880a",
+    "WritingPrompts:743:fc1ea44da9c18b46",
+    "WritingPrompts:748:a198e7e95f9425ef",
+    "WritingPrompts:798:36f6d65bcb99186c",
+    "WritingPrompts:800:d7d757889483ef67",
+    "WritingPrompts:834:7010acf705179659",
+    "WritingPrompts:866:7f76168764d469b2",
+    "WritingPrompts:888:e1415f4998505083",
+    "WritingPrompts:913:9838028457e24030",
+    "WritingPrompts:955:2b37aabe3323d461",
+    "WritingPrompts:961:66f0d3288ed1bbd3",
+    "WritingPrompts:987:2cf1c0b5ef3400a5",
+    "WritingPrompts:995:2c393c53e2ee1c5d"
+  ],
+  "coverage": [
+    {
+      "humanizer": "qwen_humanize",
+      "n_attempted": 126,
+      "n_valid": 124,
+      "n_failed": 2,
+      "n_complete_bidirectional_nli": 124,
+      "n_expanded_included": 25,
+      "n_common_sources": 123,
+      "n_excluded_from_common": 3
+    },
+    {
+      "humanizer": "qwen14b_humanize",
+      "n_attempted": 126,
+      "n_valid": 126,
+      "n_failed": 0,
+      "n_complete_bidirectional_nli": 126,
+      "n_expanded_included": 19,
+      "n_common_sources": 123,
+      "n_excluded_from_common": 3
+    },
+    {
+      "humanizer": "dipper",
+      "n_attempted": 126,
+      "n_valid": 125,
+      "n_failed": 1,
+      "n_complete_bidirectional_nli": 125,
+      "n_expanded_included": 4,
+      "n_common_sources": 123,
+      "n_excluded_from_common": 3
+    },
+    {
+      "humanizer": "dipper_context3",
+      "n_attempted": 126,
+      "n_valid": 125,
+      "n_failed": 1,
+      "n_complete_bidirectional_nli": 125,
+      "n_expanded_included": 17,
+      "n_common_sources": 123,
+      "n_excluded_from_common": 3
+    }
+  ],
+  "nli_model": "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli",
+  "nli_configured_revision": "6f5cf0a2b59cabb106aca4c287eed12e357e90eb",
+  "historical_nli_run": {
+    "protocol": "contextual_nli_v1",
+    "status": "executed",
+    "n_pairs": 626,
+    "n_comparisons": 199126,
+    "modes": [
+      "single_all",
+      "window2",
+      "window3",
+      "document"
+    ],
+    "device": "cuda:0",
+    "precision": "float32",
+    "max_pair_tokens": 384,
+    "hypothesis_units": "exact existing alignment units; otherwise sentence/chunks <=160 NLI tokens",
+    "premise_units": "native contiguous sentence/chunks; window2/window3 include shorter windows",
+    "document_mode": "exact full text only when actual tokenizer pair fits; incomplete coverage is not averaged",
+    "selection": "all supplied pairs",
+    "pairs_sha256": "537fceaa0ba5b8e29518b97bf789f25a8b98a5c45ba12797669eb5b24ffecfb6",
+    "code_sha256": "14ade40e727324888656553fce39d32eb1833fb6dc8cc1cb4b45ea38d5847c47",
+    "elapsed_seconds": 1700.991017680999,
+    "new_evidence_scored": 199126,
+    "cache_entries": 199126,
+    "peak_rss_mib": 2040.3046875,
+    "batch_size": 4,
+    "threads": 2
+  },
+  "nli_cache_policy": "Reuse complete window2 scores for exact saved texts; recompute document aggregates from saved units; no new NLI inference",
+  "nli_window_definition": "Native contiguous windows of one or two aligned sentence/chunk units; same original hypothesis units, <=160 NLI tokens per chunk; max384 tokens per pair; no selective coverage averaging",
+  "forward": "Original as premise supports rewritten hypotheses; weak support can suggest additions or altered claims",
+  "reverse": "Rewrite as premise supports original hypotheses; weak support can suggest lost information",
+  "document_min": "Minimum over hypothesis supports in each direction; bidirectional_min = min(forward_min, reverse_min)",
+  "document_mean": "Mean over hypotheses in each direction; bidirectional_mean = min(forward_mean, reverse_mean), matching the existing suite",
+  "balanced_direction_mean": "Additional explicitly separate diagnostic: 0.5*(forward_mean+reverse_mean)",
+  "distributions": "Median, Q1 and Q3 across documents; IQR = Q3-Q1; all_valid per method and common_sources; no decision threshold",
+  "historical_reference": {
+    "value": 0.04075,
+    "role": "Descriptive count only, not a calibrated failure threshold for humanizer outputs"
+  },
+  "lexical_rules": {
+    "protocol": "humanizer_lexical_guards_v2",
+    "alerts": [
+      "alert_number",
+      "alert_date",
+      "alert_entity",
+      "alert_negation",
+      "alert_quantifier",
+      "alert_hedge_removal",
+      "alert_any"
+    ],
+    "historical_rules_reused": {
+      "hedge_modals_require_tag_MD": [
+        "could",
+        "may",
+        "might"
+      ],
+      "hedge_lemmas": [
+        "apparently",
+        "appear",
+        "arguably",
+        "estimate",
+        "indicate",
+        "likely",
+        "perhaps",
+        "possibly",
+        "potentially",
+        "presumably",
+        "probably",
+        "seem",
+        "suggest",
+        "tend",
+        "unlikely"
+      ],
+      "negation_canonicalization": {
+        "not": "not",
+        "n't": "not",
+        "never": "never",
+        "no": "no",
+        "none": "none",
+        "neither": "neither",
+        "nor": "nor",
+        "without": "without"
+      },
+      "quantifier_canonicalization": {
+        "all": "universal",
+        "every": "universal",
+        "each": "universal",
+        "always": "always",
+        "everyone": "everyone",
+        "everybody": "everyone",
+        "everything": "everything",
+        "some": "some",
+        "several": "several",
+        "many": "many",
+        "much": "much",
+        "most": "most",
+        "few": "few",
+        "someone": "someone",
+        "somebody": "someone",
+        "something": "something",
+        "any": "any",
+        "none": "none",
+        "no": "no",
+        "never": "never"
+      },
+      "primary_guard_features": [
+        "guard_hedge_change",
+        "guard_negation_change",
+        "guard_number_change",
+        "guard_quantifier_change"
+      ],
+      "number_normalization": "Decimal literals, English cardinal subset, basic ordinals, percent and USD/GBP/EUR labels; multisets, not just counts.",
+      "warnings_are_not_semantic_gold": true,
+      "known_limits": [
+        "Modal ability/permission vs epistemic uncertainty is not fully resolved.",
+        "Appear/suggest/indicate and quantifiers are lexical proxies with contextual false positives.",
+        "No general arithmetic, coreference, numerical unit conversion or scope reasoning."
+      ]
+    },
+    "number_policy": "Multinsieme normalizzato storico, esclusi gli span riconosciuti come date; cambi di valore/unità e frequenza di menzione.",
+    "date_policy": "Date NER e pattern calendario espliciti; normalizzazione di mese/giorno/anno e ISO, nessuna interpretazione fuzzy di date ambigue.",
+    "entity_policy": "Presenza di superfici NER normalizzate, senza pesare ripetizioni o differenze di etichetta; esclusi tipi numerici/date. Nessuna risoluzione di alias.",
+    "entity_labels_excluded": [
+      "CARDINAL",
+      "DATE",
+      "MONEY",
+      "ORDINAL",
+      "PERCENT",
+      "QUANTITY",
+      "TIME"
+    ],
+    "quantifier_phrases": {
+      "no more than": "upper_inclusive",
+      "not more than": "upper_inclusive",
+      "up to": "upper_inclusive",
+      "at most": "upper_inclusive",
+      "no fewer than": "lower_inclusive",
+      "not less than": "lower_inclusive",
+      "at least": "lower_inclusive",
+      "more than": "lower_exclusive",
+      "greater than": "lower_exclusive",
+      "over": "lower_exclusive",
+      "less than": "upper_exclusive",
+      "fewer than": "upper_exclusive",
+      "under": "upper_exclusive",
+      "below": "upper_exclusive"
+    },
+    "quantifier_policy": "Limiti multi-parola con numero vicino e valore normalizzato; priorità ai limiti lunghi, senza doppi conteggi. Altri quantificatori dal lessico storico.",
+    "hedge_policy": "Calo del totale di cautele modali MD e lessicali storiche; may/might e sinonimi non generano allarme se il totale resta uguale.",
+    "negation_policy": "Conteggi e inventario normalizzati; le negazioni dentro limiti numerici sono conteggiate solo come quantificatori.",
+    "warnings_are_confirmed_semantic_errors": false,
+    "limits": [
+      "Errori NER e alias, pronomi o riferimenti impliciti possono produrre falsi allarmi.",
+      "Inventari globali non individuano necessariamente entità o numeri riassegnati a fatti diversi.",
+      "Ripetizioni di numeri/date e cambi di forma non normalizzati possono produrre segnalazioni.",
+      "Abilità, permesso e incertezza dei modali non sono distinti; lessico delle cautele incompleto.",
+      "Non vengono risolti portata della negazione, coreferenza, conversioni generali di unità o equivalenza semantica."
+    ]
+  },
+  "spacy_version": "3.8.7",
+  "spacy_model": {
+    "lang": "en",
+    "name": "core_web_sm",
+    "version": "3.8.0",
+    "description": "English pipeline optimized for CPU. Components: tok2vec, tagger, parser, senter, ner, attribute_ruler, lemmatizer.",
+    "author": "Explosion",
+    "email": "contact@explosion.ai",
+    "url": "https://explosion.ai",
+    "license": "MIT",
+    "spacy_version": ">=3.8.0,<3.9.0",
+    "spacy_git_version": "5010fcbd3",
+    "vectors": {
+      "width": 0,
+      "vectors": 0,
+      "keys": 0,
+      "name": null,
+      "mode": "default"
+    },
+    "labels": {
+      "tok2vec": [],
+      "tagger": [
+        "$",
+        "''",
+        ",",
+        "-LRB-",
+        "-RRB-",
+        ".",
+        ":",
+        "ADD",
+        "AFX",
+        "CC",
+        "CD",
+        "DT",
+        "EX",
+        "FW",
+        "HYPH",
+        "IN",
+        "JJ",
+        "JJR",
+        "JJS",
+        "LS",
+        "MD",
+        "NFP",
+        "NN",
+        "NNP",
+        "NNPS",
+        "NNS",
+        "PDT",
+        "POS",
+        "PRP",
+        "PRP$",
+        "RB",
+        "RBR",
+        "RBS",
+        "RP",
+        "SYM",
+        "TO",
+        "UH",
+        "VB",
+        "VBD",
+        "VBG",
+        "VBN",
+        "VBP",
+        "VBZ",
+        "WDT",
+        "WP",
+        "WP$",
+        "WRB",
+        "XX",
+        "_SP",
+        "``"
+      ],
+      "parser": [
+        "ROOT",
+        "acl",
+        "acomp",
+        "advcl",
+        "advmod",
+        "agent",
+        "amod",
+        "appos",
+        "attr",
+        "aux",
+        "auxpass",
+        "case",
+        "cc",
+        "ccomp",
+        "compound",
+        "conj",
+        "csubj",
+        "csubjpass",
+        "dative",
+        "dep",
+        "det",
+        "dobj",
+        "expl",
+        "intj",
+        "mark",
+        "meta",
+        "neg",
+        "nmod",
+        "npadvmod",
+        "nsubj",
+        "nsubjpass",
+        "nummod",
+        "oprd",
+        "parataxis",
+        "pcomp",
+        "pobj",
+        "poss",
+        "preconj",
+        "predet",
+        "prep",
+        "prt",
+        "punct",
+        "quantmod",
+        "relcl",
+        "xcomp"
+      ],
+      "attribute_ruler": [],
+      "lemmatizer": [],
+      "ner": [
+        "CARDINAL",
+        "DATE",
+        "EVENT",
+        "FAC",
+        "GPE",
+        "LANGUAGE",
+        "LAW",
+        "LOC",
+        "MONEY",
+        "NORP",
+        "ORDINAL",
+        "ORG",
+        "PERCENT",
+        "PERSON",
+        "PRODUCT",
+        "QUANTITY",
+        "TIME",
+        "WORK_OF_ART"
+      ]
+    },
+    "pipeline": [
+      "tok2vec",
+      "tagger",
+      "parser",
+      "attribute_ruler",
+      "lemmatizer",
+      "ner"
+    ],
+    "components": [
+      "tok2vec",
+      "tagger",
+      "parser",
+      "senter",
+      "attribute_ruler",
+      "lemmatizer",
+      "ner"
+    ],
+    "disabled": [
+      "senter"
+    ],
+    "performance": {
+      "token_acc": 0.9986194413,
+      "token_p": 0.9956819193,
+      "token_r": 0.9957659295000001,
+      "token_f": 0.9957239226000001,
+      "tag_acc": 0.9729372620000001,
+      "sents_p": 0.9200841934,
+      "sents_r": 0.8939244013000001,
+      "sents_f": 0.9068156724,
+      "dep_uas": 0.9176955214,
+      "dep_las": 0.8991533598,
+      "dep_las_per_type": {
+        "prep": {
+          "p": 0.8541604085000001,
+          "r": 0.8631379245,
+          "f": 0.8586257006
+        },
+        "det": {
+          "p": 0.9768729642,
+          "r": 0.9782271875,
+          "f": 0.9775496068
+        },
+        "pobj": {
+          "p": 0.9620664033,
+          "r": 0.966071078,
+          "f": 0.9640645819
+        },
+        "nsubj": {
+          "p": 0.9573684677000001,
+          "r": 0.9454983571000001,
+          "f": 0.9513963894
+        },
+        "aux": {
+          "p": 0.9792295402000001,
+          "r": 0.982106294,
+          "f": 0.9806658074000001
+        },
+        "advmod": {
+          "p": 0.8525198045,
+          "r": 0.8510853104,
+          "f": 0.8518019535
+        },
+        "relcl": {
+          "p": 0.7660107335,
+          "r": 0.776850508,
+          "f": 0.7713925419000001
+        },
+        "root": {
+          "p": 0.9179682195000001,
+          "r": 0.8917474767,
+          "f": 0.9046678936
+        },
+        "xcomp": {
+          "p": 0.8814035088000001,
+          "r": 0.9016511127,
+          "f": 0.8914123492
+        },
+        "amod": {
+          "p": 0.9161996611000001,
+          "r": 0.9109167477000001,
+          "f": 0.9135505669
+        },
+        "compound": {
+          "p": 0.916113822,
+          "r": 0.9305524616,
+          "f": 0.9232766957
+        },
+        "poss": {
+          "p": 0.9741586538,
+          "r": 0.9788647343,
+          "f": 0.9765060241
+        },
+        "ccomp": {
+          "p": 0.7786216062,
+          "r": 0.8352342159,
+          "f": 0.8059349514
+        },
+        "attr": {
+          "p": 0.8972491909,
+          "r": 0.9327165685000001,
+          "f": 0.9146391753
+        },
+        "case": {
+          "p": 0.9782608696,
+          "r": 0.9909909910000001,
+          "f": 0.9845847837
+        },
+        "mark": {
+          "p": 0.9028511088000001,
+          "r": 0.906200318,
+          "f": 0.9045226131
+        },
+        "intj": {
+          "p": 0.6679841897000001,
+          "r": 0.619047619,
+          "f": 0.6425855513000001
+        },
+        "advcl": {
+          "p": 0.6656519533,
+          "r": 0.6607907328,
+          "f": 0.6632124352000001
+        },
+        "cc": {
+          "p": 0.8345964153000001,
+          "r": 0.8298050472,
+          "f": 0.8321938347000001
+        },
+        "neg": {
+          "p": 0.9475786321,
+          "r": 0.9523331661000001,
+          "f": 0.9499499499
+        },
+        "conj": {
+          "p": 0.7649689441,
+          "r": 0.7751762336,
+          "f": 0.7700387645
+        },
+        "nsubjpass": {
+          "p": 0.9159021407,
+          "r": 0.9215384615000001,
+          "f": 0.9187116564000001
+        },
+        "auxpass": {
+          "p": 0.9494232476000001,
+          "r": 0.9749430524,
+          "f": 0.9620139357
+        },
+        "dobj": {
+          "p": 0.9231431478000001,
+          "r": 0.9399155311,
+          "f": 0.9314538419
+        },
+        "nummod": {
+          "p": 0.9353284301,
+          "r": 0.9313131313,
+          "f": 0.9333164621000001
+        },
+        "npadvmod": {
+          "p": 0.7748267898000001,
+          "r": 0.7150976909,
+          "f": 0.7437650102000001
+        },
+        "prt": {
+          "p": 0.8148760331,
+          "r": 0.8835125448000001,
+          "f": 0.8478073947
+        },
+        "pcomp": {
+          "p": 0.8693820225000001,
+          "r": 0.8669467787,
+          "f": 0.8681626928
+        },
+        "expl": {
+          "p": 0.9789029536,
+          "r": 0.9935760171,
+          "f": 0.9861849097000001
+        },
+        "acl": {
+          "p": 0.7417295415,
+          "r": 0.6972176759000001,
+          "f": 0.7187851519
+        },
+        "agent": {
+          "p": 0.8994889267,
+          "r": 0.9462365591,
+          "f": 0.9222707424000001
+        },
+        "dative": {
+          "p": 0.7669172932,
+          "r": 0.7018348624,
+          "f": 0.7329341317
+        },
+        "acomp": {
+          "p": 0.9132441163,
+          "r": 0.8975056689,
+          "f": 0.9053064959
+        },
+        "dep": {
+          "p": 0.3686006826,
+          "r": 0.1753246753,
+          "f": 0.23762376240000002
+        },
+        "csubj": {
+          "p": 0.7039106145,
+          "r": 0.7455621302000001,
+          "f": 0.724137931
+        },
+        "quantmod": {
+          "p": 0.8625336927,
+          "r": 0.7798537774000001,
+          "f": 0.8191126280000001
+        },
+        "nmod": {
+          "p": 0.7528868360000001,
+          "r": 0.5959780622,
+          "f": 0.6653061224
+        },
+        "appos": {
+          "p": 0.6866606983,
+          "r": 0.6655097614000001,
+          "f": 0.6759198061
+        },
+        "predet": {
+          "p": 0.8406374502,
+          "r": 0.9055793991000001,
+          "f": 0.8719008264
+        },
+        "preconj": {
+          "p": 0.5591397849,
+          "r": 0.6046511628,
+          "f": 0.5810055866
+        },
+        "oprd": {
+          "p": 0.8287671233,
+          "r": 0.7223880597,
+          "f": 0.7719298246
+        },
+        "parataxis": {
+          "p": 0.5860215054,
+          "r": 0.4728850325,
+          "f": 0.5234093637
+        },
+        "meta": {
+          "p": 0.8,
+          "r": 0.4615384615,
+          "f": 0.5853658537
+        },
+        "csubjpass": {
+          "p": 0.625,
+          "r": 0.8333333333,
+          "f": 0.7142857143
+        }
+      },
+      "ents_p": 0.8429743795,
+      "ents_r": 0.8436498397000001,
+      "ents_f": 0.8433119744,
+      "ents_per_type": {
+        "DATE": {
+          "p": 0.8531038722000001,
+          "r": 0.8812698413000001,
+          "f": 0.8669581512000001
+        },
+        "GPE": {
+          "p": 0.9142205757,
+          "r": 0.8948396095000001,
+          "f": 0.9044262757
+        },
+        "ORDINAL": {
+          "p": 0.7741046832,
+          "r": 0.8726708075,
+          "f": 0.8204379562
+        },
+        "ORG": {
+          "p": 0.7904834996000001,
+          "r": 0.8191940615000001,
+          "f": 0.8045827366
+        },
+        "CARDINAL": {
+          "p": 0.8149386845000001,
+          "r": 0.8692033294,
+          "f": 0.8411967779
+        },
+        "FAC": {
+          "p": 0.3904761905,
+          "r": 0.3153846154,
+          "f": 0.3489361702
+        },
+        "PERSON": {
+          "p": 0.8574969021000001,
+          "r": 0.9033942559,
+          "f": 0.8798474253
+        },
+        "NORP": {
+          "p": 0.9031224980000001,
+          "r": 0.9024000000000001,
+          "f": 0.9027611044
+        },
+        "TIME": {
+          "p": 0.7454545455,
+          "r": 0.7192982456,
+          "f": 0.7321428571
+        },
+        "LOC": {
+          "p": 0.7356321839000001,
+          "r": 0.6114649682000001,
+          "f": 0.667826087
+        },
+        "MONEY": {
+          "p": 0.915274463,
+          "r": 0.9055489965,
+          "f": 0.9103857567
+        },
+        "QUANTITY": {
+          "p": 0.8153846154000001,
+          "r": 0.5824175824,
+          "f": 0.6794871795
+        },
+        "WORK_OF_ART": {
+          "p": 0.47445255470000003,
+          "r": 0.3350515464,
+          "f": 0.3927492447
+        },
+        "EVENT": {
+          "p": 0.6341463415,
+          "r": 0.29885057470000004,
+          "f": 0.40625000000000006
+        },
+        "LAW": {
+          "p": 0.44642857140000003,
+          "r": 0.390625,
+          "f": 0.4166666667
+        },
+        "PERCENT": {
+          "p": 0.9153354633,
+          "r": 0.8774885145,
+          "f": 0.8960125098
+        },
+        "LANGUAGE": {
+          "p": 0.7692307692,
+          "r": 0.625,
+          "f": 0.6896551724000001
+        },
+        "PRODUCT": {
+          "p": 0.5287356322,
+          "r": 0.2180094787,
+          "f": 0.3087248322
+        }
+      },
+      "speed": 9426.1029865937
+    },
+    "sources": [
+      {
+        "name": "OntoNotes 5",
+        "url": "https://catalog.ldc.upenn.edu/LDC2013T19",
+        "license": "commercial (licensed by Explosion)",
+        "author": "Ralph Weischedel, Martha Palmer, Mitchell Marcus, Eduard Hovy, Sameer Pradhan, Lance Ramshaw, Nianwen Xue, Ann Taylor, Jeff Kaufman, Michelle Franchini, Mohammed El-Bachouti, Robert Belvin, Ann Houston"
+      },
+      {
+        "name": "ClearNLP Constituent-to-Dependency Conversion",
+        "url": "https://github.com/clir/clearnlp-guidelines/blob/master/md/components/dependency_conversion.md",
+        "license": "Citation provided for reference, no code packaged with model",
+        "author": "Emory University"
+      },
+      {
+        "name": "WordNet 3.0",
+        "url": "https://wordnet.princeton.edu/",
+        "author": "Princeton University",
+        "license": "WordNet 3.0 License"
+      }
+    ],
+    "requirements": []
+  },
+  "alerts_interpretation": "Potential changes for review, not confirmed semantic violations; numeric/date format normalization is limited; NER aliases/coreference and scope can produce false alarms",
+  "alert_rate_denominator": "All valid documents in the declared scope, including those with no original item of that type; added items may still trigger a warning",
+  "comparison": "Same common source IDs for all four humanizers; resample sources jointly; difference B minus A of document medians for NLI, rates for alerts",
+  "bootstrap_replicates": 5000,
+  "seed": 42,
+  "intervals": "Pointwise paired-source percentile95, descriptive, no corrected significance claims; degenerate bootstrap intervals left empty with status, not interpreted as zero uncertainty",
+  "alert_rate_intervals": "Marginal Wilson two-sided95 intervals, including zero events; not simultaneous intervals",
+  "generation_failure_policy": "Explicit coverage and status; no fabricated NLI score or semantic label for incomplete generations",
+  "scope": "Semantic diagnostic application to real paraphrasers, not a new gold-labelled validation; human annotation remains separate",
+  "historical_code_provenance": "Recorded historical NLI code hash retained; current analysis code does not replace historical inference provenance",
+  "analysis_code_sha256": {
+    "semantics/humanizer_evaluation.py": "272c736ffc28b8e8a1240a095aaf0b21bfb721f8d5e8ed530f947bee341053b7",
+    "semantics/humanizer_guards.py": "2165efc43044256e5e42ba8e8b306ac01d14db50e9fc94927a2ad5f866d5fff3",
+    "scripts/evaluate_humanizer_semantics.py": "fde8263354be30957f457881ef186a6e11ca90c082da473da4052afb3a720eb7"
+  },
+  "nli_model_inference_executed": false,
+  "spacy_inference_executed": true,
+  "api_calls_executed": false,
+  "files": [
+    "document_scores.csv",
+    "nli_distributions.csv",
+    "lexical_alert_rates.csv",
+    "historical_reference_only.csv",
+    "paired_source_comparisons.csv",
+    "coverage.csv",
+    "generation_status.csv",
+    "identity_control.csv",
+    "common_source_ids.csv",
+    "lexical_alert_evidence.jsonl"
+  ],
+  "figures": [
+    "nli_distributions_common.png",
+    "lexical_alert_rates_common.png"
+  ]
+}
