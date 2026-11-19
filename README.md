@@ -16,6 +16,8 @@ Per riprodurre le nuove tabelle e immagini: `python scripts/analyze_detector_per
 
 ## Controlli di lunghezza e rumore: campioni comuni e significatività
 
+Il report dedicato a questo singolo esperimento è disponibile in [PDF](results_null_controls_robustness/report_controlli.pdf) e in [Markdown](results_null_controls_robustness/report_controlli.md).
+
 La rianalisi in [results_null_controls_robustness/](results_null_controls_robustness/) confronta ogni riscrittura con tre condizioni: **prefisso dell'originale**, per controllare la sola riduzione di lunghezza; **una sostituzione lessicale**, per confrontare la riscrittura con una perturbazione minima; **prefisso più sostituzione**, per combinare i due controlli. Il prefisso conserva esattamente il numero di parole alfabetiche spaCy della riscrittura e può finire dentro una frase. Il rumore usa il dizionario congelato, al massimo una sostituzione, con vincoli POS e sulle entità riconosciute. Non si presume che queste modifiche conservino sempre il significato.
 
 La [tabella principale sulla lunghezza](results_null_controls_robustness/length_common_sources.csv) usa **78 fonti comuni ai quattro riscrittori**, invece dei precedenti campioni diversi di 99, 107, 121 e 108 fonti. I conteggi di evasioni sono:
