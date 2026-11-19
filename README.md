@@ -2,6 +2,31 @@
 
 Esperimenti per la tesi su testi umani, generazioni macchina e riscritture. I risultati sono già disponibili: per consultarli non occorre rilanciare i modelli. Il PDF della tesi è materiale scientifico, non istruzioni operative. Versioni precedenti e strumenti rimossi durante la pulizia sono recuperabili dalla cronologia Git.
 
+## Esperimento 3: costo semantico dell'evasione
+
+Il branch **`feature/semantic-cost-evasion`** unisce detector e semantica sulle stesse **123 fonti × 4 metodi = 492 riscritture**, inclusi gli allungamenti. OpenAI RoBERTa-base e Binoculars producono **984 righe**. Il [report dedicato PDF](results_semantic_cost_evasion/report_semantic_cost_evasion.pdf) e il [Markdown](results_semantic_cost_evasion/report_semantic_cost_evasion.md) spiegano definizioni, curve complete e limiti; i [CSV e le figure](results_semantic_cost_evasion/) sono disponibili senza rilanciare modelli.
+
+Lo [ZIP del solo esperimento](exports/semantic_cost_evasion/semantic_cost_evasion_results.zip) raccoglie report PDF/Markdown, tutti i CSV, configurazione, manifest e due figure. Gli script riproducibili rimangono nel repository.
+
+Le definizioni in [config_exp3.json](results_semantic_cost_evasion/config_exp3.json) sono state salvate nel commit `efb7d32` prima del calcolo di questa analisi, dopo aver già osservato le distribuzioni: non sono cieche. **Moderata** richiede evasione e media NLI conservativa ≥0,8; **stringente** aggiunge minimo NLI ≥0,5. Il denominatore resta sempre costituito dagli originali rilevati del campione comune: **71 per OpenAI, 117 per Binoculars**. Tutti gli otto ASR semplici coincidono con i risultati precedenti sulle stesse fonti: [verifica](results_semantic_cost_evasion/baseline_asr_check.csv).
+
+| Detector | Metodo | Evasione semplice | Moderata | Stringente |
+|---|---|---:|---:|---:|
+| OpenAI | Qwen 3B | 45/71 | 33/71 | 18/71 |
+| OpenAI | Qwen 14B NF4 | 60/71 | 38/71 | 18/71 |
+| OpenAI | DIPPER intero | 10/71 | 3/71 | 1/71 |
+| OpenAI | DIPPER tre frasi | 6/71 | 5/71 | 3/71 |
+| Binoculars | Qwen 3B | 17/117 | 12/117 | 7/117 |
+| Binoculars | Qwen 14B NF4 | 29/117 | 14/117 | 10/117 |
+| Binoculars | DIPPER intero | 0/117 | 0/117 | 0/117 |
+| Binoculars | DIPPER tre frasi | 1/117 | 0/117 | 0/117 |
+
+[main_results.csv](results_semantic_cost_evasion/main_results.csv) conserva anche percentuali, intervalli Wilson e conteggi degli allungamenti. Su OpenAI il vantaggio del 14B nell'ASR semplice scompare nel conteggio stringente: entrambi 18/71, su fonti non identiche. Il confronto evasi/non evasi non stabilisce una minore fedeltà degli evasi: tutti gli intervalli con almeno due evasi comprendono zero. I gruppi vuoti o con un solo evaso sono segnalati, senza imputazioni. Il calo della curva non misura una percentuale di significato perso e non dimostra un costo causale.
+
+Le figure [NLI](results_semantic_cost_evasion/asr_curve_nli.png) e [BERTScore riscalato](results_semantic_cost_evasion/asr_curve_bertscore.png) mostrano τ da 0 a 1, riferimenti a 0,7/0,8/0,9 e bande puntuali ottenute con **5.000 ricampionamenti congiunti per fonte, seme 42**. La sensibilità al proxy è forte: a τ=0,8, BERTScore lascia 5/71 e 1/71 per i due Qwen su OpenAI, contro 33/71 e 38/71 con NLI. Lo stesso τ non è calibrato come lo stesso livello di fedeltà tra metriche e differiscono anche gli allineamenti. I CSV includono tutte le curve, i confronti evasi/non evasi, le correlazioni continue e McNemar con Holm sui 12 confronti stringenti.
+
+Riproduzione su CPU dagli score salvati: `python scripts/semantic_cost_of_evasion.py --output results_semantic_cost_evasion_reproduction`. Il join è in `humanizers/semantic_evasion_data.py`, le statistiche in `humanizers/semantic_evasion_analysis.py`. Non servono nuove inferenze o API. Il campione comune esclude generazioni incomplete e può favorire la semantica rispetto all'insieme di tutti i tentativi.
+
 ## NLI: direzioni separate e distribuzione completa
 
 Il branch **`feature/nli-directions-distributions`** estende l'esperimento semantico sulle **123 fonti comuni**, leggendo i CSV già salvati senza nuove inferenze. Il [report PDF aggiornato](results_humanizer_semantics_final/report_semantica_humanizer.pdf) e il [Markdown](results_humanizer_semantics_final/report_semantica_humanizer.md) ora comprendono forward/reverse separati, associazione con la lunghezza, bootstrap e cumulativa completa.

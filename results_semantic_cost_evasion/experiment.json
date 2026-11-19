@@ -1,0 +1,93 @@
+{
+  "protocol": "semantic_cost_of_evasion_v1",
+  "created_at": "2026-11-19T16:13:05.551009+00:00",
+  "config_sha256": "1ecd7f8063c65da80a40a9ab3f26b77b7944b262819c74d32316799aa62f5d14",
+  "config_definition_commit": "efb7d32",
+  "provenance": {
+    "input_sha256": {
+      "common_document_metrics.csv": "ca6e6b0bc71e8edefbfac2e345ad83aedad92b98041fd64613e577f053723867",
+      "catalogue_document_metrics.csv": "f3290f2b91e17a5ac364679d1f3e98ef794161ff941c152f56bce66adc27f285",
+      "common_source_ids.csv": "b24785bbdd06acac66360f5fcc942ab069be0a7c4304602d165762f760218235",
+      "reference_detector_pairs.csv": "9bf0a04e28a853f253462b8aa69c6dcc6673ca5c5bccad381a020bfa4e818ca5"
+    },
+    "archive_input_sha256": {
+      "config.json": "947f1aaee4739d3ed5929b05a08884027b4ce5438e4cf3c7c47d023ac3ef65cd",
+      "cohorts/study.jsonl": "84f9f6933b2ee72412d65eedbf8f1fbe70cf0139bcd3d6d395cb85250c0edb68",
+      "null_controls/rewrites.jsonl": "23c8a5a890c091ede15916c8b5206dedf52df486198749eda968a71eb67cac37",
+      "detection/detector_scores.csv": "78cbcd8509f783906bdebb7400edcaab2cfeb75f1350b5b73a44468028f55042",
+      "zero_shot/zero_shot_scores.csv": "922a410a02f82ff09d5ae8733a0a18784de239644517d559bf48e638012bd266",
+      "detector_thresholds_combined.json": "c367abfa0f95b7b4dc3007eb3f801046ef6b748ec8901908608587ddb496d489"
+    },
+    "frozen_detector_thresholds": {
+      "openai_roberta_base": {
+        "threshold": 0.9706076979637146,
+        "calibration_n": 300,
+        "target_fpr": 0.05,
+        "calibration_fpr": 0.05,
+        "decision": "AI iff score > threshold; ties are classified human"
+      },
+      "binoculars_falcon7b": {
+        "threshold": 0.9046559856180912,
+        "calibration_n": 300,
+        "target_fpr": 0.05,
+        "calibration_fpr": 0.05,
+        "decision": "AI iff raw Binoculars ratio < threshold; ties are human",
+        "score_is_probability": false,
+        "orientation": "lower_is_more_ai_like"
+      }
+    },
+    "reference_population": "Common123 only: full126 and historical pilot ASR have different denominators",
+    "join": "source_id + method + rewrite_id, text hashes and metadata, then detector; row-by-row check against saved paired detector scores",
+    "semantic_mean": "min(forward_mean,reverse_mean)",
+    "bertscore": "aligned_bert_f1_rescaled_bidirectional_mean; supplemented from catalogue, not the raw document F1",
+    "length_ratio": "modified_n_words / original_n_words; no expansion excluded",
+    "calibration": "Original frozen thresholds; target5%FPR on separate calibration humans; no recalibration",
+    "model_inference_executed": false,
+    "api_calls_executed": false
+  },
+  "baseline_check": "All eight common-panel ASRs checked before conditional semantic analysis",
+  "n_sources": 123,
+  "n_rewrites": 492,
+  "n_detector_rows": 984,
+  "analysis_status": "Retrospective descriptive analysis. NLI distributions and earlier ASR results were already inspected. These definitions are written before calculating this experiment; they are not blind or preregistered thresholds.",
+  "thresholds_blind": false,
+  "denominator": "All original-detected sources of the common panel for the detector, unchanged across methods, semantic definitions and tau.",
+  "bootstrap_unit": "source_group_id; resample the 123 sources jointly, retaining all four methods and both detectors in each draw",
+  "bootstrap_replicates": 5000,
+  "bootstrap_seed": 42,
+  "interval_policy": "Pointwise paired-source percentile 95% bands; report undefined resamples and degenerate empirical intervals. Wilson two-sided 95% for individual ASR proportions, including zero events.",
+  "group_population": "Only orig_detected sources: compare evaded rewrites with rew_detected rewrites within each method and detector.",
+  "definitions": "Moderate and stringent are operational proxy-score requirements, not human-verified preservation labels",
+  "score_comparison": "BERTScore and NLI thresholds use the same numerical grid, not matched calibration or identical evidence contexts",
+  "empty_groups": "No imputation; unavailable comparisons or resamples are explicitly counted",
+  "causal_interpretation": "None. Association between evasion and proxy support does not identify meaning lost or a causal cost",
+  "selection_limit": "The common panel already excludes incomplete generations; semantic scores can therefore be more favorable than for all attempts",
+  "analysis_code_sha256": {
+    "humanizers/semantic_evasion_data.py": "5ec7cadf7d8be246541a08141bfcb25529d98cb30520e839889d719fd2236113",
+    "humanizers/semantic_evasion_analysis.py": "20f19bd50441e6b223ecbde241df8bfe2c76b6abd0f9b5a882c912edc39c8b1d",
+    "scripts/semantic_cost_of_evasion.py": "c3c7723f1f0e9bdf7a7b98da345e68c40774cd2ba05d0f4b295fb4792ef59f64"
+  },
+  "runtime_versions": {
+    "numpy": "2.2.6",
+    "pandas": "2.3.3",
+    "scipy": "1.16.3",
+    "matplotlib": "3.10.7"
+  },
+  "model_inference_executed": false,
+  "api_calls_executed": false,
+  "files": [
+    "evasion_semantics_long.csv",
+    "baseline_asr_check.csv",
+    "main_results.csv",
+    "asr_by_threshold.csv",
+    "sensitivity_thresholds.csv",
+    "evaded_vs_not.csv",
+    "score_reduction_correlations.csv",
+    "method_comparisons_mcnemar.csv",
+    "config_exp3.json"
+  ],
+  "figures": [
+    "asr_curve_nli.png",
+    "asr_curve_bertscore.png"
+  ]
+}

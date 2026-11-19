@@ -1,0 +1,9 @@
+detector,method,n_sources,n_original_detected,evaded,asr,reference_n_original_detected,reference_evaded,asr_reference,matches_reference,source_population
+openai_roberta_base,qwen_humanize,123,71,45,0.6338028169014085,71,45,0.6338028169014085,True,"same 123 common sources, successful outputs from all four methods"
+openai_roberta_base,qwen14b_humanize,123,71,60,0.8450704225352113,71,60,0.8450704225352113,True,"same 123 common sources, successful outputs from all four methods"
+openai_roberta_base,dipper,123,71,10,0.14084507042253522,71,10,0.14084507042253522,True,"same 123 common sources, successful outputs from all four methods"
+openai_roberta_base,dipper_context3,123,71,6,0.08450704225352113,71,6,0.08450704225352113,True,"same 123 common sources, successful outputs from all four methods"
+binoculars_falcon7b,qwen_humanize,123,117,17,0.1452991452991453,117,17,0.1452991452991453,True,"same 123 common sources, successful outputs from all four methods"
+binoculars_falcon7b,qwen14b_humanize,123,117,29,0.24786324786324787,117,29,0.24786324786324787,True,"same 123 common sources, successful outputs from all four methods"
+binoculars_falcon7b,dipper,123,117,0,0.0,117,0,0.0,True,"same 123 common sources, successful outputs from all four methods"
+binoculars_falcon7b,dipper_context3,123,117,1,0.008547008547008548,117,1,0.008547008547008548,True,"same 123 common sources, successful outputs from all four methods"

@@ -1,0 +1,9 @@
+detector,method,n_sources,n_original_detected,rho,statistic,status
+openai_roberta_base,qwen_humanize,123,71,0.01766390218106306,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+openai_roberta_base,qwen14b_humanize,123,71,-0.0031019850124466342,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+openai_roberta_base,dipper,123,71,0.04129960918858264,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+openai_roberta_base,dipper_context3,123,71,0.10115035187826402,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+binoculars_falcon7b,qwen_humanize,123,117,0.12286053320607243,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+binoculars_falcon7b,qwen14b_humanize,123,117,0.25821284389470023,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+binoculars_falcon7b,dipper,123,117,0.4055216623028209,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
+binoculars_falcon7b,dipper_context3,123,117,0.32310946589106293,"Spearman(score_reduction,nli_cons_mean), all common sources",descriptive_no_p_value
