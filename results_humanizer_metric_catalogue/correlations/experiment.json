@@ -1,0 +1,46 @@
+{
+  "protocol": "humanizer_document_metric_correlations_v1",
+  "created_at": "2026-11-19T15:55:29.375248+00:00",
+  "input_sha256": {
+    "document_metrics.csv": "f3290f2b91e17a5ac364679d1f3e98ef794161ff941c152f56bce66adc27f285",
+    "common_source_ids.csv": "b24785bbdd06acac66360f5fcc942ab069be0a7c4304602d165762f760218235"
+  },
+  "method": "Spearman with average ranks for ties",
+  "metrics": [
+    "rouge_l_f1",
+    "bleu_0_100",
+    "bert_document_chunk_f1",
+    "embedding_cosine",
+    "nli_bidirectional_min",
+    "nli_bidirectional_mean",
+    "flesch_delta"
+  ],
+  "n_documents": 492,
+  "n_sources": 123,
+  "documents_per_humanizer": 123,
+  "n_distinct_metric_pairs_per_scope": 21,
+  "aggregation": "One matrix pooling all four rewrites per source, plus one matrix separately for each humanizer",
+  "missing_policy": "All seven metrics finite in all selected documents; no selective pairwise row deletion",
+  "nli_mean_definition": "min(forward_mean, reverse_mean), not arithmetic mean of directions",
+  "bertscore_definition": "Raw document chunk-matched F1 approximation used in the catalogue",
+  "delta_flesch_definition": "Flesch Reading Ease rewrite minus original, per document",
+  "interpretation": "Descriptive associations, not metric validity or accuracy; pooled correlations can reflect differences among methods and domains",
+  "repeated_sources": "The 492 rows share 123 original sources. They are not 492 independent sources; no iid p-values or confidence intervals are reported",
+  "statistical_tests": "none",
+  "model_inference_executed": false,
+  "api_calls_executed": false,
+  "code_sha256": "368177794e0357e9f5f30464ef3388f4b33c66b5425b48c58abac4d8006c75d5",
+  "files": [
+    "spearman_pooled_492.csv",
+    "spearman_qwen_humanize.csv",
+    "spearman_qwen14b_humanize.csv",
+    "spearman_dipper.csv",
+    "spearman_dipper_context3.csv",
+    "common_document_metrics.csv",
+    "spearman_pairs.csv"
+  ],
+  "figures": [
+    "spearman_pooled_heatmap.png",
+    "spearman_within_humanizers.png"
+  ]
+}

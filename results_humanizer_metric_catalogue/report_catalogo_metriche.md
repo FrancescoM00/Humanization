@@ -122,9 +122,33 @@ Le tabelle usano gli stessi originali per rendere comparabili le descrizioni dei
 
 Non si applicano soglie, test di significatività o nuove classificazioni di successo e fallimento. Non vengono dedotte superiorità statistiche dalle sole differenze delle medie. Le colonne di media, deviazione standard, mediana e quartili sono **descrittive**; non sono una validazione delle metriche rispetto a giudizi umani.
 
+## 7.1. Correlazioni fra le metriche documentali
+
+Il catalogo è completato con le correlazioni di **Spearman**, che confrontano l'ordinamento dei documenti senza richiedere una relazione lineare fra i punteggi. Si utilizzano le stesse **492 coppie, cioè 123 fonti per quattro metodi**, senza valori mancanti o eliminazioni selettive. Le sette variabili sono ROUGE-L, BLEU, BERTScore F1 documentale a chunk, coseno, minimo NLI bidirezionale, media NLI conservativa e delta Flesch. La media NLI rimane il minimo delle medie forward e reverse.
+
+Si calcola una matrice complessiva e una matrice per ciascun humanizer, ciascuna con 21 coppie distinte di metriche. La separazione per metodo permette di distinguere le associazioni tra i punteggi dalle differenze tra tipi di riscrittura. Alcune correlazioni rappresentative sono:
+
+| Coppia di metriche | Totale, 492 | Qwen 3B | Qwen 14B | DIPPER intero | DIPPER tre frasi |
+|---|---:|---:|---:|---:|---:|
+| ROUGE-L – BLEU | 0,955 | 0,892 | 0,826 | 0,936 | 0,922 |
+| BERTScore – NLI minimo | 0,300 | 0,520 | 0,395 | 0,278 | 0,427 |
+| Coseno – NLI minimo | 0,324 | 0,482 | 0,214 | 0,352 | 0,352 |
+| NLI minimo – NLI media | 0,880 | 0,908 | 0,899 | 0,644 | 0,881 |
+| Delta Flesch – NLI minimo | 0,027 | 0,111 | 0,246 | −0,029 | 0,117 |
+
+ROUGE-L e BLEU descrivono aspetti fortemente associati della sovrapposizione lessicale. Le associazioni di BERTScore e coseno con il minimo NLI sono più moderate e cambiano secondo il metodo. Questo non dimostra che una metrica sia più accurata: misura soltanto quanto gli ordinamenti dei documenti concordano.
+
+La miscela dei metodi può cambiare anche il segno dell'associazione. ROUGE-L e delta Flesch hanno correlazione **+0,327** nel totale; dentro DIPPER intero la correlazione è **−0,314**, e dentro DIPPER tre frasi **−0,208**. Per questo la sola matrice complessiva non basta a descrivere ciò che avviene entro ciascun metodo. Anche il dominio e il contenuto degli originali possono contribuire alle associazioni.
+
+![Matrice complessiva delle correlazioni descrittive di Spearman.](correlations/spearman_pooled_heatmap.png)
+
+Le quattro riscritture dello stesso originale condividono una fonte: le 492 righe **non sono 492 fonti indipendenti**. L'analisi rimane descrittiva, senza p-value o intervalli calcolati assumendo tale indipendenza. Le matrici complete e il confronto grafico entro metodo sono conservati nei risultati; non sono stati ricalcolati i punteggi dei modelli.
+
 # 8. File, codice e riproduzione
 
 I risultati sono in **`results_humanizer_metric_catalogue/`**, nel branch `feature/humanizer-metric-catalogue` della repository `FrancescoM00/Humanization`.
+
+L'aggiunta delle correlazioni e questo aggiornamento del report sono nel branch **`feature/nli-directions-distributions`**. La sottocartella **`correlations/`** contiene cinque matrici CSV: `spearman_pooled_492.csv` e una per ciascun humanizer. `spearman_pairs.csv` riunisce le 105 correlazioni distinte con indicazione di campione e numerosità. `common_document_metrics.csv` contiene le 492 righe effettivamente utilizzate; `experiment.json` documenta input e convenzioni. I grafici sono `spearman_pooled_heatmap.png` e `spearman_within_humanizers.png`.
 
 La **tabella unica riassuntiva** è `summary_common_median.csv`: contiene le quattro righe dei metodi e tutte le metriche sul campione comune. `summary_common_mean.csv` offre la stessa struttura per le medie. Nel PDF le metriche sono separate in tabelle più leggibili perché hanno scale e significati diversi.
 
@@ -140,3 +164,5 @@ python scripts/summarize_humanizer_metrics.py \
 ```
 
 Servono le dipendenze del progetto e il corpus locale `cmudict` utilizzato da `textstat`. La rianalisi legge l'archivio dello studio già incluso e funziona su CPU, senza GPU, chiavi API o download dei modelli neurali.
+
+La sola aggiunta delle correlazioni si riproduce con `python scripts/correlate_humanizer_metrics.py`: legge il catalogo documentale e gli ID delle fonti comuni già esportati, senza rieseguire metriche, spaCy o modelli neurali.
