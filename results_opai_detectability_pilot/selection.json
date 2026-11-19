@@ -1,0 +1,82 @@
+{
+  "config_sha256": "aaaa44892b9e503e0461161f6df2cd1cd0b520c34342ef85f152ce31ffbcb677",
+  "panel_sha256": "12d946191175e1f0e43ae2fd91c36bd9f5196faab09c95ef03cb2c6c1d187b45",
+  "n_documents": 400,
+  "n_texts": 1200,
+  "available_documents_by_domain": {
+    "abstracts": 435,
+    "essays": 473,
+    "news": 429,
+    "reports": 497
+  },
+  "n_excluded_documents": 534,
+  "overlap_with_previous_sources": 0,
+  "dataset_revision": "072c03c7051409346aaba05168d183cf6d863ee9",
+  "source_files": [
+    {
+      "file": "abstracts_gemini-2.5-flash.parquet",
+      "sha256": "091b15daf4c12280d527966489d52dd03863ce1db2d0fe0b0227929d1b4e3852"
+    },
+    {
+      "file": "abstracts_gpt-5.4-nano.parquet",
+      "sha256": "f9f5ff9eceedf5132073042becfd2fa7d6ee65ab4fabebe9c22ddda1e840c3e7"
+    },
+    {
+      "file": "abstracts_gpt-5.4.parquet",
+      "sha256": "bbc13be5fcb8c162bc07a753959577feb596e49f9784b931c94f583abd356884"
+    },
+    {
+      "file": "abstracts_qwen3-8b.parquet",
+      "sha256": "14a7176a97d0d1b0ce9b1306cf9c7180fcf5df0b2d77d53e4f49903599353287"
+    },
+    {
+      "file": "essays_gemini-2.5-flash.parquet",
+      "sha256": "6de1035ff624b0057842bac9e776c3197c0f0e912473db49437ebb514e9409e9"
+    },
+    {
+      "file": "essays_gpt-5.4-nano.parquet",
+      "sha256": "5c833df33247aa8c86f287aaec4820edcde185e4e1dae8f7a0f373f84512a992"
+    },
+    {
+      "file": "essays_gpt-5.4.parquet",
+      "sha256": "6189e557157fb2d5d4fb04591ab7ee6b01143a357899bb977ce44caabed685b8"
+    },
+    {
+      "file": "essays_qwen3-8b.parquet",
+      "sha256": "49edf3a27951f1eb63ed7ad2256206b21b5f8660dfb66da03365c7658e0df543"
+    },
+    {
+      "file": "news_gemini-2.5-flash.parquet",
+      "sha256": "0d5b0f50a3b2a05eb409babb3e855d78b91a467a24967d7e7dfb7d3451416e9b"
+    },
+    {
+      "file": "news_gpt-5.4-nano.parquet",
+      "sha256": "fdaecc28a136de06d4234cbf096debe2664000e634caae6350b162da55957a72"
+    },
+    {
+      "file": "news_gpt-5.4.parquet",
+      "sha256": "8295a0115412ad69301d23d8a7e9ffea80b71e2660c11d197ceec942dc6eb7bd"
+    },
+    {
+      "file": "news_qwen3-8b.parquet",
+      "sha256": "9d2223474e798c797cd1481242b3db6904cfc2c9de8d2e2ddb8cff31f9ef6d73"
+    },
+    {
+      "file": "reports_gemini-2.5-flash.parquet",
+      "sha256": "d694239f5026128e0a0febc1275abc14f40b268518a3a2e411642585a23e0915"
+    },
+    {
+      "file": "reports_gpt-5.4-nano.parquet",
+      "sha256": "ee15d9cfeebe9e41598b9eab2642e1588f64b711f6186ab97e9232a7b1443453"
+    },
+    {
+      "file": "reports_gpt-5.4.parquet",
+      "sha256": "9217406902f980d41bee65a7c9b9a6b5975e8e950ef06d312f2927a0e1ccd54e"
+    },
+    {
+      "file": "reports_qwen3-8b.parquet",
+      "sha256": "30afee11c2c7a6eb6ffddc611a01e09655eabd1ce3cee4c4b01c8b52edf4eaf5"
+    }
+  ],
+  "selection_without_detector_scores": true
+}
