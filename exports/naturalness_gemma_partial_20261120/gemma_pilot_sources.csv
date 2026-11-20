@@ -1,0 +1,11 @@
+pilot_index,source_id,source_group_id,domain,source_generator,in_qwen_complete61,qwen_valid_requests,gemma_valid_requests,original_n_words
+1,Essay:478:7c3a543a109849c4,Essay:478:7c3a543a109849c4,Essay,ChatGPT-turbo,True,12,12,149
+2,Reuters:258:fe095ad494a53def,Reuters:258:fe095ad494a53def,Reuters,ChatGPT-turbo,True,12,12,146
+3,WritingPrompts:913:9838028457e24030,WritingPrompts:913:9838028457e24030,WritingPrompts,ChatGPT-turbo,True,12,12,154
+4,WritingPrompts:866:7f76168764d469b2,WritingPrompts:866:7f76168764d469b2,WritingPrompts,ChatGLM,True,12,12,156
+5,Reuters:413:f03ded1cf6ac27d0,Reuters:413:f03ded1cf6ac27d0,Reuters,Dolly,True,12,12,102
+6,WritingPrompts:102:d3741c28724a751f,WritingPrompts:102:d3741c28724a751f,WritingPrompts,ChatGPT-turbo,True,12,12,152
+7,WritingPrompts:834:7010acf705179659,WritingPrompts:834:7010acf705179659,WritingPrompts,Dolly,True,12,12,147
+8,Reuters:739:84d830dbd6a59907,Reuters:739:84d830dbd6a59907,Reuters,ChatGPT,True,12,12,146
+9,WritingPrompts:1:9a7c98e2b4aa207c,WritingPrompts:1:9a7c98e2b4aa207c,WritingPrompts,Claude,True,12,12,147
+10,Reuters:503:2d035c54028b239b,Reuters:503:2d035c54028b239b,Reuters,ChatGPT-turbo,True,12,12,164

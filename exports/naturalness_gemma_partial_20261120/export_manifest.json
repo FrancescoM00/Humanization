@@ -1,0 +1,26 @@
+{
+  "created_on": "2026-11-20",
+  "source_sha256": {
+    "qwen_reference_20261118.zip": "c834bf2d03eb3735c93fe105d7a937983f0c44a468784b1969ec997d46f6dee4",
+    "humanization_naturalness_panel_gemma_google_v1 (7).zip": "6c4d57401feb5b637037229d4c6dd348b4e716d253d7157b572ac67b6cf72f00",
+    "document_metrics.csv": "f3290f2b91e17a5ac364679d1f3e98ef794161ff941c152f56bce66adc27f285"
+  },
+  "rows": {
+    "ratings_long.csv": 5028,
+    "rewrite_lengths.csv": 492,
+    "gemma_pilot_sources.csv": 10,
+    "qwen_complete61_sources.csv": 61,
+    "gemma_reasoning_checks.csv": 509,
+    "gemma_source_coverage.csv": 61,
+    "gemma_complete41_sources.csv": 41
+  },
+  "checks": [
+    "All valid ratings exactly match archived ratings.csv",
+    "All prompt rewrite hashes match document_metrics.csv",
+    "All10Gemma sources are in61complete Qwen sources",
+    "All shared messages and anonymous mappings identical",
+    "Raw missing reasoning counters remain missing, not replaced by explicit zero",
+    "All41completeGemma sources are in61completeQwen sources; current matched flag1968ratings per judge"
+  ],
+  "no_api_calls": true
+}

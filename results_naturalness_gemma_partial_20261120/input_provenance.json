@@ -1,0 +1,11 @@
+{
+  "received_archive": "exports/naturalness_judge_comparison/gemma_partial_20261120_received.zip",
+  "received_sha256": "6c4d57401feb5b637037229d4c6dd348b4e716d253d7157b572ac67b6cf72f00",
+  "source_native_plan_preserved": true,
+  "comparison_normalization": "Only native_payload removed after verifying every native message and generationConfig; no text/rating/scoring change",
+  "complete_sources": 41,
+  "valid_responses": 507,
+  "invalid_responses": 2,
+  "missing_requests": 223,
+  "no_api_calls": true
+}

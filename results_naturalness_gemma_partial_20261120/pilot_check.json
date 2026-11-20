@@ -1,0 +1,56 @@
+{
+  "status": "passed",
+  "passed": true,
+  "provider": "google",
+  "requested_model": "gemma-4-31b-it",
+  "thinking_level": "minimal",
+  "n_pilot_sources": 10,
+  "pilot_source_ids": [
+    "Essay:478:7c3a543a109849c4",
+    "Reuters:258:fe095ad494a53def",
+    "Reuters:413:f03ded1cf6ac27d0",
+    "Reuters:503:2d035c54028b239b",
+    "Reuters:739:84d830dbd6a59907",
+    "WritingPrompts:102:d3741c28724a751f",
+    "WritingPrompts:1:9a7c98e2b4aa207c",
+    "WritingPrompts:834:7010acf705179659",
+    "WritingPrompts:866:7f76168764d469b2",
+    "WritingPrompts:913:9838028457e24030"
+  ],
+  "expected_requests": 120,
+  "stored_responses": 120,
+  "valid_responses": 120,
+  "invalid_responses": 0,
+  "invalid_fraction": 0.0,
+  "all_planned_requests_answered": true,
+  "n_complete_source_panels": 10,
+  "complete_source_ids": [
+    "Essay:478:7c3a543a109849c4",
+    "Reuters:258:fe095ad494a53def",
+    "Reuters:413:f03ded1cf6ac27d0",
+    "Reuters:503:2d035c54028b239b",
+    "Reuters:739:84d830dbd6a59907",
+    "WritingPrompts:102:d3741c28724a751f",
+    "WritingPrompts:1:9a7c98e2b4aa207c",
+    "WritingPrompts:834:7010acf705179659",
+    "WritingPrompts:866:7f76168764d469b2",
+    "WritingPrompts:913:9838028457e24030"
+  ],
+  "positive_thinking_responses": 0,
+  "empty_thought_marker_responses": 120,
+  "unverified_thinking_responses": 0,
+  "model_version_changed": false,
+  "observed_provider_model_versions": [
+    "gemma-4-31b-it"
+  ],
+  "thinking_evidence_counts": {
+    "usage_balance_zero": 120
+  },
+  "post_attempts": 229,
+  "http_429_count": 0,
+  "http_503_count": 109,
+  "warnings": [],
+  "pass_rule": "All pilot slots answered; invalid fraction below 5%; at least one complete panel; all responses verified zero thought tokens without nonempty thought parts; stable model version",
+  "minimal_is_not_assumed_to_disable_thinking": true,
+  "human_annotation_produced": false
+}

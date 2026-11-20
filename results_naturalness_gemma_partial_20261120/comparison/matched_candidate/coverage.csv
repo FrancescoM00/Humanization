@@ -1,0 +1,7 @@
+scope,stratum,n_selected_sources,n_eligible_sources,n_generation_ineligible_sources,n_complete_sources,n_partial_sources,n_not_started_sources,eligible_fraction,complete_fraction_selected,complete_fraction_eligible,planned_requests,valid_requests,invalid_requests,missing_requests
+overall,all,41,41,0,41,0,0,1.0,1.0,1.0,492,492,0,0
+domain,Essay,10,10,0,10,0,0,1.0,1.0,1.0,120,120,0,0
+domain,Reuters,14,14,0,14,0,0,1.0,1.0,1.0,168,168,0,0
+domain,WritingPrompts,17,17,0,17,0,0,1.0,1.0,1.0,204,204,0,0
+length_bin,150–299,23,23,0,23,0,0,1.0,1.0,1.0,276,276,0,0
+length_bin,<150,18,18,0,18,0,0,1.0,1.0,1.0,216,216,0,0

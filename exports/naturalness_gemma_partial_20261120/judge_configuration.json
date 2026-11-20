@@ -1,0 +1,131 @@
+{
+  "protocol": "groq_panel_naturalness_williams_v1",
+  "scope": "Current four-passage rating experiment; old AB/BA experiments excluded",
+  "systems": [
+    "qwen_humanize",
+    "qwen14b_humanize",
+    "dipper",
+    "dipper_context3"
+  ],
+  "rating_scale": [
+    1,
+    5
+  ],
+  "temperature": 0,
+  "seed": 42,
+  "distinct_orders": 4,
+  "repetitions": 3,
+  "requests_per_source": 12,
+  "ratings_per_request": 4,
+  "qwen": {
+    "provider": "groq",
+    "model": "qwen/qwen3.8-27b",
+    "parameters": {
+      "model": "qwen/qwen3.8-27b",
+      "temperature": 0,
+      "reasoning_effort": "none",
+      "response_format": {
+        "type": "json_object"
+      },
+      "max_completion_tokens": 256
+    },
+    "reasoning_control": "reasoning_effort=none was sent and accepted; no separate reasoning token counter is present in saved usage",
+    "reasoning_token_count_reported": null,
+    "planned_sources": 123,
+    "planned_requests": 1476,
+    "stored_responses": 748,
+    "valid_responses": 747,
+    "invalid_responses": 1,
+    "complete_sources": 61,
+    "primary_requests": 732,
+    "primary_ratings": 2928
+  },
+  "gemma_partial": {
+    "provider": "google",
+    "model": "gemma-4-31b-it",
+    "stage": "full",
+    "pilot_sources": 10,
+    "complete_sources": 41,
+    "stored_responses": 509,
+    "valid_responses": 507,
+    "invalid_responses": 2,
+    "missing_requests": 223,
+    "primary_ratings": 1968,
+    "extended_plan_sources": 61,
+    "extended_plan_requests": 732,
+    "canonical_parameters_not_native_http_body": {
+      "model": "gemma-4-31b-it",
+      "temperature": 0,
+      "response_format": {
+        "type": "json_object"
+      },
+      "max_completion_tokens": 256
+    },
+    "native_generationConfig": {
+      "temperature": 0,
+      "maxOutputTokens": 256,
+      "thinkingConfig": {
+        "thinkingLevel": "MINIMAL"
+      }
+    },
+    "native_responseMimeType_sent": false,
+    "reasoning_control": "MINIMAL does not mean OFF. All509 responses infer zero accounted thought tokens from total minus prompt minus candidates; no nonempty thought parts.",
+    "responses_with_raw_thoughtsTokenCount": 0,
+    "responses_with_zero_inferred_from_usage_balance": 509,
+    "responses_with_empty_thought_markers": 509,
+    "responses_with_nonempty_thought_parts": 0
+  },
+  "prompt": {
+    "system_file": "judge_prompt.txt",
+    "example_file": "request_examples.json",
+    "user_template": {
+      "genre": "<domain>",
+      "passages": [
+        {
+          "id": "T1",
+          "text": "<rewrite in this position>"
+        },
+        {
+          "id": "T2",
+          "text": "<rewrite in this position>"
+        },
+        {
+          "id": "T3",
+          "text": "<rewrite in this position>"
+        },
+        {
+          "id": "T4",
+          "text": "<rewrite in this position>"
+        }
+      ]
+    },
+    "actual_google_roles": "Same system prompt in native systemInstruction and same user JSON in contents[0].parts[0].text",
+    "messages_identical_between_judges_on_shared_planned_requests": true
+  },
+  "validity": {
+    "valid": "Response status ok with four integer ratings1..5",
+    "complete_panel": "All12 requests valid for the original and judge",
+    "included_primary": "valid AND complete_panel",
+    "included_matched_current": "included_primary AND source_id in41common complete sources",
+    "missing_requests": "Unobserved planned requests have no rows; invalid stored responses produce4 rows with empty ratings, never zeros."
+  },
+  "lengths": {
+    "source": "results_humanizer_metric_catalogue/document_metrics.csv",
+    "original_n_words": "Number of alphabetic spaCy tokens; copied unchanged from catalogue",
+    "modified_n_words": "Number of alphabetic spaCy tokens; copied unchanged from catalogue",
+    "whitespace_words": "len(text.split()); differs from lexical spaCy count; modified text is exact judge prompt text",
+    "character_count": "len(text), Unicode code points",
+    "join_key": [
+      "source_id",
+      "method"
+    ]
+  },
+  "cross_judge_join_key": [
+    "source_id",
+    "method",
+    "order_id",
+    "repeat_index"
+  ],
+  "no_new_judge_calls": true,
+  "human_annotations": false
+}
