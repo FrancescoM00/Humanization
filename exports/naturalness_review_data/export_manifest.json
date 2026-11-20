@@ -1,0 +1,23 @@
+{
+  "created_on": "2026-11-20",
+  "source_sha256": {
+    "qwen_reference_20261118.zip": "c834bf2d03eb3735c93fe105d7a937983f0c44a468784b1969ec997d46f6dee4",
+    "document_metrics.csv": "f3290f2b91e17a5ac364679d1f3e98ef794161ff941c152f56bce66adc27f285",
+    "humanization_naturalness_panel_gemma_google_v1 (1).zip": "f9822a5299bb624f8417259f0b9edf6364af18c8843353331b34f8719b45f8d4"
+  },
+  "rows": {
+    "ratings_long.csv": 3472,
+    "rewrite_lengths.csv": 492,
+    "gemma_pilot_sources.csv": 10,
+    "qwen_complete61_sources.csv": 61,
+    "gemma_reasoning_checks.csv": 120
+  },
+  "checks": [
+    "All valid ratings exactly match archived ratings.csv",
+    "All prompt rewrite hashes match document_metrics.csv",
+    "All10Gemma sources are in61complete Qwen sources",
+    "All shared messages and anonymous mappings identical",
+    "Raw missing reasoning counters remain missing, not replaced by explicit zero"
+  ],
+  "no_api_calls": true
+}
